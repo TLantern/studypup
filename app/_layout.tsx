@@ -4,8 +4,15 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import {
+  SuperwallAvailableContext,
+  SuperwallProvider,
+} from './_lib/superwall';
 
 SplashScreen.preventAutoHideAsync();
+
+const SUPERWALL_IOS_KEY = process.env.EXPO_PUBLIC_SUPERWALL_IOS_KEY ?? '';
+const SUPERWALL_ANDROID_KEY = process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? '';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Fredoka_400Regular, FredokaOne_400Regular });
@@ -16,11 +23,28 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
-  return (
+  const content = (
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
         <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
       </Stack>
     </View>
   );
+
+  const apiKeys: { ios?: string; android?: string } = {
+    ...(SUPERWALL_IOS_KEY && { ios: SUPERWALL_IOS_KEY }),
+    ...(SUPERWALL_ANDROID_KEY && { android: SUPERWALL_ANDROID_KEY }),
+  };
+
+  if (SuperwallProvider) {
+    return (
+      <SuperwallProvider
+        apiKeys={apiKeys}
+        onConfigurationError={(e) => console.error('Superwall config failed:', e)}
+      >
+        <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
+      </SuperwallProvider>
+    );
+  }
+  return <SuperwallAvailableContext.Provider value={false}>{content}</SuperwallAvailableContext.Provider>;
 }

@@ -35,16 +35,23 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#ADD8E6",
+          "backgroundColor": "#7AA3A3",
           "image": "./assets/icons/mainicon.png",
           "dark": {
             "image": "./assets/icons/mainicon.png",
-            "backgroundColor": "#ADD8E6"
+            "backgroundColor": "#7AA3A3"
           },
           "imageWidth": 200
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": { "minSdkVersion": 21 },
+          "ios": { "deploymentTarget": "15.1" }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

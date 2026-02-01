@@ -1,7 +1,14 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useContext, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ProgressBar } from './_components/ProgressBar';
+import { SuperwallAvailableContext, usePlacementHook } from './_lib/superwall';
+
+const PLACEMENT = 'StudyPup_paywall';
+const ONBOARDING_KEY = 'onboardingComplete';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -11,15 +18,76 @@ const BUTTON_SHADOW = {
   elevation: 6,
 };
 
+function PaywallWithSuperwall() {
+  const usePlacement = usePlacementHook!;
+  const navigateToMain = useCallback(() => router.replace('/(tabs)'), []);
+
+  const { registerPlacement } = usePlacement({
+    onDismiss: navigateToMain,
+    onSkip: navigateToMain,
+    onError: (err) => {
+      console.error('Superwall paywall error:', err);
+      navigateToMain();
+    },
+  });
+
+  const handlePress = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      await registerPlacement({ placement: PLACEMENT, feature: navigateToMain });
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      navigateToMain();
+    }
+  };
+
+  return <PaywallUI onContinue={handlePress} />;
+}
+
+function PaywallWithoutSuperwall() {
+  const handlePress = async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      router.replace('/(tabs)');
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      router.replace('/(tabs)');
+    }
+  };
+
+  return <PaywallUI onContinue={handlePress} />;
+}
+
 export default function PaywallScreen() {
+  const superwallAvailable = useContext(SuperwallAvailableContext);
+  return superwallAvailable ? <PaywallWithSuperwall /> : <PaywallWithoutSuperwall />;
+}
+
+function PaywallUI({ onContinue }: { onContinue: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleContinue = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      await onContinue();
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, onContinue]);
+
   const insets = useSafeAreaInsets();
+
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Paywall</Text>
+      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+        <View>
+          <ProgressBar progress={100} />
+          <Text style={[styles.title, { marginTop: 24 }]}>Paywall</Text>
+        </View>
         <View style={styles.buttons}>
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/notifications')}>
-            <Text style={styles.continueBtnText}>Continue</Text>
+          <Pressable style={styles.continueBtn} onPress={handleContinue} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.continueBtnText}>Continue</Text>}
           </Pressable>
         </View>
       </View>

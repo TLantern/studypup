@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ProgressBar } from './_components/ProgressBar';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -16,8 +17,9 @@ export default function WhereStudyScreen() {
   const insets = useSafeAreaInsets();
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Where do you study?</Text>
+      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+        <ProgressBar progress={20} />
+        <Text style={[styles.title, { marginTop: 24 }]}>Where do you study?</Text>
 
         <Pressable style={styles.optionBtn}>
           <Text style={styles.optionFlag}>🇺🇸</Text>
