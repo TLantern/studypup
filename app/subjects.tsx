@@ -3,7 +3,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProgressBar } from './_components/ProgressBar';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
+import { ProgressBar } from '@/components/ProgressBar';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -27,6 +28,7 @@ const SUBJECTS = [
 export default function SubjectsScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [showPicker, setShowPicker] = useState(false);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -40,7 +42,12 @@ export default function SubjectsScreen() {
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <ProgressBar progress={60} />
+        <View style={styles.headerRow}>
+          <View style={styles.progressWrap}><ProgressBar progress={60} /></View>
+          <Pressable onPress={() => setShowPicker(true)}>
+            <Text style={styles.changeLocationText}>⇄ Location</Text>
+          </Pressable>
+        </View>
         <Text style={[styles.title, { marginTop: 24 }]}>Which subjects are you struggling with?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {SUBJECTS.map((s) => (
@@ -60,6 +67,7 @@ export default function SubjectsScreen() {
           </Pressable>
         </View>
       </View>
+      <LocationPickerModal visible={showPicker} onClose={() => setShowPicker(false)} onSelect={() => {}} />
     </LinearGradient>
   );
 }
@@ -67,6 +75,9 @@ export default function SubjectsScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  progressWrap: { flex: 1 },
+  changeLocationText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666' },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: 24, color: '#000', textAlign: 'center', marginBottom: 24 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16 },

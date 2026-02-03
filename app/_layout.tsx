@@ -7,7 +7,7 @@ import { View } from 'react-native';
 import {
   SuperwallAvailableContext,
   SuperwallProvider,
-} from './_lib/superwall';
+} from '@/lib/superwall';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,7 +40,7 @@ export default function RootLayout() {
     return (
       <SuperwallProvider
         apiKeys={apiKeys}
-        onConfigurationError={(e) => console.error('Superwall config failed:', e)}
+        onConfigurationError={(e: any) => console.error('Superwall config failed:', e)}
       >
         <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
       </SuperwallProvider>

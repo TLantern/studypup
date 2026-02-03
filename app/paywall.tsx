@@ -1,11 +1,11 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useCallback, useContext, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProgressBar } from './_components/ProgressBar';
-import { SuperwallAvailableContext, usePlacementHook } from './_lib/superwall';
+import { setItem as storageSetItem } from '@/lib/storage';
+import { ProgressBar } from '@/components/ProgressBar';
+import { SuperwallAvailableContext, usePlacementHook } from '@/lib/superwall';
 
 const PLACEMENT = 'StudyPup_paywall';
 const ONBOARDING_KEY = 'onboardingComplete';
@@ -25,7 +25,7 @@ function PaywallWithSuperwall() {
   const { registerPlacement } = usePlacement({
     onDismiss: navigateToMain,
     onSkip: navigateToMain,
-    onError: (err) => {
+    onError: (err: unknown) => {
       console.error('Superwall paywall error:', err);
       navigateToMain();
     },
@@ -33,7 +33,7 @@ function PaywallWithSuperwall() {
 
   const handlePress = async () => {
     try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      await storageSetItem(ONBOARDING_KEY, 'true');
       await registerPlacement({ placement: PLACEMENT, feature: navigateToMain });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
@@ -47,7 +47,7 @@ function PaywallWithSuperwall() {
 function PaywallWithoutSuperwall() {
   const handlePress = async () => {
     try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+      await storageSetItem(ONBOARDING_KEY, 'true');
       router.replace('/(tabs)');
     } catch (err) {
       console.error('Failed to complete onboarding:', err);

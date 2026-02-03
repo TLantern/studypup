@@ -4,7 +4,8 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProgressBar } from './_components/ProgressBar';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
+import { ProgressBar } from '@/components/ProgressBar';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -25,17 +26,23 @@ const GRADES = [
 export default function GradeLevelScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState('highschool');
+  const [showPicker, setShowPicker] = useState(false);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <ProgressBar progress={40} />
+        <View style={styles.headerRow}>
+          <View style={styles.progressWrap}><ProgressBar progress={40} /></View>
+          <Pressable onPress={() => setShowPicker(true)}>
+            <Text style={styles.changeLocationText}>⇄ Location</Text>
+          </Pressable>
+        </View>
         <Text style={[styles.title, { marginTop: 24 }]}>What grade level are you?</Text>
         <Text style={styles.subtitle}>I am in...</Text>
 
         {GRADES.map((g) => (
           <Pressable
             key={g.id}
-            style={[styles.gradeBtn]}
+            style={[styles.gradeBtn, selected === g.id && styles.gradeBtnSelected]}
             onPress={() => setSelected(g.id)}
           >
             <Text style={styles.gradeText}>{g.label}</Text>
@@ -54,12 +61,16 @@ export default function GradeLevelScreen() {
           </Pressable>
         </View>
       </View>
+      <LocationPickerModal visible={showPicker} onClose={() => setShowPicker(false)} onSelect={() => {}} />
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  progressWrap: { flex: 1 },
+  changeLocationText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666' },
   container: { flex: 1, paddingHorizontal: 24 },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 4 },
   subtitle: {
@@ -83,6 +94,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
+  gradeBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
   gradeText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   gradeEmoji: { fontSize: 24 },
   bottomSection: {

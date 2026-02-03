@@ -6,10 +6,11 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#000',
-        tabBarInactiveTintColor: '#666',
+        tabBarActiveTintColor: '#fff',
+        tabBarInactiveTintColor: 'rgba(0,0,0,0.6)',
         tabBarLabelStyle: { fontFamily: 'Fredoka_400Regular', fontSize: 12 },
-        tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#eee' },
+        tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
+        tabBarStyle: { backgroundColor: '#FD8A8A', borderTopColor: 'transparent', paddingTop: 10 },
       }}
     >
       <Tabs.Screen
@@ -28,10 +29,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="create"
-        options={{
-          title: 'Create',
-          tabBarIcon: () => <Image source={require('../../assets/createbutton.png')} style={{ width: 48, height: 48 }} />,
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="profile"
