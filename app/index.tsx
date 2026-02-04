@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     marginBottom: 40,
   },
-  buttons: { gap: 16, paddingTop: 100 },
+  buttons: { gap: 16, paddingTop: 170 },
   btn: {
     borderRadius: 35,
     paddingVertical: 18,

@@ -10,6 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "StudyPup needs local network access to connect to the development server for live reload.",
+        "NSMicrophoneUsageDescription": "StudyPup uses the microphone to record lectures and study notes.",
+        "NSCameraUsageDescription": "StudyPup uses the camera to capture notes and study materials.",
+        "NSPhotoLibraryUsageDescription": "StudyPup needs access to your photos to import study materials and images.",
+        "NSPhotoLibraryAddUsageDescription": "StudyPup saves recordings and captures to your photo library."
+      },
       "icon": {
         "light": "./assets/icons/appcovericon.png",
         "dark": "./assets/icons/appcovericon.png",
@@ -32,6 +39,21 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StudyPup needs access to your photos to import study materials and images.",
+          "cameraPermission": "StudyPup uses the camera to capture notes and study materials.",
+          "microphonePermission": "StudyPup uses the microphone to record lectures and study notes."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "StudyPup needs access to your photos to import study materials and images.",
+          "savePhotosPermission": "StudyPup saves recordings and captures to your photo library."
+        }
+      ],
       [
         "expo-splash-screen",
         {

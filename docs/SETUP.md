@@ -36,6 +36,16 @@ npm run android
 npm run web
 ```
 
+### 4. Running on a physical iPhone (iOS)
+
+The app needs **Local Network** access to load the JS bundle from Metro. Grant it before opening the app:
+
+1. **Settings → Privacy & Security → Local Network** → turn **StudyPup** ON.
+2. If StudyPup isn’t listed, launch the app once (it may crash), then return to Settings and enable it.
+3. Start Metro (`npx expo start`), then open the app on the device.
+
+Without this, you’ll see: “No script URL provided” and the app won’t load.
+
 ## Project Structure
 
 ```
