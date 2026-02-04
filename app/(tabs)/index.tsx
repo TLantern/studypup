@@ -103,7 +103,7 @@ export default function HomeScreen() {
   const uploadModalOffset = useSharedValue(0);
   const [uploadFiles, setUploadFiles] = useState<{ uri: string; name: string; size?: number }[]>([]);
 
-  type ContentItem = { uri: string; name: string; size?: number; type: 'audio' | 'image' | 'file' | 'notes' };
+  type ContentItem = { uri: string; name: string; size?: number; type: 'audio' | 'image' | 'file' | 'notes'; text?: string };
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [showContentConfirmModal, setShowContentConfirmModal] = useState(false);
   const contentConfirmModalOffset = useSharedValue(0);
@@ -447,9 +447,10 @@ export default function HomeScreen() {
   const onNotesGenerate = () => {
     const name = notesUrl ? 'Link' : 'Pasted content';
     closeNotesModal();
+    const text = notesText;
     setNotesUrl('');
     setNotesText('');
-    openContentConfirmModal([{ uri: notesUrl || '', name, type: 'notes' }]);
+    openContentConfirmModal([{ uri: notesUrl || '', name, type: 'notes', text }]);
   };
 
   const uploadModalHeight = Math.min(screenHeight * 0.6, 480);
@@ -534,7 +535,9 @@ export default function HomeScreen() {
     });
   };
 
-  const onContentConfirmNext = () => {
+  const onContentConfirmNext = async () => {
+    const { savePendingContent } = await import('@/lib/content-store');
+    await savePendingContent(contentItems);
     closeContentConfirmModal();
     router.push('/choose-methods');
   };
@@ -856,6 +859,7 @@ export default function HomeScreen() {
                 value={notesText}
                 onChangeText={setNotesText}
                 multiline
+                scrollEnabled
                 textAlignVertical="top"
               />
               <Pressable style={styles.notesGenerateBtn} onPress={onNotesGenerate}>
@@ -1240,7 +1244,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
     color: '#333',
-    minHeight: 120,
+    height: 160,
+    maxHeight: 160,
     marginBottom: 20,
   },
   notesGenerateBtn: {
