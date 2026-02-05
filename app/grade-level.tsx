@@ -4,7 +4,6 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LocationPickerModal } from '@/components/LocationPickerModal';
 import { ProgressBar } from '@/components/ProgressBar';
 
 const BUTTON_SHADOW = {
@@ -26,15 +25,11 @@ const GRADES = [
 export default function GradeLevelScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState('highschool');
-  const [showPicker, setShowPicker] = useState(false);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={40} /></View>
-          <Pressable onPress={() => setShowPicker(true)}>
-            <Text style={styles.changeLocationText}>⇄ Location</Text>
-          </Pressable>
         </View>
         <Text style={[styles.title, { marginTop: 24 }]}>What grade level are you?</Text>
         <Text style={styles.subtitle}>I am in...</Text>
@@ -61,7 +56,6 @@ export default function GradeLevelScreen() {
           </Pressable>
         </View>
       </View>
-      <LocationPickerModal visible={showPicker} onClose={() => setShowPicker(false)} onSelect={() => {}} />
     </LinearGradient>
   );
 }
@@ -70,7 +64,6 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   progressWrap: { flex: 1 },
-  changeLocationText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666' },
   container: { flex: 1, paddingHorizontal: 24 },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 4 },
   subtitle: {

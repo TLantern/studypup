@@ -20,7 +20,7 @@ const BUTTON_SHADOW = {
 
 function PaywallWithSuperwall() {
   const usePlacement = usePlacementHook!;
-  const navigateToMain = useCallback(() => router.replace('/(tabs)'), []);
+  const navigateToMain = useCallback(() => router.replace('/create-account'), []);
 
   const { registerPlacement } = usePlacement({
     onDismiss: navigateToMain,
@@ -48,10 +48,10 @@ function PaywallWithoutSuperwall() {
   const handlePress = async () => {
     try {
       await storageSetItem(ONBOARDING_KEY, 'true');
-      router.replace('/(tabs)');
+      router.replace('/create-account');
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
-      router.replace('/(tabs)');
+      router.replace('/create-account');
     }
   };
 

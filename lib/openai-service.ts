@@ -135,6 +135,25 @@ export async function callOpenAIChat(
 }
 
 /**
+ * Extract text from an image using OpenAI Vision (works in React Native; Tesseract does not).
+ */
+export async function extractTextFromImageWithVision(imageDataUrl: string): Promise<string> {
+  if (!openaiClient) {
+    throw new Error('OpenAI API key not configured. Set EXPO_PUBLIC_OPENAI_API_KEY in .env');
+  }
+  const response = await openaiClient.chat.completions.create({
+    model: 'gpt-4o-mini',
+    max_tokens: 1024,
+    messages: [
+      { role: 'system', content: 'Extract all text from this image. Return only the raw text, no markdown or explanation.' },
+      { role: 'user', content: [{ type: 'image_url', image_url: { url: imageDataUrl } }] } as OpenAI.ChatCompletionUserMessageParam,
+    ],
+  });
+  const text = response.choices[0]?.message?.content ?? '';
+  return text.trim();
+}
+
+/**
  * Estimate token count (rough approximation)
  */
 export function estimateTokens(text: string): number {

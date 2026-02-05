@@ -1,28 +1,20 @@
 /**
- * Tesseract OCR for images
+ * OCR for images. Uses OpenAI Vision (Tesseract.js requires Worker, which React Native does not have).
  */
 
-import Tesseract from 'tesseract.js';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { extractTextFromImageWithVision, isOpenAIConfigured } from './openai-service';
 
-/**
- * Extract text from image using Tesseract OCR
- */
 export async function extractTextFromImage(uri: string): Promise<string> {
   try {
-    // Read image as base64 for Tesseract
     const base64 = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
     });
     const dataUrl = `data:image/jpeg;base64,${base64}`;
-
-    const {
-      data: { text },
-    } = await Tesseract.recognize(dataUrl, 'eng', {
-      logger: () => {}, // Suppress logs
-    });
-
-    return (text || '').trim();
+    if (!isOpenAIConfigured()) {
+      throw new Error('OCR requires OpenAI API key. Set EXPO_PUBLIC_OPENAI_API_KEY in .env');
+    }
+    return await extractTextFromImageWithVision(dataUrl);
   } catch (error: any) {
     console.error('OCR error:', error);
     throw new Error(`OCR failed: ${error.message}`);

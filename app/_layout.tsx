@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { View } from 'react-native';
+import { AuthProvider } from '@/lib/auth-store';
 import {
   SuperwallAvailableContext,
   SuperwallProvider,
@@ -24,11 +25,13 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   const content = (
-    <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-        <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
-      </Stack>
-    </View>
+    <AuthProvider>
+      <View style={{ flex: 1 }}>
+        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
+        </Stack>
+      </View>
+    </AuthProvider>
   );
 
   const apiKeys: { ios?: string; android?: string } = {

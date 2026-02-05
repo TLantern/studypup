@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { InteractionManager, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -112,6 +112,7 @@ export default function HomeScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRecordRef = useRef(false);
 
   const [playbackUri, setPlaybackUri] = useState<string | null>(null);
   const [playbackDurationSec, setPlaybackDurationSec] = useState(0);
@@ -122,6 +123,15 @@ export default function HomeScreen() {
 
   const overlayWidth = screenWidth;
   const overlayHeight = screenHeight - tabBarHeight;
+
+  useEffect(() => {
+    if (!showRecordModal || !pendingRecordRef.current) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      pendingRecordRef.current = false;
+      startRecording();
+    });
+    return () => task.cancel();
+  }, [showRecordModal]);
 
   const toggleMenu = () => {
     isExpanded.value = !isExpanded.value;
@@ -145,7 +155,7 @@ export default function HomeScreen() {
   const handleMenuItemPress = async (itemId: string) => {
     if (itemId === 'record') {
       closeMenu();
-      await startRecording();
+      pendingRecordRef.current = true;
       setShowRecordModal(true);
       requestAnimationFrame(() => {
         recordModalOffset.value = withTiming(0, {

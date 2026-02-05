@@ -3,6 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { useHoverFloatStyle } from '@/lib/useHoverFloat';
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -14,13 +18,14 @@ const BUTTON_SHADOW = {
 
 export default function FlashcardsScreen() {
   const insets = useSafeAreaInsets();
+  const hoverStyle = useHoverFloatStyle();
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill2.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Turn Notes into Flashcards in Seconds!</Text>
         <Text style={styles.subtext}>AI turns your notes into personalized flashcards.</Text>
-        <Image source={require('../assets/images/flashcards.png')} style={styles.hero} contentFit="contain" />
+        <AnimatedImage source={require('../assets/images/flashcards.png')} style={[styles.hero, hoverStyle]} contentFit="contain" />
         <View style={styles.buttons}>
           <Pressable style={styles.btn} onPress={() => router.push('/instantanswers')}>
             <Text style={[styles.btnText, styles.btnPrimaryText]}>Continue</Text>

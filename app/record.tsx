@@ -3,6 +3,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { useHoverFloatStyle } from '@/lib/useHoverFloat';
+
+const AnimatedImage = Animated.createAnimatedComponent(Image);
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -14,13 +18,14 @@ const BUTTON_SHADOW = {
 
 export default function RecordScreen() {
   const insets = useSafeAreaInsets();
+  const hoverStyle = useHoverFloatStyle();
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill1.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Record Your Lectures</Text>
         <Text style={styles.subtext}>Capture audio from classes and turn them into study notes.</Text>
-        <Image source={require('../assets/images/recordlecture.png')} style={styles.hero} contentFit="contain" />
+        <AnimatedImage source={require('../assets/images/recordlecture.png')} style={[styles.hero, hoverStyle]} contentFit="contain" />
         <View style={styles.buttons}>
         <Pressable style={styles.btn} onPress={() => router.push('/flashcards')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Continue</Text>
@@ -36,9 +41,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 24 },
-  hero: { flex: 1, width: '100%', maxHeight: 360, alignSelf: 'center', marginBottom: 24 },
-  buttons: { paddingTop: 100 },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: -64 },
+  hero: { width: '100%', height: 620, alignSelf: 'center' },
+  buttons: { paddingTop: 40 },
   btn: {
     borderRadius: 35,
     paddingVertical: 18,
@@ -47,6 +52,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     backgroundColor: '#FD8A8A',
     borderColor: '#CA6E6E',
+    marginTop: -54,
     ...BUTTON_SHADOW,
   },
   btnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24 },
