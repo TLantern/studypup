@@ -10,7 +10,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: 'rgba(0,0,0,0.6)',
         tabBarLabelStyle: { fontFamily: 'Fredoka_400Regular', fontSize: 12 },
         tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
-        tabBarStyle: { backgroundColor: '#FD8A8A', borderTopColor: 'transparent', paddingTop: 10 },
+        tabBarStyle: { display: 'none' },
       }}
     >
       <Tabs.Screen

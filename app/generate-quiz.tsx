@@ -3,7 +3,14 @@ import { FlashcardStudy } from '@/components/FlashcardStudy';
 import { NotesStudy } from '@/components/NotesStudy';
 import { TutorStudy } from '@/components/TutorStudy';
 import { WrittenStudy } from '@/components/WrittenStudy';
-import { getMaterials } from '@/lib/study-materials-storage';
+import { getMaterials, updateMaterials } from '@/lib/study-materials-storage';
+import { getKnowledgeGraph } from '@/lib/knowledge-graph-storage';
+import {
+  generateFlashcardsWithAI,
+  generateQuizQuestionsWithAI,
+  generateWrittenQuestionsWithAI,
+  generateFillInBlankQuestionsWithAI,
+} from '@/lib/ai-material-generation';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -42,66 +49,266 @@ export default function GenerateQuizScreen() {
   const selectedIds = (methods ?? 'quiz').split(',').filter(Boolean);
   const tabs = ALL_TABS.filter((t) => selectedIds.includes(t.id));
   const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'quiz');
+  const [title, setTitle] = useState('Title');
   const [materials, setMaterials] = useState<{
-    flashcards: { front: string; back: string }[];
-    quiz_questions: { question: string; options: string[]; correct_answer_index: number }[];
-    written_questions: { question: string; rubric?: string[] }[];
-    fill_in_blank_questions: { text: string; answer: string }[];
+    flashcards: { id: string; front: string; back: string }[];
+    quiz_questions: { id: string; question: string; options: string[]; correct_answer_index: number }[];
+    written_questions: { id: string; question: string; rubric?: string[] }[];
+    fill_in_blank_questions: { id: string; text: string; answer: string }[];
     notes: string;
   } | null>(null);
   const [loading, setLoading] = useState(!!materialId);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [sessionQuizCorrect, setSessionQuizCorrect] = useState(0);
+  const [flashcardCorrect, setFlashcardCorrect] = useState(0);
+  const [flashcardTotal, setFlashcardTotal] = useState(0);
+  const [writtenCorrect, setWrittenCorrect] = useState(0);
+  const [writtenTotal, setWrittenTotal] = useState(0);
+  const [fillCorrect, setFillCorrect] = useState(0);
+  const [fillTotal, setFillTotal] = useState(0);
+  const [generatingMessage, setGeneratingMessage] = useState('');
+  const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!materialId) {
       setLoading(false);
       return;
     }
-    getMaterials(materialId).then((m) => {
-      if (m) {
+    
+    const loadAndGenerate = async () => {
+      const m = await getMaterials(materialId);
+      if (!m) {
+        setLoading(false);
+        return;
+      }
+
+      setTitle(m.title ?? 'Title');
+
+      // Check which content is missing for the selected methods
+      const needsFlashcards = selectedIds.includes('flashcards') && (!m.flashcards || m.flashcards.length === 0);
+      const needsQuiz = selectedIds.includes('quiz') && (!m.quiz_questions || m.quiz_questions.length === 0);
+      const needsWritten = selectedIds.includes('written') && (!m.written_questions || m.written_questions.length === 0);
+      const needsFill = selectedIds.includes('fill') && (!m.fill_in_blank_questions || m.fill_in_blank_questions.length === 0);
+
+      // If any content needs generation, get the knowledge graph and generate
+      if (needsFlashcards || needsQuiz || needsWritten || needsFill) {
+        try {
+          setGeneratingMessage('Loading knowledge graph...');
+          const graph = await getKnowledgeGraph(m.knowledge_graph_id);
+          if (graph) {
+            const updates: any = {};
+
+            if (needsFlashcards) {
+              setGeneratingMessage('Generating flashcards...');
+              const flashcards = await generateFlashcardsWithAI(graph, 10);
+              updates.flashcards = flashcards;
+            }
+            if (needsQuiz) {
+              setGeneratingMessage('Generating quiz questions...');
+              const quizzes = await generateQuizQuestionsWithAI(graph, 10);
+              updates.quiz_questions = quizzes;
+            }
+            if (needsWritten) {
+              setGeneratingMessage('Generating written questions...');
+              const written = await generateWrittenQuestionsWithAI(graph, 5);
+              updates.written_questions = written;
+            }
+            if (needsFill) {
+              setGeneratingMessage('Generating fill in the blank...');
+              const fill = await generateFillInBlankQuestionsWithAI(graph, 10);
+              updates.fill_in_blank_questions = fill;
+            }
+
+            // Update the materials with newly generated content
+            await updateMaterials(materialId, updates);
+            
+            // Reload to get the updated materials
+            const updated = await getMaterials(materialId);
+            if (updated) {
+              setMaterials({
+                flashcards: updated.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back })),
+                quiz_questions: updated.quiz_questions.map((q) => ({
+                  id: q.id,
+                  question: q.question,
+                  options: q.options,
+                  correct_answer_index: q.correct_answer_index,
+                })),
+                written_questions: updated.written_questions.map((w) => ({
+                  id: w.id,
+                  question: w.question,
+                  rubric: w.rubric,
+                })),
+                fill_in_blank_questions: updated.fill_in_blank_questions.map((f) => ({
+                  id: f.id,
+                  text: f.text,
+                  answer: f.answer,
+                })),
+                notes: updated.notes,
+              });
+              setQuizAnswers(updated.user_answers?.quiz_questions ?? {});
+              setFlashcardAnswers(updated.user_answers?.flashcards ?? {});
+              setWrittenAnswers(updated.user_answers?.written_questions ?? {});
+              setFillAnswers(updated.user_answers?.fill_in_blank_questions ?? {});
+            }
+          }
+        } catch (error) {
+          console.error('Failed to generate missing content:', error);
+        }
+      } else {
+        // No generation needed, just load existing content
         setMaterials({
-          flashcards: m.flashcards.map((f) => ({ front: f.front, back: f.back })),
+          flashcards: m.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back })),
           quiz_questions: m.quiz_questions.map((q) => ({
+            id: q.id,
             question: q.question,
             options: q.options,
             correct_answer_index: q.correct_answer_index,
           })),
           written_questions: m.written_questions.map((w) => ({
+            id: w.id,
             question: w.question,
             rubric: w.rubric,
           })),
           fill_in_blank_questions: m.fill_in_blank_questions.map((f) => ({
+            id: f.id,
             text: f.text,
             answer: f.answer,
           })),
           notes: m.notes,
         });
+        setQuizAnswers(m.user_answers?.quiz_questions ?? {});
+        setFlashcardAnswers(m.user_answers?.flashcards ?? {});
+        setWrittenAnswers(m.user_answers?.written_questions ?? {});
+        setFillAnswers(m.user_answers?.fill_in_blank_questions ?? {});
       }
+
       setLoading(false);
-    });
-  }, [materialId]);
+    };
+
+    loadAndGenerate();
+  }, [materialId, selectedIds]);
 
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingCenter]}>
         <ActivityIndicator size="large" color={PURPLE} />
+        {generatingMessage ? (
+          <Text style={styles.generatingText}>{generatingMessage}</Text>
+        ) : null}
       </View>
     );
   }
 
-  const flashcardCards = materials?.flashcards?.map((f) => ({ question: f.front, answer: f.back })) ?? undefined;
-  const writtenItems = materials?.written_questions?.map((w) => ({ question: w.question })) ?? undefined;
-  const fillItems = materials?.fill_in_blank_questions?.map((f) => ({ text: f.text, answer: f.answer })) ?? undefined;
+  const flashcardCards = materials?.flashcards?.map((f) => ({ id: f.id, question: f.front, answer: f.back })) ?? undefined;
+
+  const [flashcardAnswers, setFlashcardAnswers] = useState<Record<string, 'correct' | 'incorrect'>>({});
+
+  const handleFlashcardProgress = (correct: number, total: number) => {
+    setFlashcardCorrect(correct);
+    setFlashcardTotal(total);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            progress: { ...m.progress, flashcards: correct },
+          });
+        }
+      });
+    }
+  };
+
+  const handleFlashcardAnswersUpdate = (answers: Record<string, 'correct' | 'incorrect'>) => {
+    setFlashcardAnswers(answers);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            user_answers: { ...m.user_answers, flashcards: answers },
+          });
+        }
+      });
+    }
+  };
+
+  const [writtenAnswers, setWrittenAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
+
+  const handleWrittenProgress = (correct: number, total: number) => {
+    setWrittenCorrect(correct);
+    setWrittenTotal(total);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            progress: { ...m.progress, written: correct },
+          });
+        }
+      });
+    }
+  };
+
+  const handleWrittenAnswersUpdate = (answers: Record<string, { answer: string; correct: boolean; explanation?: string }>) => {
+    setWrittenAnswers(answers);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            user_answers: { ...m.user_answers, written_questions: answers },
+          });
+        }
+      });
+    }
+  };
+
+  const [fillAnswers, setFillAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
+
+  const handleFillProgress = (correct: number, total: number) => {
+    setFillCorrect(correct);
+    setFillTotal(total);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            progress: { ...m.progress, fillInBlanks: correct },
+          });
+        }
+      });
+    }
+  };
+
+  const handleFillAnswersUpdate = (answers: Record<string, { answer: string; correct: boolean; explanation?: string }>) => {
+    setFillAnswers(answers);
+    if (materialId) {
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            user_answers: { ...m.user_answers, fill_in_blank_questions: answers },
+          });
+        }
+      });
+    }
+  };
+
+  const writtenItems = materials?.written_questions?.map((w) => ({ id: w.id, question: w.question })) ?? undefined;
+  const fillItems = materials?.fill_in_blank_questions?.map((f) => ({ id: f.id, text: f.text, answer: f.answer })) ?? undefined;
   const notesContent = materials?.notes ?? undefined;
 
   const quizQuestions = (materials?.quiz_questions?.length ?? 0) >= 10
     ? materials!.quiz_questions
-    : [...(materials?.quiz_questions ?? []), ...SCAFFOLD_QUIZ].slice(0, 10);
-  const quizData = quizQuestions[questionIndex] ?? SCAFFOLD_QUIZ[0];
+    : [...(materials?.quiz_questions ?? []), ...SCAFFOLD_QUIZ.map((q, i) => ({ id: `scaffold_${i}`, ...q }))].slice(0, 10);
+  const quizData = quizQuestions[questionIndex] ?? { id: 'scaffold_0', ...SCAFFOLD_QUIZ[0] };
   const correctIndex = quizData.correct_answer_index;
   const answered = selectedAnswer !== null;
   const totalQuestions = quizQuestions.length;
+  
+  // Load saved answer for current question
+  useEffect(() => {
+    if (quizData.id && quizAnswers[quizData.id] !== undefined) {
+      setSelectedAnswer(quizAnswers[quizData.id]);
+    } else {
+      setSelectedAnswer(null);
+    }
+  }, [quizData.id, questionIndex]);
 
   const getAnswerCardStyle = (i: number) => {
     if (!answered) return [styles.answerCard];
@@ -120,10 +327,28 @@ export default function GenerateQuizScreen() {
   };
 
   const goNext = () => {
+    const correctThis = answered && selectedAnswer === correctIndex ? 1 : 0;
+    const newCorrect = sessionQuizCorrect + correctThis;
+    
+    // Save the answer
+    if (answered && materialId && quizData.id) {
+      const updatedAnswers = { ...quizAnswers, [quizData.id]: selectedAnswer };
+      setQuizAnswers(updatedAnswers);
+      getMaterials(materialId).then((m) => {
+        if (m) {
+          updateMaterials(materialId, {
+            user_answers: { ...m.user_answers, quiz_questions: updatedAnswers },
+            progress: { ...m.progress, multipleChoice: newCorrect },
+          });
+        }
+      });
+    }
+    
     if (questionIndex >= totalQuestions - 1) {
       router.back();
       return;
     }
+    setSessionQuizCorrect(newCorrect);
     setSelectedAnswer(null);
     setQuestionIndex((i) => i + 1);
   };
@@ -134,7 +359,7 @@ export default function GenerateQuizScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Ionicons name="chevron-back" size={28} color="#333" />
         </Pressable>
-        <Text style={styles.title}>Title</Text>
+        <Text style={styles.title}>{title}</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs} contentContainerStyle={styles.tabsContent}>
@@ -145,12 +370,29 @@ export default function GenerateQuizScreen() {
           </Pressable>
         ))}
       </ScrollView>
+      <View style={styles.divider} />
 
       {activeTab === 'notes' && <NotesStudy notes={notesContent} />}
       {activeTab === 'tutor' && <TutorStudy notes={notesContent} />}
-      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} />}
-      {activeTab === 'written' && <WrittenStudy items={writtenItems} />}
-      {activeTab === 'fill' && <FillInBlankStudy items={fillItems} />}
+      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} />}
+      {activeTab === 'written' && (
+        <WrittenStudy
+          items={writtenItems}
+          onProgressUpdate={handleWrittenProgress}
+          materialId={materialId}
+          savedAnswers={writtenAnswers}
+          onAnswersUpdate={handleWrittenAnswersUpdate}
+        />
+      )}
+      {activeTab === 'fill' && (
+        <FillInBlankStudy
+          items={fillItems}
+          onProgressUpdate={handleFillProgress}
+          materialId={materialId}
+          savedAnswers={fillAnswers}
+          onAnswersUpdate={handleFillAnswersUpdate}
+        />
+      )}
       {activeTab === 'quiz' && (
         <>
           <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
@@ -166,7 +408,9 @@ export default function GenerateQuizScreen() {
                 <View style={[styles.answerNum, answered && i === correctIndex && styles.answerNumCorrect]}>
                   <Text style={styles.answerNumText}>{i + 1}</Text>
                 </View>
-                <Text style={styles.answerText}>{ans}</Text>
+                <View style={styles.answerTextWrap}>
+                  <Text style={styles.answerText}>{ans}</Text>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
@@ -187,11 +431,19 @@ export default function GenerateQuizScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: 24 },
   loadingCenter: { justifyContent: 'center', alignItems: 'center' },
+  generatingText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: PURPLE,
+    marginTop: 16,
+    textAlign: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
     paddingVertical: 8,
+    marginRight: 20,
   },
   backBtn: { padding: 4 },
   title: {
@@ -201,7 +453,9 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
-  tabs: { marginBottom: 24, flexGrow: 0, flexShrink: 0 },
+  tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#ccc', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
+  },
   tabsContent: { gap: 8, paddingRight: 24 },
   tab: {
     flexDirection: 'row',
@@ -253,7 +507,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 12,
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 2 },
@@ -287,6 +541,11 @@ const styles = StyleSheet.create({
     backgroundColor: SALMON,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 14,
+  },
+  answerTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   answerNumCorrect: {
     backgroundColor: '#81FF88',

@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginVertical: 24,
   },
-  buttons: { paddingTop: 100 },
+  buttons: { marginTop: 'auto', paddingTop: 6 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
     borderRadius: 35,

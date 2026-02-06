@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   gradeEmoji: { fontSize: 24 },
   bottomSection: {
     marginTop: 'auto',
-    paddingTop: 16,
+    paddingTop: 6,
     position: 'relative',
     alignItems: 'center',
   },

@@ -26,7 +26,7 @@ const OPTIONS = [
 
 export default function PlanUsageScreen() {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState('recording');
+  const [selected, setSelected] = useState<string[]>(['recording']);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
@@ -39,11 +39,11 @@ export default function PlanUsageScreen() {
           {OPTIONS.map((o) => (
             <Pressable
               key={o.id}
-              style={[styles.optionBtn, selected === o.id && styles.optionBtnSelected]}
-              onPress={() => setSelected(o.id)}
+              style={[styles.optionBtn, selected.includes(o.id) && styles.optionBtnSelected]}
+              onPress={() => setSelected(prev => prev.includes(o.id) ? prev.filter(id => id !== o.id) : [...prev, o.id])}
             >
               <Text style={styles.optionText}>{o.label}</Text>
-              <Ionicons name={o.icon} size={24} color={selected === o.id ? '#7c3aed' : '#666'} />
+              <Ionicons name={o.icon} size={24} color={selected.includes(o.id) ? '#7c3aed' : '#666'} />
             </Pressable>
           ))}
         </ScrollView>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   },
   optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  bottomSection: { marginTop: 'auto', paddingTop: 16, position: 'relative', alignItems: 'center' },
+  bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
   puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1 },
   continueBtn: {
     backgroundColor: '#FD8A8A',

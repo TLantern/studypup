@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-store';
-import { confirmPhoneOtp, sendMagicLink, signInWithApple, signInWithGoogle, startPhoneSignIn } from '@/lib/auth';
+import { getItem, setItem } from '@/lib/storage';
+import { confirmPhoneOtp, sendMagicLink, signInBypass, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
 
 const BUTTON_SHADOW = {
@@ -16,6 +17,8 @@ const BUTTON_SHADOW = {
   shadowRadius: 6,
   elevation: 6,
 };
+
+const PENDING_EMAIL_KEY = 'auth:pendingEmail';
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -54,21 +57,33 @@ export default function CreateAccountScreen() {
   }, [cooldown]);
 
   useEffect(() => {
-    const sub = Linking.addEventListener('url', async ({ url }) => {
-      if (!pendingEmail) return;
+    const handleUrl = async (url: string) => {
+      const storedEmail = pendingEmail ?? (await getItem(PENDING_EMAIL_KEY));
+      if (!storedEmail || busy) return;
       setError(null);
       setBusy(true);
       try {
         const { completeMagicLink } = await import('@/lib/auth');
-        await completeMagicLink(url, pendingEmail);
+        await completeMagicLink(url, storedEmail);
+        setPendingEmail(null);
+        await setItem(PENDING_EMAIL_KEY, '');
       } catch (e: any) {
         setError(e?.message ?? 'Failed to sign in with magic link.');
       } finally {
         setBusy(false);
       }
+    };
+
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      if (url) void handleUrl(url);
     });
+
+    Linking.getInitialURL().then((url) => {
+      if (url) void handleUrl(url);
+    });
+
     return () => sub.remove();
-  }, [pendingEmail]);
+  }, [pendingEmail, busy]);
 
   const normalizePhoneE164 = (raw: string) => {
     const digits = raw.replace(/[^\d+]/g, '');
@@ -95,11 +110,16 @@ export default function CreateAccountScreen() {
       setResendCount((c) => c + 1);
     } catch (e: any) {
       const code = e?.code as string | undefined;
+      console.error('Phone auth error:', e);
       setError(
         code === 'auth/too-many-requests'
           ? 'Too many requests. Please wait and try again.'
           : code === 'auth/invalid-phone-number'
             ? 'Invalid phone number.'
+            : code === 'auth/captcha-check-failed'
+            ? 'Verification failed. Please try again.'
+            : Platform.OS === 'ios'
+            ? 'On simulator, use test phone: +1 650-555-3434 (code: 123456) [Configure in Firebase Console]'
             : e?.message ?? 'Failed to send code.'
       );
     } finally {
@@ -127,39 +147,15 @@ export default function CreateAccountScreen() {
     }
   };
 
-  const handleApple = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await signInWithApple();
-    } catch (e: any) {
-      setError(e?.message ?? 'Apple sign-in failed.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleGoogle = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await signInWithGoogle();
-    } catch (e: any) {
-      setError(e?.message ?? 'Google sign-in failed.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const handleEmail = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await sendMagicLink(email.trim());
-      setPendingEmail(email.trim());
+      const trimmed = email.trim();
+      await sendMagicLink(trimmed);
+      setPendingEmail(trimmed);
+      await setItem(PENDING_EMAIL_KEY, trimmed);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to send magic link.');
     } finally {
@@ -167,13 +163,16 @@ export default function CreateAccountScreen() {
     }
   };
 
+  // Google OAuth commented out
+  // const handleGoogle = async () => { ... };
+
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.title}>Create an Account</Text>
         <Text style={styles.subtitle}>Sign up with your phone number</Text>
 
-        <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} />
+        <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
 
         <View style={styles.phoneRow}>
           <View style={styles.countryCode}>
@@ -190,18 +189,30 @@ export default function CreateAccountScreen() {
           />
         </View>
         {stage === 'otp' ? (
-          <View style={styles.otpRow}>
-            <TextInput
-              style={styles.otpInput}
-              placeholder="6-digit code"
-              placeholderTextColor="#999"
-              keyboardType="number-pad"
-              value={code}
-              onChangeText={setCode}
-              editable={!busy}
-              maxLength={6}
-            />
-          </View>
+          <>
+            <View style={styles.otpRow}>
+              <TextInput
+                style={styles.otpInput}
+                placeholder="6-digit code"
+                placeholderTextColor="#999"
+                keyboardType="number-pad"
+                value={code}
+                onChangeText={setCode}
+                editable={!busy}
+                maxLength={6}
+              />
+            </View>
+            <Text style={styles.otpHint}>Code sent. It may take 1–2 minutes to arrive.</Text>
+            <Pressable
+              style={[styles.resendBtn, (cooldown > 0 || busy) && styles.resendBtnDisabled]}
+              onPress={handleSend}
+              disabled={cooldown > 0 || busy}
+            >
+              <Text style={styles.resendBtnText}>
+                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+              </Text>
+            </Pressable>
+          </>
         ) : null}
 
         <Pressable
@@ -210,53 +221,59 @@ export default function CreateAccountScreen() {
           disabled={stage === 'phone' ? !canSend : !canVerify}
         >
           <Text style={styles.continueBtnText}>
-            {stage === 'phone'
-              ? cooldown > 0
-                ? `Resend in ${cooldown}s`
-                : 'Send code'
-              : 'Verify code'}
+            {stage === 'phone' ? 'Send code' : 'Verify code'}
           </Text>
         </Pressable>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>Other options</Text>
-          <View style={styles.dividerLine} />
-        </View>
+        <Pressable
+          style={styles.bypassBtn}
+          onPress={async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await signInBypass();
+            } catch (e: any) {
+              setError(e?.message ?? 'Bypass failed.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          disabled={busy}
+        >
+          <Text style={styles.bypassBtnText}>Skip (dev)</Text>
+        </Pressable>
 
-        <View style={styles.optionsContainer}>
-          <View style={styles.emailRow}>
-            <TextInput
-              style={styles.emailInput}
-              placeholder="Email for magic link"
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              editable={!busy}
-            />
-            <Pressable style={[styles.emailBtn, !email.trim() && styles.continueBtnDisabled]} onPress={handleEmail} disabled={!email.trim() || busy}>
-              <Text style={styles.emailBtnText}>{pendingEmail ? 'Sent' : 'Send'}</Text>
-            </Pressable>
-          </View>
-          {Platform.OS === 'ios' ? (
-            <Pressable style={styles.optionBtn} onPress={handleApple} disabled={busy}>
-              <Image source={require('../assets/icons/apple.png')} style={styles.optionIcon} />
-              <Text style={styles.optionText}>Continue with Apple</Text>
-            </Pressable>
-          ) : null}
-          <Pressable style={styles.optionBtn} onPress={handleGoogle} disabled={busy}>
-            <Image source={require('../assets/icons/google.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Continue with Google</Text>
-          </Pressable>
-        </View>
-
-        {pendingEmail ? (
-          <Text style={styles.magicHint}>Check your email and tap the link to finish signing in.</Text>
-        ) : null}
+        {false && (
+          <>
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>Other options</Text>
+              <View style={styles.dividerLine} />
+            </View>
+            <View style={styles.optionsContainer}>
+              <View style={styles.emailRow}>
+                <TextInput
+                  style={styles.emailInput}
+                  placeholder="Email Address"
+                  placeholderTextColor="#999"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                  editable={!busy}
+                />
+                <Pressable style={[styles.emailBtn, !email.trim() && styles.continueBtnDisabled]} onPress={handleEmail} disabled={!email.trim() || busy}>
+                  <Text style={styles.emailBtnText}>{pendingEmail ? 'Sent' : 'Send'}</Text>
+                </Pressable>
+              </View>
+            </View>
+            {pendingEmail ? (
+              <Text style={styles.magicHint}>Check your email and tap the link to finish signing in.</Text>
+            ) : null}
+          </>
+        )}
       </View>
     </LinearGradient>
   );
@@ -297,6 +314,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
   },
+  otpHint: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  resendBtn: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  resendBtnDisabled: { opacity: 0.5 },
+  resendBtnText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#333',
+    textDecorationLine: 'underline',
+  },
   continueBtn: {
     backgroundColor: '#FD8A8A',
     borderRadius: 12,
@@ -307,6 +343,8 @@ const styles = StyleSheet.create({
   },
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#fff' },
+  bypassBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
+  bypassBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666', textDecorationLine: 'underline' },
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: -16, marginBottom: 16, textAlign: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },

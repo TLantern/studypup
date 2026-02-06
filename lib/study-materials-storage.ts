@@ -185,7 +185,7 @@ export async function saveMaterials(materials: StudyMaterialSet): Promise<void> 
 
 export async function updateMaterials(
   materialId: string,
-  updates: Partial<Pick<StudyMaterialSet, 'flashcards' | 'quiz_questions' | 'written_questions' | 'fill_in_blank_questions' | 'notes' | 'updated_at'>>
+  updates: Partial<Pick<StudyMaterialSet, 'flashcards' | 'quiz_questions' | 'written_questions' | 'fill_in_blank_questions' | 'notes' | 'progress' | 'user_answers' | 'updated_at'>>
 ): Promise<StudyMaterialSet | null> {
   const existing = await getMaterialsLocally(materialId);
   if (!existing) return null;
@@ -295,7 +295,9 @@ export function createStudyMaterialSet(
     notes: string;
   },
   generationMethod: 'ai' | 'template' = 'ai',
-  model?: string
+  model?: string,
+  title?: string,
+  emoji?: string
 ): StudyMaterialSet {
   const now = new Date().toISOString();
   return {
@@ -311,5 +313,7 @@ export function createStudyMaterialSet(
     notes: materials.notes,
     generation_method: generationMethod,
     model,
+    title,
+    emoji,
   };
 }

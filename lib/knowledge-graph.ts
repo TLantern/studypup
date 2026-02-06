@@ -57,6 +57,11 @@ export type KnowledgeGraph = {
   
   /** Array of concepts extracted from the material */
   concepts: Concept[];
+  
+  /** Short topic title (e.g. "Electromagnetism") from AI */
+  title?: string;
+  /** Single emoji for the topic (e.g. "⚡") from AI */
+  emoji?: string;
 };
 
 /**
@@ -117,4 +122,22 @@ export type StudyMaterialSet = {
   // Metadata
   generation_method: 'ai' | 'template'; // How materials were generated
   model?: string; // AI model used (if ai)
+  /** Display title (from knowledge graph) */
+  title?: string;
+  /** Display emoji (from knowledge graph) */
+  emoji?: string;
+  /** Completed-question counts per category (correct answers). Totals come from array lengths. */
+  progress?: {
+    multipleChoice?: number;
+    flashcards?: number;
+    fillInBlanks?: number;
+    written?: number;
+  };
+  /** User answers for each study method */
+  user_answers?: {
+    quiz_questions?: Record<string, number>; // question id -> selected answer index
+    flashcards?: Record<string, 'correct' | 'incorrect'>; // flashcard id -> user assessment
+    written_questions?: Record<string, { answer: string; correct: boolean; explanation?: string }>; // question id -> answer data
+    fill_in_blank_questions?: Record<string, { answer: string; correct: boolean; explanation?: string }>; // question id -> answer data
+  };
 };

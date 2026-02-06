@@ -3,6 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -14,6 +16,12 @@ const BUTTON_SHADOW = {
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      Notifications.requestPermissionsAsync();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>

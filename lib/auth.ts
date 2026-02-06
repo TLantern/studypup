@@ -9,6 +9,7 @@ import {
   AppleAuthProvider,
   GoogleAuthProvider,
   linkWithCredential,
+  signInAnonymously,
   signInWithCredential,
   signInWithPhoneNumber,
   type ConfirmationResult,
@@ -31,6 +32,11 @@ export async function startPhoneSignIn(
 export async function confirmPhoneOtp(code: string) {
   if (!phoneConfirmation) throw new Error('No OTP session. Please request a new code.');
   return await phoneConfirmation.confirm(code);
+}
+
+export async function signInBypass() {
+  const { auth } = getFirebase();
+  return await signInAnonymously(auth);
 }
 
 export async function signInWithApple() {
@@ -74,6 +80,7 @@ export async function signInWithGoogle() {
     clientId,
     redirectUri,
     responseType: AuthSession.ResponseType.IdToken,
+    usePKCE: false,
     scopes: ['openid', 'email', 'profile'],
     extraParams: { nonce: Crypto.randomUUID() },
   });
@@ -98,6 +105,7 @@ export async function linkGoogle(user: User) {
     clientId,
     redirectUri,
     responseType: AuthSession.ResponseType.IdToken,
+    usePKCE: false,
     scopes: ['openid', 'email', 'profile'],
     extraParams: { nonce: Crypto.randomUUID() },
   });
@@ -111,8 +119,10 @@ export async function linkGoogle(user: User) {
 
 export async function sendMagicLink(email: string) {
   const { auth } = getFirebase();
+  // The domain of `url` must be in Firebase Console → Authentication → Settings → Authorized domains.
+  // If you see auth/unauthorized-continue-uri, add this URL's host (e.g. studypup-b3973.firebaseapp.com) there.
   const actionCodeSettings = {
-    url: Linking.createURL('auth'),
+    url: 'https://studypup-b3973.firebaseapp.com',
     handleCodeInApp: true,
   };
   await (await import('firebase/auth')).sendSignInLinkToEmail(auth, email, actionCodeSettings as any);

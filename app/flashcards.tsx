@@ -6,8 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 
-const AnimatedImage = Animated.createAnimatedComponent(Image);
-
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
   shadowOffset: { width: 0, height: 4 },
@@ -25,7 +23,9 @@ export default function FlashcardsScreen() {
         <Image source={require('../assets/images/progresspill2.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Turn Notes into Flashcards in Seconds!</Text>
         <Text style={styles.subtext}>AI turns your notes into personalized flashcards.</Text>
-        <AnimatedImage source={require('../assets/images/flashcards.png')} style={[styles.hero, hoverStyle]} contentFit="contain" />
+        <Animated.View style={[styles.heroWrap, hoverStyle]}>
+          <Image source={require('../assets/images/flashcards.png')} style={styles.hero} contentFit="contain" />
+        </Animated.View>
         <View style={styles.buttons}>
           <Pressable style={styles.btn} onPress={() => router.push('/instantanswers')}>
             <Text style={[styles.btnText, styles.btnPrimaryText]}>Continue</Text>
@@ -42,8 +42,9 @@ const styles = StyleSheet.create({
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 24 },
-  hero: { flex: 1, width: '100%', maxHeight: 360, alignSelf: 'center', marginBottom: 24 },
-  buttons: { paddingTop: 100 },
+  heroWrap: { flex: 1, width: '100%', maxHeight: 360, alignSelf: 'center', marginBottom: 24 },
+  hero: { width: '100%', height: '100%' },
+  buttons: { marginTop: 'auto', paddingTop: 6 },
   btn: {
     borderRadius: 35,
     paddingVertical: 18,

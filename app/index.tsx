@@ -64,11 +64,14 @@ export default function OnboardingScreen() {
       <Animated.View style={[styles.logoWrap, logoStyle]}>
         <Image source={require('../assets/images/puppylogoo.png')} style={styles.logo} contentFit="contain" />
       </Animated.View>
+      <View style={styles.userChoiceRow}>
+        <Image source={require('../assets/icons/userchoice.png')} style={styles.userChoiceBadge} contentFit="contain" />
+      </View>
       <View style={styles.buttons}>
         <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
-        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push('/login')}>
+        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push('/create-account')}>
           <Text style={[styles.btnText, styles.btnLoginText]}>Login</Text>
         </Pressable>
       </View>
@@ -94,14 +97,24 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  buttons: { gap: 16, paddingTop: 120 },
+  userChoiceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: -16,
+    marginBottom: 8,
+    marginRight: -15,
+  },
+  userChoiceBadge: { width: 440, height: 88 },
+  buttons: { gap: 16, paddingTop: 80 },
   btn: {
     borderRadius: 35,
-    paddingVertical: 18,
+    paddingVertical: 12,
     paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 1,
     ...BUTTON_SHADOW,
   },
   btnPrimary: { backgroundColor: '#FD8A8A', borderColor: '#CA6E6E' },

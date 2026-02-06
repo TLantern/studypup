@@ -133,16 +133,17 @@ export async function generateWrittenQuestionsWithAI(
     throw new Error('OpenAI not configured');
   }
 
-  const systemPrompt = `You are an expert at creating open-ended essay questions.
-Create questions that require students to demonstrate deep understanding by explaining, analyzing, or applying concepts.
+  const systemPrompt = `You are an expert at creating short-answer questions.
+Create simple, direct questions that can be answered in 1-2 sentences.
 
 Rules:
-- Ask questions that require paragraph-length answers
-- Encourage students to make connections between concepts
-- Provide clear rubrics for what a good answer should include
-- Include sample answers that demonstrate expected quality`;
+- Keep questions short and clear (one sentence maximum)
+- Ask for specific facts, definitions, or brief explanations
+- Answers should be concise (1-2 sentences, no more than 30 words)
+- Focus on core concepts and key facts
+- Avoid complex analysis or multi-part questions`;
 
-  const userPrompt = `Create ${count} written essay questions from this knowledge graph:
+  const userPrompt = `Create ${count} short-answer questions from this knowledge graph:
 
 ${JSON.stringify(graph.concepts, null, 2)}
 

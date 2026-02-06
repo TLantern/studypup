@@ -246,7 +246,9 @@ export function generateKnowledgeGraphId(): string {
 export function createKnowledgeGraph(
   userId: string,
   source: KnowledgeGraph['source'],
-  concepts: KnowledgeGraph['concepts']
+  concepts: KnowledgeGraph['concepts'],
+  title?: string,
+  emoji?: string
 ): KnowledgeGraph {
   const now = new Date().toISOString();
   return {
@@ -256,5 +258,7 @@ export function createKnowledgeGraph(
     updated_at: now,
     source,
     concepts,
+    title,
+    emoji,
   };
 }

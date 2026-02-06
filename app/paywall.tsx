@@ -97,9 +97,9 @@ function PaywallUI({ onContinue }: { onContinue: () => void }) {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
+  container: { flex: 1, paddingHorizontal: 24 },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center' },
-  buttons: { paddingTop: 100 },
+  buttons: { marginTop: 'auto', paddingTop: 6 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
     borderRadius: 35,

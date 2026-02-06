@@ -60,7 +60,7 @@ export async function processContent(
   
   // TODO: Replace with actual AI service call
   // For now, returns a mock knowledge graph
-  const concepts = await extractConceptsFromContent(content);
+  const { concepts, title, emoji } = await extractConceptsFromContent(content);
   
   const contentHash = await hashContent(content);
   const graph = createKnowledgeGraph(
@@ -70,7 +70,9 @@ export async function processContent(
       content_hash: contentHash,
       metadata,
     },
-    concepts
+    concepts,
+    title,
+    emoji
   );
   
   // Save immediately to local cache
@@ -80,29 +82,39 @@ export async function processContent(
 }
 
 /**
- * Extract concepts from content using AI
+ * Extract concepts from content using AI (plus topic title and emoji)
  */
-async function extractConceptsFromContent(content: string): Promise<Concept[]> {
+async function extractConceptsFromContent(content: string): Promise<{
+  concepts: Concept[];
+  title?: string;
+  emoji?: string;
+}> {
   if (!isOpenAIConfigured()) {
     console.warn('OpenAI not configured, using mock data');
-    // Return mock data for testing
-    return [
-      {
-        id: 'example_concept',
-        definition: 'This is an example concept extracted from the content',
-        dependencies: [],
-        common_mistakes: ['Common mistake 1', 'Common mistake 2'],
-      },
-    ];
+    return {
+      concepts: [
+        {
+          id: 'example_concept',
+          definition: 'This is an example concept extracted from the content',
+          dependencies: [],
+          common_mistakes: ['Common mistake 1', 'Common mistake 2'],
+        },
+      ],
+      title: 'Study Set',
+      emoji: '📚',
+    };
   }
 
   try {
-    const response = await callOpenAI<{ concepts: Concept[] }>(
+    const response = await callOpenAI<{ concepts: Concept[]; title?: string; emoji?: string }>(
       KNOWLEDGE_GRAPH_SYSTEM_PROMPT,
       content
     );
-    
-    return response.concepts;
+    return {
+      concepts: response.concepts,
+      title: response.title,
+      emoji: response.emoji,
+    };
   } catch (error) {
     console.error('Failed to extract concepts with AI:', error);
     throw error;
@@ -211,7 +223,7 @@ export async function processContentAndGenerateMaterials(
     written_questions: [],
     fill_in_blank_questions: [],
     notes: '',
-  }, 'template');
+  }, 'template', undefined, graph.title, graph.emoji);
 
   const merged: StudyMaterialSet = {
     ...base,
@@ -352,8 +364,12 @@ Your task is to analyze the provided content and extract atomic concepts followi
 
 6. COMMON MISTAKES: Capture any student confusions mentioned or implied in the content.
 
+7. TOPIC: Also output a short display title (2–4 words, e.g. "Electromagnetism", "Cell Biology") and a single emoji that fits the topic (e.g. "⚡" for electromagnetism, "🧬" for biology).
+
 Output valid JSON in this exact format:
 {
+  "title": "Short Topic Title",
+  "emoji": "⚡",
   "concepts": [
     {
       "id": "concept_name",

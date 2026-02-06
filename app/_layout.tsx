@@ -3,7 +3,9 @@ import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { View } from 'react-native';
+import { LogBox, View } from 'react-native';
+
+LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
 import {
   SuperwallAvailableContext,

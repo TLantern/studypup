@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   subjectBtnSelected: { backgroundColor: '#D4C4B0' },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   subjectEmoji: { fontSize: 24 },
-  buttons: { paddingTop: 16 },
+  buttons: { marginTop: 'auto', paddingTop: 6 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
     borderRadius: 35,
