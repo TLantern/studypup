@@ -7,8 +7,11 @@ try {
   const sw = require('expo-superwall');
   SuperwallProvider = sw.SuperwallProvider;
   usePlacementHook = sw.usePlacement;
-} catch {
-  // Native module not available (Expo Go)
+  console.log('[Superwall] Native module loaded successfully');
+  console.log('[Superwall] SuperwallProvider available:', !!SuperwallProvider);
+  console.log('[Superwall] usePlacementHook available:', !!usePlacementHook);
+} catch (err) {
+  console.warn('[Superwall] Native module not available (Expo Go or build issue):', err);
 }
 
 export const SuperwallAvailableContext = createContext(!!SuperwallProvider);

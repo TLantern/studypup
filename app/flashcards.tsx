@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 24 },
   heroWrap: { flex: 1, width: '100%', maxHeight: 360, alignSelf: 'center', marginBottom: 24 },
   hero: { width: '100%', height: '100%' },
-  buttons: { marginTop: 'auto', paddingTop: 6 },
+  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
   btn: {
     borderRadius: 35,
     paddingVertical: 18,

@@ -6,6 +6,10 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
+import { updateOnboarding } from '@/lib/onboarding-storage';
+import { setItem as storageSetItem } from '@/lib/storage';
+
+const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -49,9 +53,18 @@ export default function PlanUsageScreen() {
         </ScrollView>
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/paywall')}>
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
+          <Pressable
+          style={styles.continueBtn}
+          onPress={async () => {
+            console.log('[PlanUsage] Completing onboarding, navigating to paywall');
+            await updateOnboarding({ plan_usage: selected });
+            await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
+            console.log('[PlanUsage] Onboarding complete flag set, pushing /paywall');
+            router.push('/paywall');
+          }}
+        >
+          <Text style={styles.continueBtnText}>Continue</Text>
+        </Pressable>
         </View>
       </View>
     </LinearGradient>
@@ -82,8 +95,9 @@ const styles = StyleSheet.create({
   optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
-  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1 },
+  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1, marginBottom: -34 },
   continueBtn: {
+    marginBottom: -34,
     backgroundColor: '#FD8A8A',
     borderRadius: 35,
     paddingVertical: 18,

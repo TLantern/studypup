@@ -29,7 +29,7 @@ export default function RootLayout() {
   const content = (
     <AuthProvider>
       <View style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
           <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
         </Stack>
       </View>
@@ -41,15 +41,25 @@ export default function RootLayout() {
     ...(SUPERWALL_ANDROID_KEY && { android: SUPERWALL_ANDROID_KEY }),
   };
 
+  console.log('[RootLayout] SuperwallProvider available:', !!SuperwallProvider);
+  console.log('[RootLayout] API keys configured:', {
+    hasIOS: !!SUPERWALL_IOS_KEY,
+    hasAndroid: !!SUPERWALL_ANDROID_KEY,
+    keys: apiKeys,
+  });
+
   if (SuperwallProvider) {
     return (
       <SuperwallProvider
         apiKeys={apiKeys}
-        onConfigurationError={(e: any) => console.error('Superwall config failed:', e)}
+        onConfigurationError={(e: any) => {
+          console.error('[RootLayout] Superwall config failed:', e);
+        }}
       >
         <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
       </SuperwallProvider>
     );
   }
+  console.warn('[RootLayout] SuperwallProvider not available, Superwall disabled');
   return <SuperwallAvailableContext.Provider value={false}>{content}</SuperwallAvailableContext.Provider>;
 }

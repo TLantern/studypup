@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
+import { updateOnboarding } from '@/lib/onboarding-storage';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -51,7 +52,13 @@ export default function GradeLevelScreen() {
             style={styles.puppy}
             contentFit="contain"
           />
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/subjects')}>
+          <Pressable
+            style={styles.continueBtn}
+            onPress={async () => {
+              await updateOnboarding({ grade_level: selected });
+              router.push('/subjects');
+            }}
+          >
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
@@ -102,8 +109,10 @@ const styles = StyleSheet.create({
     width: 140,
     height: 120,
     zIndex: 1,
+    marginBottom: -34,
   },
   continueBtn: {
+    marginBottom: -34,
     backgroundColor: '#FD8A8A',
     borderRadius: 35,
     paddingVertical: 18,

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
+import { updateOnboarding } from '@/lib/onboarding-storage';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -57,7 +58,13 @@ export default function SubjectsScreen() {
           ))}
         </ScrollView>
         <View style={styles.buttons}>
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/plan-usage')}>
+          <Pressable
+            style={styles.continueBtn}
+            onPress={async () => {
+              await updateOnboarding({ subjects: Array.from(selected) });
+              router.push('/plan-usage');
+            }}
+          >
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
@@ -90,7 +97,7 @@ const styles = StyleSheet.create({
   subjectBtnSelected: { backgroundColor: '#D4C4B0' },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   subjectEmoji: { fontSize: 24 },
-  buttons: { marginTop: 'auto', paddingTop: 6 },
+  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
     borderRadius: 35,

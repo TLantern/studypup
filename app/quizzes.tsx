@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: -160 },
-  heroWrap: { width: '100%', height: 720, alignSelf: 'center', marginBottom: -64 },
+  heroWrap: { width: '100%', height: 720, alignSelf: 'center', marginBottom: -70 },
   hero: { width: '100%', height: '100%' },
   buttons: { marginTop: 'auto', paddingTop: 6 },
   btn: {

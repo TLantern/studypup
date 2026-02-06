@@ -71,7 +71,7 @@ export default function OnboardingScreen() {
         <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
-        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push('/create-account')}>
+        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push('/paywall')}>
           <Text style={[styles.btnText, styles.btnLoginText]}>Login</Text>
         </Pressable>
       </View>
