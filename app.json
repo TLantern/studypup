@@ -23,7 +23,7 @@
         "dark": "./assets/icons/appcovericon.png",
         "tinted": "./assets/icons/appcovericon.png"
       },
-      "bundleIdentifier": "com.anonymous.studypup"
+      "bundleIdentifier": "com.studypup.app"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
@@ -33,7 +33,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.studypup",
+      "package": "com.studypup.app",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_EXTERNAL_STORAGE",

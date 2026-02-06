@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:114632107142:android:6d57f2fbe05b49997b9d07",
+        "mobilesdk_app_id": "1:114632107142:android:cf04ce24c09df3a97b9d07",
         "android_client_info": {
-          "package_name": "com.anonymous.studypup"
+          "package_name": "com.studypup.app"
         }
       },
       "oauth_client": [
