@@ -19,6 +19,7 @@ type Props = {
 };
 
 type GradeResult = {
+  answer: string;
   correct: boolean;
   explanation?: string;
 };
@@ -47,6 +48,10 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   const item = list[index];
   const total = list.length;
   const currentResult = results[item.id];
+
+  useEffect(() => {
+    if (Object.keys(savedAnswers).length > 0) setResults(savedAnswers);
+  }, [savedAnswers]);
   
   useEffect(() => {
     if (item.id && results[item.id]) {
@@ -68,7 +73,7 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
     setChecking(true);
     try {
       const result = await gradeAnswer(item.question, answer, item.expectedAnswer);
-      setResults((prev) => ({ ...prev, [item.id]: { answer, ...result } }));
+      setResults((prev) => ({ ...prev, [item.id]: { ...result, answer } }));
     } catch (error) {
       console.error('Failed to grade answer:', error);
     } finally {
@@ -137,9 +142,9 @@ Please explain the correct answer and help the student understand why their resp
       const systemPrompt = `You are a helpful tutor. The student is asking about this question: "${item.question}". 
 Keep your responses clear, concise, and educational.`;
 
-      const messages = [
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
         { role: 'system', content: systemPrompt },
-        ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
+        ...chatMessages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user', content: userMessage },
       ];
 
@@ -281,7 +286,7 @@ async function gradeAnswer(
   question: string,
   userAnswer: string,
   expectedAnswer?: string
-): Promise<GradeResult> {
+): Promise<Pick<GradeResult, 'correct' | 'explanation'>> {
   const systemPrompt = `You are an expert educator grading short-answer questions.
 These questions expect brief, 1-2 sentence answers focusing on key facts or concepts.
 

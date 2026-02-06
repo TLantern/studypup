@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const SALMON = '#FD8A8A';
@@ -36,6 +36,10 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
   const card = list[index];
   const total = list.length;
   const currentAnswer = answers[card.id];
+
+  useEffect(() => {
+    if (Object.keys(savedAnswers).length > 0) setAnswers(savedAnswers);
+  }, [savedAnswers]);
 
   useEffect(() => {
     const correct = Object.values(answers).filter((a) => a === 'correct').length;

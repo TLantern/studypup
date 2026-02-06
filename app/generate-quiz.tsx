@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -43,10 +43,13 @@ const SCAFFOLD_QUIZ = [
   { question: 'What do mitochondria produce for the cell?', options: ['Proteins', 'ATP', 'DNA', 'Chlorophyll'], correct_answer_index: 1 },
 ];
 
+const methodsKey = (methods?: string) => methods ?? 'quiz';
+
 export default function GenerateQuizScreen() {
   const insets = useSafeAreaInsets();
   const { methods, materialId } = useLocalSearchParams<{ methods?: string; materialId?: string }>();
-  const selectedIds = (methods ?? 'quiz').split(',').filter(Boolean);
+  const methodsStr = methodsKey(methods);
+  const selectedIds = useMemo(() => methodsStr.split(',').filter(Boolean), [methodsStr]);
   const tabs = ALL_TABS.filter((t) => selectedIds.includes(t.id));
   const [activeTab, setActiveTab] = useState(tabs[0]?.id ?? 'quiz');
   const [title, setTitle] = useState('Title');
@@ -69,6 +72,9 @@ export default function GenerateQuizScreen() {
   const [fillTotal, setFillTotal] = useState(0);
   const [generatingMessage, setGeneratingMessage] = useState('');
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
+  const [flashcardAnswers, setFlashcardAnswers] = useState<Record<string, 'correct' | 'incorrect'>>({});
+  const [writtenAnswers, setWrittenAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
+  const [fillAnswers, setFillAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
 
   useEffect(() => {
     if (!materialId) {
@@ -150,6 +156,16 @@ export default function GenerateQuizScreen() {
               setFlashcardAnswers(updated.user_answers?.flashcards ?? {});
               setWrittenAnswers(updated.user_answers?.written_questions ?? {});
               setFillAnswers(updated.user_answers?.fill_in_blank_questions ?? {});
+              setFlashcardCorrect(updated.progress?.flashcards ?? 0);
+              setFlashcardTotal(updated.flashcards?.length ?? 0);
+              setWrittenCorrect(updated.progress?.written ?? 0);
+              setWrittenTotal(updated.written_questions?.length ?? 0);
+              setFillCorrect(updated.progress?.fillInBlanks ?? 0);
+              setFillTotal(updated.fill_in_blank_questions?.length ?? 0);
+              const qa = updated.user_answers?.quiz_questions ?? {};
+              const qq = updated.quiz_questions ?? [];
+              const sessionCorrect = qq.filter((q) => qa[q.id] === q.correct_answer_index).length;
+              setSessionQuizCorrect(sessionCorrect);
             }
           }
         } catch (error) {
@@ -181,13 +197,39 @@ export default function GenerateQuizScreen() {
         setFlashcardAnswers(m.user_answers?.flashcards ?? {});
         setWrittenAnswers(m.user_answers?.written_questions ?? {});
         setFillAnswers(m.user_answers?.fill_in_blank_questions ?? {});
+        setFlashcardCorrect(m.progress?.flashcards ?? 0);
+        setFlashcardTotal(m.flashcards?.length ?? 0);
+        setWrittenCorrect(m.progress?.written ?? 0);
+        setWrittenTotal(m.written_questions?.length ?? 0);
+        setFillCorrect(m.progress?.fillInBlanks ?? 0);
+        setFillTotal(m.fill_in_blank_questions?.length ?? 0);
+        const qa = m.user_answers?.quiz_questions ?? {};
+        const qq = m.quiz_questions ?? [];
+        setSessionQuizCorrect(qq.filter((q) => qa[q.id] === q.correct_answer_index).length);
       }
 
       setLoading(false);
     };
 
     loadAndGenerate();
-  }, [materialId, selectedIds]);
+  }, [materialId, methodsStr]);
+
+  // Sync selected answer when question index or saved answers change (must run every render for Rules of Hooks)
+  useEffect(() => {
+    if (!materials?.quiz_questions?.length) {
+      setSelectedAnswer(null);
+      return;
+    }
+    const quizQuestions = materials.quiz_questions.length >= 10
+      ? materials.quiz_questions
+      : [...materials.quiz_questions, ...SCAFFOLD_QUIZ.map((q, i) => ({ id: `scaffold_${i}`, ...q }))].slice(0, 10);
+    const quizData = quizQuestions[questionIndex] ?? quizQuestions[0];
+    if (quizData?.id && quizAnswers[quizData.id] !== undefined) {
+      setSelectedAnswer(quizAnswers[quizData.id]);
+    } else {
+      setSelectedAnswer(null);
+    }
+  }, [materials, questionIndex, quizAnswers]);
 
   if (loading) {
     return (
@@ -201,8 +243,6 @@ export default function GenerateQuizScreen() {
   }
 
   const flashcardCards = materials?.flashcards?.map((f) => ({ id: f.id, question: f.front, answer: f.back })) ?? undefined;
-
-  const [flashcardAnswers, setFlashcardAnswers] = useState<Record<string, 'correct' | 'incorrect'>>({});
 
   const handleFlashcardProgress = (correct: number, total: number) => {
     setFlashcardCorrect(correct);
@@ -231,8 +271,6 @@ export default function GenerateQuizScreen() {
     }
   };
 
-  const [writtenAnswers, setWrittenAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
-
   const handleWrittenProgress = (correct: number, total: number) => {
     setWrittenCorrect(correct);
     setWrittenTotal(total);
@@ -259,8 +297,6 @@ export default function GenerateQuizScreen() {
       });
     }
   };
-
-  const [fillAnswers, setFillAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
 
   const handleFillProgress = (correct: number, total: number) => {
     setFillCorrect(correct);
@@ -300,15 +336,6 @@ export default function GenerateQuizScreen() {
   const correctIndex = quizData.correct_answer_index;
   const answered = selectedAnswer !== null;
   const totalQuestions = quizQuestions.length;
-  
-  // Load saved answer for current question
-  useEffect(() => {
-    if (quizData.id && quizAnswers[quizData.id] !== undefined) {
-      setSelectedAnswer(quizAnswers[quizData.id]);
-    } else {
-      setSelectedAnswer(null);
-    }
-  }, [quizData.id, questionIndex]);
 
   const getAnswerCardStyle = (i: number) => {
     if (!answered) return [styles.answerCard];

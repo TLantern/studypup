@@ -53,6 +53,10 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
   const currentResult = results[item.id];
 
   useEffect(() => {
+    if (Object.keys(savedAnswers).length > 0) setResults(savedAnswers);
+  }, [savedAnswers]);
+
+  useEffect(() => {
     if (item.id && results[item.id]) {
       setAnswer(results[item.id].answer);
     } else {
@@ -142,9 +146,9 @@ Please explain the correct answer and help the student understand why their resp
       const systemPrompt = `You are a helpful tutor. The student is asking about this fill-in-the-blank question: "${item.text}". 
 Keep your responses clear, concise, and educational.`;
 
-      const messages = [
+      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
         { role: 'system', content: systemPrompt },
-        ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
+        ...chatMessages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
         { role: 'user', content: userMessage },
       ];
 

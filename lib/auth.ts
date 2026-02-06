@@ -6,8 +6,8 @@ import { makeRedirectUri } from 'expo-auth-session';
 import * as AuthSession from 'expo-auth-session';
 import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import {
-  AppleAuthProvider,
   GoogleAuthProvider,
+  OAuthProvider,
   linkWithCredential,
   signInAnonymously,
   signInWithCredential,
@@ -50,7 +50,8 @@ export async function signInWithApple() {
   });
   if (!credential.identityToken) throw new Error('Apple sign-in failed: missing identity token.');
 
-  const providerCred = AppleAuthProvider.credential(credential.identityToken, nonce);
+  const provider = new OAuthProvider('apple.com');
+  const providerCred = provider.credential({ idToken: credential.identityToken, rawNonce: nonce });
   return await signInWithCredential(auth, providerCred);
 }
 
@@ -62,7 +63,8 @@ export async function linkApple(user: User) {
     nonce: hashedNonce,
   });
   if (!credential.identityToken) throw new Error('Apple sign-in failed: missing identity token.');
-  const providerCred = AppleAuthProvider.credential(credential.identityToken, nonce);
+  const provider = new OAuthProvider('apple.com');
+  const providerCred = provider.credential({ idToken: credential.identityToken, rawNonce: nonce });
   return await linkWithCredential(user, providerCred);
 }
 
@@ -85,7 +87,7 @@ export async function signInWithGoogle() {
     extraParams: { nonce: Crypto.randomUUID() },
   });
 
-  const result = await authRequest.promptAsync(discovery, { useProxy: false });
+  const result = await authRequest.promptAsync(discovery);
   if (result.type !== 'success') throw new Error('Google sign-in cancelled.');
   const idToken = (result.params as any).id_token;
   if (!idToken) throw new Error('Google sign-in failed: missing id_token.');
@@ -109,7 +111,7 @@ export async function linkGoogle(user: User) {
     scopes: ['openid', 'email', 'profile'],
     extraParams: { nonce: Crypto.randomUUID() },
   });
-  const result = await authRequest.promptAsync(discovery, { useProxy: false });
+  const result = await authRequest.promptAsync(discovery);
   if (result.type !== 'success') throw new Error('Google sign-in cancelled.');
   const idToken = (result.params as any).id_token;
   if (!idToken) throw new Error('Google sign-in failed: missing id_token.');
