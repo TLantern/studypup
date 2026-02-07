@@ -50,6 +50,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-firebase-core",
       [
         "expo-image-picker",
         {

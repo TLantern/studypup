@@ -306,6 +306,16 @@ console.log(result);
 - Reduce material counts in generation calls
 - Enable template generation as fallback
 
+### "No script URL provided" (iOS dev build)
+
+- **Metro must be running** before or when the app launches. In one terminal run `npx expo start`, wait until it says "Metro waiting on...", then in another terminal run `npx expo run:ios`. Or run `npx expo run:ios` and wait for Metro to start before the app opens.
+- If the app still can't load the bundle, regenerate the native project: `npx expo prebuild --clean` then `npx expo run:ios`.
+
+### "Firebase app has not yet been configured" / Bundle ID inconsistent
+
+- The project uses `expo-firebase-core` so native Firebase is initialized from `GoogleService-Info.plist`. Ensure `app.json` → `ios.bundleIdentifier` matches the `BUNDLE_ID` in `GoogleService-Info.plist` (e.g. `com.studypup.app`).
+- If you still see a bundle ID mismatch, regenerate the native project: `npx expo prebuild --clean` then `npx expo run:ios`. If your plist has a different bundle ID, either change `app.json` to match or download a new `GoogleService-Info.plist` from Firebase Console for your app’s bundle ID.
+
 ## Next Steps
 
 1. **Read the docs**:

@@ -3,7 +3,8 @@ import { getMaterials } from '@/lib/study-materials-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -39,9 +40,7 @@ export default function StudySetScreen() {
     setLoading(false);
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const openMethod = (methodId: string) => {
     router.push({ pathname: '/generate-quiz', params: { methods: methodId, materialId: id } });
@@ -94,6 +93,13 @@ export default function StudySetScreen() {
           ))}
         </View>
 
+        <Pressable
+          style={styles.notesActionBtn}
+          onPress={() => router.push({ pathname: '/generate-quiz', params: { methods: 'notes', materialId: id } })}
+        >
+          <Image source={require('../../assets/icons/notesicon.png')} style={styles.notesActionIcon} />
+          <Text style={styles.notesActionLabel}>{notes.trim() ? 'Edit note' : 'Notes — Generate'}</Text>
+        </Pressable>
         <View style={[noteStyles.card, styles.notesCard]}>
           {notes.trim() ? parseMarkdown(notes) : <Text style={styles.emptyNotes}>No notes yet.</Text>}
         </View>
@@ -156,6 +162,20 @@ const styles = StyleSheet.create({
   },
   methodIcon: { width: 24, height: 24, marginRight: 10 },
   methodLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: PURPLE },
-  notesCard: { marginTop: 8 },
+  notesActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 12,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  notesActionIcon: { width: 24, height: 24 },
+  notesActionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
+  notesCard: { marginTop: 0 },
   emptyNotes: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#888' },
 });

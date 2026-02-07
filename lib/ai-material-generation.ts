@@ -297,6 +297,23 @@ Return JSON with the notes in markdown:
   return response.notes;
 }
 
+/**
+ * Revise existing notes with a user instruction (e.g. "make it shorter", "add more on X").
+ */
+export async function reviseNotesWithAI(notes: string, instruction: string): Promise<string> {
+  if (!isOpenAIConfigured()) {
+    throw new Error('OpenAI not configured');
+  }
+  const systemPrompt = `You are an expert at improving study notes. Given existing notes and a user request, revise the notes accordingly. Keep the same markdown structure (## 📌 Title, ## 🧠 Core Idea, etc.) and return only the revised notes.`;
+  const userPrompt = `Current notes:\n\n${notes}\n\nUser request: ${instruction}\n\nReturn JSON: { "notes": "revised markdown here" }`;
+  const response = await callOpenAI<{ notes: string }>(
+    systemPrompt,
+    userPrompt,
+    { temperature: 0.5, maxTokens: 4000 }
+  );
+  return response.notes;
+}
+
 export type MaterialType = 'flashcards' | 'quiz' | 'written' | 'fill' | 'notes';
 
 /**

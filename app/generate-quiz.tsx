@@ -1,3 +1,4 @@
+import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
 import { FillInBlankStudy } from '@/components/FillInBlankStudy';
 import { FlashcardStudy } from '@/components/FlashcardStudy';
 import { NotesStudy } from '@/components/NotesStudy';
@@ -7,15 +8,17 @@ import { getMaterials, updateMaterials } from '@/lib/study-materials-storage';
 import { getKnowledgeGraph } from '@/lib/knowledge-graph-storage';
 import {
   generateFlashcardsWithAI,
+  generateNotesWithAI,
   generateQuizQuestionsWithAI,
   generateWrittenQuestionsWithAI,
   generateFillInBlankQuestionsWithAI,
+  reviseNotesWithAI,
 } from '@/lib/ai-material-generation';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SALMON = '#FD8A8A';
@@ -75,6 +78,9 @@ export default function GenerateQuizScreen() {
   const [flashcardAnswers, setFlashcardAnswers] = useState<Record<string, 'correct' | 'incorrect'>>({});
   const [writtenAnswers, setWrittenAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
   const [fillAnswers, setFillAnswers] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>({});
+  const [editNoteModalVisible, setEditNoteModalVisible] = useState(false);
+  const [editNoteInstruction, setEditNoteInstruction] = useState('');
+  const [notesRegenerating, setNotesRegenerating] = useState(false);
 
   useEffect(() => {
     if (!materialId) {
@@ -233,11 +239,8 @@ export default function GenerateQuizScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingCenter]}>
-        <ActivityIndicator size="large" color={PURPLE} />
-        {generatingMessage ? (
-          <Text style={styles.generatingText}>{generatingMessage}</Text>
-        ) : null}
+      <View style={[styles.container, styles.loadingCenter, { backgroundColor: '#f8fafc' }]}>
+        <GeneratingContentScreen contentTypes={selectedIds} />
       </View>
     );
   }
@@ -387,6 +390,9 @@ export default function GenerateQuizScreen() {
           <Ionicons name="chevron-back" size={28} color="#333" />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
+        <Pressable onPress={() => router.replace('/(tabs)')} style={styles.closeBtn} hitSlop={12}>
+          <Ionicons name="close" size={28} color="#333" />
+        </Pressable>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs} contentContainerStyle={styles.tabsContent}>
@@ -399,7 +405,90 @@ export default function GenerateQuizScreen() {
       </ScrollView>
       <View style={styles.divider} />
 
-      {activeTab === 'notes' && <NotesStudy notes={notesContent} />}
+      {activeTab === 'notes' && (
+        <View style={styles.notesTabWrap}>
+          {notesContent?.trim() ? (
+            <Pressable
+              style={styles.editNoteBtn}
+              onPress={() => setEditNoteModalVisible(true)}
+              disabled={notesRegenerating}
+            >
+              <Image source={require('../assets/icons/notesicon.png')} style={styles.editNoteIcon} />
+              <Text style={styles.editNoteLabel}>Edit note</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={styles.generateNotesBtn}
+              onPress={async () => {
+                if (!materialId || notesRegenerating) return;
+                setNotesRegenerating(true);
+                try {
+                  const m = await getMaterials(materialId);
+                  if (!m?.knowledge_graph_id) throw new Error('No material or knowledge graph');
+                  const graph = await getKnowledgeGraph(m.knowledge_graph_id);
+                  if (!graph) throw new Error('Knowledge graph not found');
+                  const newNotes = await generateNotesWithAI(graph);
+                  await updateMaterials(materialId, { notes: newNotes });
+                  setMaterials((prev) => (prev ? { ...prev, notes: newNotes } : null));
+                } catch (e: any) {
+                  Alert.alert('Error', e?.message ?? 'Failed to generate notes.');
+                } finally {
+                  setNotesRegenerating(false);
+                }
+              }}
+              disabled={notesRegenerating}
+            >
+              <Image source={require('../assets/icons/notesicon.png')} style={styles.editNoteIcon} />
+              <Text style={styles.editNoteLabel}>{notesRegenerating ? 'Generating…' : 'Notes — Generate'}</Text>
+            </Pressable>
+          )}
+          <View style={styles.notesStudyWrap}>
+            <NotesStudy notes={notesContent} />
+          </View>
+          <Modal visible={editNoteModalVisible} transparent animationType="fade">
+            <Pressable style={styles.modalBackdrop} onPress={() => setEditNoteModalVisible(false)}>
+              <Pressable style={styles.editNoteModalCard} onPress={(e) => e.stopPropagation()}>
+                <Text style={styles.editNoteModalTitle}>What change would you like to make?</Text>
+                <TextInput
+                  style={styles.editNoteModalInput}
+                  placeholder="e.g. make it shorter, add more on photosynthesis"
+                  placeholderTextColor="#999"
+                  value={editNoteInstruction}
+                  onChangeText={setEditNoteInstruction}
+                  multiline
+                  editable={!notesRegenerating}
+                />
+                <View style={styles.editNoteModalActions}>
+                  <Pressable style={styles.editNoteModalCancel} onPress={() => { setEditNoteModalVisible(false); setEditNoteInstruction(''); }}>
+                    <Text style={styles.editNoteModalCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.editNoteModalRegen, (!editNoteInstruction.trim() || notesRegenerating) && styles.editNoteModalRegenDisabled]}
+                    onPress={async () => {
+                      if (!materialId || !notesContent?.trim() || !editNoteInstruction.trim() || notesRegenerating) return;
+                      setNotesRegenerating(true);
+                      try {
+                        const newNotes = await reviseNotesWithAI(notesContent, editNoteInstruction.trim());
+                        await updateMaterials(materialId, { notes: newNotes });
+                        setMaterials((prev) => (prev ? { ...prev, notes: newNotes } : null));
+                        setEditNoteModalVisible(false);
+                        setEditNoteInstruction('');
+                      } catch (e: any) {
+                        Alert.alert('Error', e?.message ?? 'Failed to update notes.');
+                      } finally {
+                        setNotesRegenerating(false);
+                      }
+                    }}
+                    disabled={!editNoteInstruction.trim() || notesRegenerating}
+                  >
+                    <Text style={styles.editNoteModalRegenText}>{notesRegenerating ? 'Regenerating…' : 'Regenerate'}</Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            </Pressable>
+          </Modal>
+        </View>
+      )}
       {activeTab === 'tutor' && <TutorStudy notes={notesContent} />}
       {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} />}
       {activeTab === 'written' && (
@@ -473,12 +562,14 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   backBtn: { padding: 4 },
+  closeBtn: { padding: 4, marginLeft: 'auto', marginRight: -25 },
   title: {
     flex: 1,
     fontFamily: 'Fredoka_400Regular',
     fontSize: 22,
     color: '#333',
     textAlign: 'center',
+    marginLeft: 10,  
   },
   tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#ccc', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
@@ -512,6 +603,77 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   tabLabelActive: { color: '#333' },
+  notesTabWrap: { flex: 1 },
+  editNoteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  generateNotesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  editNoteIcon: { width: 24, height: 24 },
+  editNoteLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
+  notesStudyWrap: { flex: 1 },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  editNoteModalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  editNoteModalTitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 18,
+    color: '#333',
+    marginBottom: 16,
+  },
+  editNoteModalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    padding: 14,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#333',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 20,
+  },
+  editNoteModalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
+  editNoteModalCancel: { paddingVertical: 10, paddingHorizontal: 16 },
+  editNoteModalCancelText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666' },
+  editNoteModalRegen: {
+    backgroundColor: PURPLE,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  editNoteModalRegenDisabled: { opacity: 0.5 },
+  editNoteModalRegenText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#fff' },
   body: { flex: 1 },
   bodyContent: { paddingBottom: 24 },
   question: {

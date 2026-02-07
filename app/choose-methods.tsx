@@ -1,3 +1,4 @@
+import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
 import { getItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
 import { contentToText } from '@/lib/content-to-text';
@@ -6,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PURPLE = '#7c3aed';
@@ -27,7 +28,6 @@ export default function ChooseMethodsScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState('');
 
   useEffect(() => {
     getPendingContent().then(setContentItems);
@@ -42,27 +42,29 @@ export default function ChooseMethodsScreen() {
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setIsGenerating(true);
-    setProgress('Converting content...');
     try {
-      const text = await contentToText(contentItems, (p) => {
-        setProgress(`Processing ${p.current}/${p.total}: ${p.itemName}`);
-      });
+      const text = await contentToText(contentItems, () => {});
       if (!text.trim()) {
         Alert.alert('No content', 'Could not extract text from your content. Please try different files.');
         return;
       }
-      setProgress('Extracting concepts...');
       const userId = (await getItem('userId')) ?? 'local_user';
       const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, selected);
-      setProgress('');
       router.push({ pathname: '/generate-quiz', params: { methods: selected.join(','), materialId: materials.id } });
     } catch (err: any) {
       Alert.alert('Generation failed', err.message ?? 'Please try again.');
     } finally {
       setIsGenerating(false);
-      setProgress('');
     }
   };
+
+  if (isGenerating) {
+    return (
+      <View style={[styles.generatingWrap, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <GeneratingContentScreen contentTypes={selected} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -82,12 +84,6 @@ export default function ChooseMethodsScreen() {
           <Text style={styles.addBtnText}>{contentItems.length > 0 ? 'Change' : '+ Add'}</Text>
         </Pressable>
       </View>
-      {progress ? (
-        <View style={styles.progressRow}>
-          <ActivityIndicator size="small" color={PURPLE} />
-          <Text style={styles.progressText}>{progress}</Text>
-        </View>
-      ) : null}
 
       <ScrollView style={styles.list} contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
         {METHODS.map((m) => (
@@ -116,17 +112,14 @@ export default function ChooseMethodsScreen() {
         style={[styles.generateBtn, !canGenerate && styles.generateBtnDisabled]}
         onPress={handleGenerate}
       >
-        {isGenerating ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.generateBtnText}>Generate</Text>
-        )}
+        <Text style={styles.generateBtnText}>Generate</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  generatingWrap: { flex: 1, backgroundColor: '#f8fafc' },
   container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: 24 },
   header: {
     flexDirection: 'row',
@@ -169,8 +162,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
-  progressText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666' },
   list: { flex: 1 },
   listContent: { paddingBottom: 24 },
   methodBtn: {

@@ -43,8 +43,8 @@ const styles = StyleSheet.create({
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: -64 },
   heroWrap: { width: '100%', height: 620, alignSelf: 'center' },
-  hero: { width: '100%', height: '100%' },
-  buttons: { marginTop: 'auto', paddingTop: 6 },
+  hero: { width: '100%', height: '100%'},
+  buttons: { marginTop: -10},
   btn: {
     borderRadius: 35,
     paddingVertical: 18,
