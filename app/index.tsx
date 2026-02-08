@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     marginRight: -15,
   },
   userChoiceBadge: { width: 440, height: 88 },
-  buttons: { gap: 16, paddingTop: 80 },
+  buttons: { gap: 16, paddingTop: 140 },
   btn: {
     borderRadius: 35,
     paddingVertical: 12,

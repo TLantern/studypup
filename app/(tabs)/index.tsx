@@ -172,6 +172,7 @@ export default function HomeScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordingMetering, setRecordingMetering] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingRecordRef = useRef(false);
 
@@ -328,6 +329,11 @@ export default function HomeScreen() {
       setRecording(newRecording);
       setRecordingDuration(0);
       setIsPaused(false);
+      setRecordingMetering(null);
+      newRecording.setOnRecordingStatusUpdate((status) => {
+        if (status.metering != null) setRecordingMetering(status.metering);
+      });
+      newRecording.setProgressUpdateInterval(100);
 
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
@@ -341,6 +347,7 @@ export default function HomeScreen() {
     if (recording && !isPaused) {
       await recording.pauseAsync();
       setIsPaused(true);
+      setRecordingMetering(null);
       if (timerRef.current) clearInterval(timerRef.current);
     }
   };
@@ -374,6 +381,7 @@ export default function HomeScreen() {
     setRecording(null);
     setIsPaused(false);
     setRecordingDuration(0);
+    setRecordingMetering(null);
     recordModalOffset.value = withTiming(
       1,
       { duration: 300, easing: Easing.in(Easing.cubic) },
@@ -401,6 +409,7 @@ export default function HomeScreen() {
       setRecording(null);
       setIsPaused(false);
       setRecordingDuration(0);
+      setRecordingMetering(null);
       if (timerRef.current) clearInterval(timerRef.current);
     }
     recordModalOffset.value = withTiming(
@@ -860,7 +869,7 @@ export default function HomeScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: recordModalHeight + insets.bottom,
+                bottom: recordModalHeight + insets.bottom - 30,
               },
             ]}
             onPress={closeRecordModal}
@@ -885,24 +894,26 @@ export default function HomeScreen() {
                   style={styles.recordModalPup}
                 />
                 <View style={styles.recordModalControls}>
+                  <View style={styles.recordModalWaveform}>
+                    {Array.from({ length: 20 }, (_, i) => {
+                      const normalized = recordingMetering != null
+                        ? Math.max(0, Math.min(1, (recordingMetering + 160) / 160))
+                        : 0.12;
+                      const wave = 0.35 + 0.65 * (Math.sin(i * 0.45) * 0.5 + 0.5);
+                      const h = Math.max(4, Math.round(normalized * wave * 36));
+                      return <View key={i} style={[styles.recordModalWaveformBar, { height: h }]} />;
+                    })}
+                  </View>
                   <View style={styles.recordModalButtonsRow}>
-                    <Pressable 
-                      style={styles.recordModalBtn}
+                    <Pressable
+                      style={[styles.recordModalBtn, styles.recordModalBtnPlay]}
                       onPress={isPaused ? resumeRecording : pauseRecording}
                     >
-                      <Image 
-                        source={isPaused 
-                          ? require('../../assets/Play.png') 
-                          : require('../../assets/pause.png')
-                        } 
-                        style={styles.recordModalBtnIcon} 
-                      />
-                      <Text style={styles.recordModalBtnLabel}>
-                        {isPaused ? 'Play' : 'Pause'}
-                      </Text>
+                      <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color="#333" />
+                      <Text style={styles.recordModalBtnLabel}>{isPaused ? 'Play' : 'Pause'}</Text>
                     </Pressable>
-                    <Pressable style={styles.recordModalBtn} onPress={stopRecording}>
-                      <Image source={require('../../assets/stop.png')} style={styles.recordModalBtnIcon} />
+                    <Pressable style={[styles.recordModalBtn, styles.recordModalBtnStop]} onPress={stopRecording}>
+                      <Ionicons name="stop" size={22} color="#333" />
                       <Text style={styles.recordModalBtnLabel}>Stop</Text>
                     </Pressable>
                   </View>
@@ -924,7 +935,7 @@ export default function HomeScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: playbackModalHeight + insets.bottom,
+                bottom: playbackModalHeight + insets.bottom - 30,
               },
             ]}
             onPress={closePlaybackModal}
@@ -952,26 +963,23 @@ export default function HomeScreen() {
                     style={styles.recordModalPup}
                   />
                   <View style={styles.recordModalControls}>
-                    <View style={styles.recordModalButtonsRow}>
-                      <Pressable style={styles.recordModalBtn} onPress={closePlaybackModal}>
-                        <Image source={require('../../assets/delete.png')} style={styles.recordModalBtnIcon} />
+                    <View style={styles.recordModalButtonsStack}>
+                      <Pressable style={[styles.recordModalBtn, styles.recordModalBtnDelete]} onPress={closePlaybackModal}>
+                        <Ionicons name="trash-outline" size={22} color="#333" />
                         <Text style={styles.recordModalBtnLabel}>Delete</Text>
                       </Pressable>
                       <Pressable
-                        style={styles.recordModalBtn}
+                        style={[styles.recordModalBtn, styles.recordModalBtnPlay]}
                         onPress={isPlaying ? pausePlayback : playPlayback}
                       >
-                        <Image
-                          source={isPlaying ? require('../../assets/pause.png') : require('../../assets/Play.png')}
-                          style={styles.recordModalBtnIcon}
-                        />
+                        <Ionicons name={isPlaying ? 'pause' : 'play'} size={22} color="#333" />
                         <Text style={styles.recordModalBtnLabel}>{isPlaying ? 'Pause' : 'Play'}</Text>
                       </Pressable>
+                      <Pressable style={[styles.recordModalBtn, styles.recordModalBtnConfirm]} onPress={confirmPlayback}>
+                        <Ionicons name="checkmark-circle-outline" size={22} color="#333" />
+                        <Text style={styles.recordModalBtnLabel}>Confirm</Text>
+                      </Pressable>
                     </View>
-                    <Pressable style={styles.recordModalBtn} onPress={confirmPlayback}>
-                      <Image source={require('../../assets/Confirm.png')} style={styles.recordModalBtnIcon} />
-                      <Text style={styles.recordModalBtnLabel}>Confirm</Text>
-                    </Pressable>
                   </View>
                 </View>
               </LinearGradient>
@@ -1662,6 +1670,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     top: 50,
   },
+  recordModalWaveform: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    height: 40,
+    gap: 3,
+    marginBottom: -2,
+  },
+  recordModalWaveformBar: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    minHeight: 4,
+  },
   recordModalButtonsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1669,9 +1691,35 @@ const styles = StyleSheet.create({
     top: 50,
     gap: 20,
   },
+  recordModalButtonsStack: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    justifyContent: 'center',
+    gap: 16,
+    minWidth: 140,
+    paddingTop: 40,
+  },
   recordModalBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    minWidth: 120,
+  },
+  recordModalBtnDelete: {
+    backgroundColor: '#FF9B9B',
+  },
+  recordModalBtnPlay: {
+    backgroundColor: '#9CA3AF',
+  },
+  recordModalBtnConfirm: {
+    backgroundColor: '#86EFAC',
+  },
+  recordModalBtnStop: {
+    backgroundColor: '#E57373',
   },
   recordModalBtnIcon: {
     width: 56,
@@ -1681,7 +1729,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: 14,
     color: '#333',
-    marginTop: 6,
   },
   recordModalTimer: {
     fontFamily: 'Fredoka_400Regular',

@@ -1,7 +1,7 @@
 import { callOpenAIChat, isOpenAIConfigured } from '@/lib/openai-service';
 import { noteStyles, parseMarkdown } from '@/lib/notes-renderer';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -51,6 +51,14 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  const scrollToEnd = () => scrollRef.current?.scrollToEnd({ animated: true });
 
   const systemContent = TUTOR_SYSTEM + '\n\nHere are the student notes:\n\n' + content;
   const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -90,10 +98,12 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onContentSizeChange={scrollToEnd}
       >
         <View style={noteStyles.card}>{parseMarkdown(content)}</View>
 
