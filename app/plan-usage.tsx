@@ -6,8 +6,10 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
+import { useAuth } from '@/lib/auth-store';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { setItem as storageSetItem } from '@/lib/storage';
+import { ensureUserDoc } from '@/lib/user-profile';
 
 const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 
@@ -30,6 +32,7 @@ const OPTIONS = [
 
 export default function PlanUsageScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [selected, setSelected] = useState<string[]>(['recording']);
 
   return (
@@ -56,11 +59,10 @@ export default function PlanUsageScreen() {
           <Pressable
           style={styles.continueBtn}
           onPress={async () => {
-            console.log('[PlanUsage] Completing onboarding, navigating to paywall');
             await updateOnboarding({ plan_usage: selected });
             await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
-            console.log('[PlanUsage] Onboarding complete flag set, pushing /paywall');
-            router.push('/paywall');
+            if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
+            router.push('/review');
           }}
         >
           <Text style={styles.continueBtnText}>Continue</Text>

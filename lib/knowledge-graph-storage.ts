@@ -215,22 +215,28 @@ export async function listKnowledgeGraphs(userId?: string): Promise<KnowledgeGra
   // Get list from local cache
   const graphIds = await listLocalKnowledgeGraphs();
   const graphs: KnowledgeGraph[] = [];
-  
+
   for (const id of graphIds) {
     const graph = await getKnowledgeGraphLocally(id);
     if (graph) {
       graphs.push(graph);
     }
   }
-  
+
   // TODO: Merge with Firebase graphs and sync
   // if (userId) {
   //   const firebaseGraphs = await listFirebaseKnowledgeGraphs(userId);
   //   // Merge and deduplicate
   //   // Update local cache with any missing graphs
   // }
-  
+
   return graphs;
+}
+
+export async function deleteAllLocalKnowledgeGraphs(): Promise<void> {
+  const ids = await listLocalKnowledgeGraphs();
+  for (const id of ids) await deleteKnowledgeGraphLocally(id);
+  await AsyncStorage.removeItem(KG_INDEX_KEY);
 }
 
 /**

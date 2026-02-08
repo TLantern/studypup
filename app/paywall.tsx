@@ -1,25 +1,28 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { SuperwallAvailableContext, usePlacementHook } from '@/lib/superwall';
 
-// Superwall in-app event (placement) configured to show: "Studypup paywall"
-const PLACEMENT = 'onboarding_complete';
+const PLACEMENT_ONBOARDING = 'onboarding_complete';
 
 function PaywallWithSuperwall() {
+  const params = useLocalSearchParams<{ placement?: string; return?: string }>();
+  const placement = params.placement ?? PLACEMENT_ONBOARDING;
+  const shouldReturn = params.return === '1';
   const usePlacement = usePlacementHook!;
   const navigateToMain = useCallback(() => {
-    console.log('[Paywall] Navigating to create-account');
-    router.replace('/create-account');
-  }, []);
+    if (shouldReturn) {
+      router.back();
+    } else {
+      router.replace('/create-account');
+    }
+  }, [shouldReturn]);
   const didPresentRef = useRef(false);
 
   const { registerPlacement } = usePlacement({
     onDismiss: () => {
-      console.log('[Paywall] Superwall onDismiss called');
       navigateToMain();
     },
     onSkip: () => {
-      console.log('[Paywall] Superwall onSkip called');
       navigateToMain();
     },
     onError: (err: unknown) => {
@@ -29,27 +32,14 @@ function PaywallWithSuperwall() {
   });
 
   useEffect(() => {
-    console.log('[Paywall] PaywallWithSuperwall mounted');
-    console.log('[Paywall] Placement name:', PLACEMENT);
-    console.log('[Paywall] registerPlacement available:', typeof registerPlacement === 'function');
-    
-    if (didPresentRef.current) {
-      console.log('[Paywall] Already attempted to present, skipping');
-      return;
-    }
-    
+    if (didPresentRef.current) return;
     didPresentRef.current = true;
-    console.log('[Paywall] Calling registerPlacement with placement:', PLACEMENT);
-    
-    registerPlacement({ placement: PLACEMENT, feature: navigateToMain })
-      .then(() => {
-        console.log('[Paywall] registerPlacement resolved successfully');
-      })
-      .catch((err: unknown) => {
-        console.error('[Paywall] registerPlacement rejected:', err);
+    registerPlacement({ placement, feature: navigateToMain })
+      .then(() => {})
+      .catch(() => {
         navigateToMain();
       });
-  }, [navigateToMain, registerPlacement]);
+  }, [placement, navigateToMain, registerPlacement]);
 
   return null;
 }

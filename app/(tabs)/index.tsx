@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator } from 'react-native';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -10,6 +10,7 @@ import Animated, {
   withSpring,
   withTiming,
   withDelay,
+  withRepeat,
   Easing,
   ReduceMotion,
   runOnJS,
@@ -21,11 +22,15 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import type { StudyMaterialSet } from '@/lib/knowledge-graph';
 import { Note, getMasteryColor, noteFromStudyMaterialSet } from '@/lib/notes';
-import { listAllMaterials } from '@/lib/study-materials-storage';
+import { listAllMaterials, deleteAllLocalMaterials } from '@/lib/study-materials-storage';
+import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getStreak, recordMasteryAchieved } from '@/lib/streak';
+import { useAuth } from '@/lib/auth-store';
+import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext } from '@/lib/superwall';
 import * as StoreReview from 'expo-store-review';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
+import LottieView from 'lottie-react-native';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -104,14 +109,19 @@ export default function HomeScreen() {
   const [streakCount, setStreakCount] = useState(0);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const { signOut } = useAuth();
+  const { showPaywall } = useContext(PaywallTriggerContext);
+  const superwallAvailable = useContext(SuperwallAvailableContext);
+  const unlimitedShimmer = useSharedValue(0);
+  const unlimitedScale = useSharedValue(1);
   const [savedRecordings, setSavedRecordings] = useState<{ uri: string; name: string; duration: number }[]>([]);
   const [showSavedRecordingsModal, setShowSavedRecordingsModal] = useState(false);
+  const emptyArrowLottieRef = useRef<LottieView>(null);
 
   useFocusEffect(
     useCallback(() => {
       listAllMaterials().then((mats) => {
         setMaterials(mats);
-        // Check if any set just crossed 75% mastery today
         const notes = mats.map(noteFromStudyMaterialSet);
         const has75 = notes.some((n) => n.mastery >= 75);
         if (has75) {
@@ -121,8 +131,14 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-    }, [])
+      if (superwallAvailable) showPaywall(PLACEMENT_APP_OPEN);
+      else router.push('/paywall');
+    }, [showPaywall, superwallAvailable])
   );
+
+  useEffect(() => {
+    if (materials.length === 0) emptyArrowLottieRef.current?.play();
+  }, [materials.length]);
 
   const displayNotes = useMemo((): Note[] => {
     const q = searchQuery.trim().toLowerCase();
@@ -178,6 +194,20 @@ export default function HomeScreen() {
     });
     return () => task.cancel();
   }, [showRecordModal]);
+
+  useEffect(() => {
+    if (showSettingsModal) {
+      unlimitedShimmer.value = 0;
+      unlimitedShimmer.value = withRepeat(withTiming(1, { duration: 2500 }), -1);
+    }
+  }, [showSettingsModal]);
+
+  const unlimitedBtnAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: unlimitedScale.value }],
+  }));
+  const unlimitedShimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: unlimitedShimmer.value * (screenWidth + 120) - 120 }],
+  }));
 
   const toggleMenu = () => {
     isExpanded.value = !isExpanded.value;
@@ -730,6 +760,14 @@ export default function HomeScreen() {
                 </LinearGradient>
               </Pressable>
             </View>
+            <View style={styles.emptyArrowWrap}>
+              <LottieView
+                ref={emptyArrowLottieRef}
+                source={require('../../arrow.json')}
+                style={[styles.emptyArrowLottie, { transform: [{ rotate: '-90deg' }] }]}
+                loop
+              />
+            </View>
           </View>
         ) : (
           <View style={styles.notesContainer}>
@@ -1123,6 +1161,34 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           <ScrollView style={styles.settingsScroll} showsVerticalScrollIndicator={false}>
+            <Pressable
+              style={styles.unlimitedBtnWrap}
+              onPressIn={() => { unlimitedScale.value = withSpring(0.97); }}
+              onPressOut={() => { unlimitedScale.value = withSpring(1); }}
+              onPress={() => {
+                setShowSettingsModal(false);
+                if (superwallAvailable) showPaywall(PLACEMENT_GET_UNLIMITED);
+                else router.push('/paywall');
+              }}
+            >
+              <Animated.View style={[styles.unlimitedBtnInner, unlimitedBtnAnimatedStyle]}>
+                <LinearGradient
+                  colors={['#0D9488', '#14B8A6', '#EC4899']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Animated.View style={[styles.unlimitedShimmerStrip, unlimitedShimmerStyle]} pointerEvents="none">
+                  <LinearGradient
+                    colors={['transparent', 'rgba(255,255,255,0.35)', 'transparent']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
+                <Text style={styles.unlimitedBtnText}>Get Unlimited Notes</Text>
+              </Animated.View>
+            </Pressable>
             <Text style={styles.settingsSectionTitle}>For You</Text>
             <View style={styles.settingsSection}>
               <Pressable style={styles.settingsItem} onPress={async () => {
@@ -1188,6 +1254,22 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </Pressable>
               <Pressable style={styles.settingsItem} onPress={() => {
+                Alert.alert('Delete All Notes', 'Remove all study materials and notes from this device? This cannot be undone.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete All', style: 'destructive', onPress: async () => {
+                    await deleteAllLocalMaterials();
+                    await deleteAllLocalKnowledgeGraphs();
+                    setMaterials([]);
+                    setShowSettingsModal(false);
+                  }}
+                ]);
+              }}>
+                <View style={styles.settingsItemLeft}>
+                  <Ionicons name="trash" size={24} color="#FF4444" />
+                  <Text style={[styles.settingsItemText, { color: '#FF4444' }]}>Delete all notes</Text>
+                </View>
+              </Pressable>
+              <Pressable style={styles.settingsItem} onPress={() => {
                 Alert.alert('Restore Purchases', 'Restoring your purchases...', [{ text: 'OK' }]);
               }}>
                 <View style={styles.settingsItemLeft}>
@@ -1217,7 +1299,7 @@ export default function HomeScreen() {
               <Pressable style={styles.settingsItem} onPress={() => {
                 Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
                   { text: 'Cancel', style: 'cancel' },
-                  { text: 'Sign Out', style: 'destructive', onPress: () => router.push('/login') }
+                  { text: 'Sign Out', style: 'destructive', onPress: () => signOut().then(() => router.replace('/')) }
                 ]);
               }}>
                 <View style={styles.settingsItemLeft}>
@@ -1323,6 +1405,8 @@ const styles = StyleSheet.create({
   searchNoResults: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666', marginBottom: 12 },
   content: { flex: 1, paddingHorizontal: 20 },
   emptyStateContainer: { paddingTop: 20 },
+  emptyArrowWrap: { alignItems: 'center', marginTop: 8 },
+  emptyArrowLottie: { width: 80, height: 80 },
   notesContainer: { paddingTop: 20, paddingBottom: 140, flexDirection: 'column' },
   myNotesTitle: {
     fontFamily: 'FredokaOne_400Regular',
@@ -1955,6 +2039,33 @@ const styles = StyleSheet.create({
   settingsScroll: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  unlimitedBtnWrap: {
+    marginTop: 2,
+    marginBottom: 4,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  unlimitedBtnInner: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+  },
+  unlimitedShimmerStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 120,
+  },
+  unlimitedBtnText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 18,
+    color: '#fff',
   },
   settingsSectionTitle: {
     fontFamily: 'Fredoka_400Regular',

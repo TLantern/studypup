@@ -27,7 +27,7 @@ export default function QuizzesScreen() {
           <Image source={require('../assets/images/quizzes.png')} style={styles.hero} contentFit="contain" />
         </Animated.View>
         <View style={styles.buttons}>
-          <Pressable style={styles.btn} onPress={() => router.push('/where-study')}>
+          <Pressable style={styles.btn} onPress={() => router.push('/students-improve' as never)}>
             <Text style={[styles.btnText, styles.btnPrimaryText]}>Continue</Text>
           </Pressable>
         </View>

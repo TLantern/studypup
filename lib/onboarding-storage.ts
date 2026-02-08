@@ -5,6 +5,9 @@ export type OnboardingData = {
   region?: string;
   grade_level?: string;
   subjects?: string[];
+  study_duration?: string;
+  current_gpa?: string;
+  target_gpa?: string;
   plan_usage?: string[];
 };
 

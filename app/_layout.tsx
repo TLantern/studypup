@@ -7,10 +7,14 @@ import { LogBox, View } from 'react-native';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
+import React from 'react';
 import {
+  PaywallTriggerProvider as PaywallTriggerProviderRaw,
   SuperwallAvailableContext,
   SuperwallProvider,
 } from '@/lib/superwall';
+
+const PaywallTriggerProvider = PaywallTriggerProviderRaw as React.ComponentType<{ children: React.ReactNode }>;
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,9 +33,11 @@ export default function RootLayout() {
   const content = (
     <AuthProvider>
       <View style={{ flex: 1 }}>
-        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-          <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
-        </Stack>
+        <PaywallTriggerProvider>
+          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+            <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
+          </Stack>
+        </PaywallTriggerProvider>
       </View>
     </AuthProvider>
   );

@@ -257,21 +257,27 @@ export async function deleteMaterials(
 export async function listAllMaterials(userId?: string): Promise<StudyMaterialSet[]> {
   const materialIds = await listLocalMaterials();
   const materials: StudyMaterialSet[] = [];
-  
+
   for (const id of materialIds) {
     const mat = await getMaterialsLocally(id);
     if (mat) {
       materials.push(mat);
     }
   }
-  
+
   // TODO: Merge with Firebase materials
   // if (userId) {
   //   const firebaseMaterials = await listFirebaseMaterials(userId);
   //   // Merge and deduplicate
   // }
-  
+
   return materials;
+}
+
+export async function deleteAllLocalMaterials(): Promise<void> {
+  const ids = await listLocalMaterials();
+  for (const id of ids) await deleteMaterialsLocally(id);
+  await AsyncStorage.removeItem(MATERIALS_INDEX_KEY);
 }
 
 /**

@@ -1,12 +1,13 @@
 import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
-import { getItem } from '@/lib/storage';
+import { getItem, setItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
+import { PaywallTriggerContext, PLACEMENT_GENERATE, SuperwallAvailableContext } from '@/lib/superwall';
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,8 +24,12 @@ const METHODS = [
 
 const SALMON = '#FD8A8A';
 
+const FREE_GENERATION_USED_KEY = 'free_generation_used';
+
 export default function ChooseMethodsScreen() {
   const insets = useSafeAreaInsets();
+  const { showPaywall } = useContext(PaywallTriggerContext);
+  const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -41,6 +46,12 @@ export default function ChooseMethodsScreen() {
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
+    const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
+    if (freeUsed === 'true') {
+      if (superwallAvailable) showPaywall(PLACEMENT_GENERATE);
+      else router.push('/paywall');
+      return;
+    }
     setIsGenerating(true);
     try {
       const text = await contentToText(contentItems, () => {});
@@ -50,6 +61,7 @@ export default function ChooseMethodsScreen() {
       }
       const userId = (await getItem('userId')) ?? 'local_user';
       const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, selected);
+      await setItem(FREE_GENERATION_USED_KEY, 'true');
       router.push({ pathname: '/generate-quiz', params: { methods: selected.join(','), materialId: materials.id } });
     } catch (err: any) {
       Alert.alert('Generation failed', err.message ?? 'Please try again.');

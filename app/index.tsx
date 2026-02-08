@@ -1,5 +1,7 @@
 import { Image } from 'expo-image';
+import { Audio } from 'expo-av';
 import { router } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -9,7 +11,6 @@ import Animated, {
   withRepeat,
   Easing,
 } from 'react-native-reanimated';
-import { useEffect } from 'react';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -54,9 +55,33 @@ function useLogoAnimation() {
   return animatedStyle;
 }
 
+const WELCOME_MP3 = require('../audio/welcomeaudio.mp3');
+
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const logoStyle = useLogoAnimation();
+  const welcomeSound = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false, shouldDuckAndroid: true, playThroughEarpieceAndroid: false });
+        const { sound } = await Audio.Sound.createAsync(WELCOME_MP3);
+        if (!mounted) {
+          sound.unloadAsync();
+          return;
+        }
+        welcomeSound.current = sound;
+        await sound.playAsync();
+      } catch (_) {}
+    })();
+    return () => {
+      mounted = false;
+      welcomeSound.current?.unloadAsync();
+    };
+  }, []);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 80, paddingBottom: insets.bottom + 24 }]}>
       <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>

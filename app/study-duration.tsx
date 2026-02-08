@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -14,46 +15,34 @@ const BUTTON_SHADOW = {
   elevation: 6,
 };
 
-const SUBJECTS = [
-  { id: 'biology', label: 'Biology', emoji: '🧬' },
-  { id: 'cs', label: 'Computer Science', emoji: '💻' },
-  { id: 'math', label: 'Math', emoji: '÷' },
-  { id: 'history', label: 'History', emoji: '🏛️' },
-  { id: 'geography', label: 'Geography', emoji: '🌍' },
-  { id: 'music', label: 'Music', emoji: '🎵' },
-  { id: 'chemistry', label: 'Chemistry', emoji: '🧪' },
-  { id: 'religious', label: 'Religious Studies', emoji: '🙏' },
+const OPTIONS = [
+  { id: '10-20', label: '10-20 min', icon: 'time-outline' as const },
+  { id: '20-40', label: '20-40 min', icon: 'book-outline' as const },
+  { id: '40-60', label: '40-60 min', icon: 'bulb-outline' as const },
+  { id: '60+', label: '60+ min', icon: 'flame-outline' as const },
 ];
 
-export default function SubjectsScreen() {
+export default function StudyDurationScreen() {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const [selected, setSelected] = useState<string | null>(null);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={60} /></View>
+          <View style={styles.progressWrap}><ProgressBar progress={65} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>Which subjects are you struggling with?</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>How much do you want to study per day?</Text>
+        <Text style={styles.subtitle}>You can change this anytime.</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {SUBJECTS.map((s) => (
+          {OPTIONS.map((o) => (
             <Pressable
-              key={s.id}
-              style={[styles.subjectBtn, selected.has(s.id) && styles.subjectBtnSelected]}
-              onPress={() => toggle(s.id)}
+              key={o.id}
+              style={[styles.optionBtn, selected === o.id && styles.optionBtnSelected]}
+              onPress={() => setSelected(o.id)}
             >
-              <Text style={styles.subjectText}>{s.label}</Text>
-              <Text style={styles.subjectEmoji}>{s.emoji}</Text>
+              <Ionicons name={o.icon} size={24} color="#000" />
+              <Text style={styles.optionText}>{o.label}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -61,8 +50,10 @@ export default function SubjectsScreen() {
           <Pressable
             style={styles.continueBtn}
             onPress={async () => {
-              await updateOnboarding({ subjects: Array.from(selected) });
-              router.push('/study-duration');
+              if (selected) {
+                await updateOnboarding({ study_duration: selected });
+                router.push('/current-gpa');
+              }
             }}
           >
             <Text style={styles.continueBtnText}>Continue</Text>
@@ -78,13 +69,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 24, color: '#000', textAlign: 'center', marginBottom: 24 },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 24, color: '#000', textAlign: 'center', marginBottom: 8 },
+  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000', textAlign: 'center', marginBottom: 24 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16 },
-  subjectBtn: {
+  optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 12,
     backgroundColor: '#fff',
     borderRadius: 12,
     paddingVertical: 14,
@@ -94,9 +86,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
-  subjectBtnSelected: { backgroundColor: '#D4C4B0' },
-  subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  subjectEmoji: { fontSize: 24 },
+  optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
+  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
   continueBtn: {
     backgroundColor: '#FD8A8A',

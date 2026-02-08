@@ -17,9 +17,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
 const SALMON = '#FD8A8A';
 const PURPLE = '#7c3aed';
@@ -81,6 +82,14 @@ export default function GenerateQuizScreen() {
   const [editNoteModalVisible, setEditNoteModalVisible] = useState(false);
   const [editNoteInstruction, setEditNoteInstruction] = useState('');
   const [notesRegenerating, setNotesRegenerating] = useState(false);
+  const [explainOpen, setExplainOpen] = useState(false);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explainText, setExplainText] = useState('');
+  const [explainChatMessages, setExplainChatMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [explainChatInput, setExplainChatInput] = useState('');
+  const [explainChatSending, setExplainChatSending] = useState(false);
+  const explainSlideAnim = useMemo(() => new Animated.Value(0), []);
+  const explainChatScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (!materialId) {
@@ -237,6 +246,15 @@ export default function GenerateQuizScreen() {
     }
   }, [materials, questionIndex, quizAnswers]);
 
+  const explainPanelHeight = Dimensions.get('window').height * 0.5;
+  useEffect(() => {
+    Animated.timing(explainSlideAnim, {
+      toValue: explainOpen ? 1 : 0,
+      duration: 280,
+      useNativeDriver: true,
+    }).start();
+  }, [explainOpen, explainSlideAnim]);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingCenter, { backgroundColor: '#f8fafc' }]}>
@@ -340,6 +358,55 @@ export default function GenerateQuizScreen() {
   const answered = selectedAnswer !== null;
   const totalQuestions = quizQuestions.length;
 
+  const openExplain = () => {
+    setExplainOpen(true);
+    setExplainChatMessages([]);
+    setExplainText('');
+    setExplainLoading(true);
+    const q = quizData.question;
+    const opts = quizData.options ?? [];
+    const correctIdx = quizData.correct_answer_index ?? 0;
+    const correct = opts[correctIdx] ?? '';
+    const chosen = selectedAnswer !== null ? (opts[selectedAnswer] ?? '') : '';
+    const wrong = selectedAnswer !== null && selectedAnswer !== correctIdx;
+    const systemPrompt = 'You are a study tutor. In 2-4 sentences explain why the user\'s answer was wrong and why the correct answer is right. Be clear and encouraging.';
+    const userPrompt = `Question: ${q}\nOptions: ${opts.map((o, i) => `${i + 1}. ${o}`).join('\n')}\nCorrect answer: ${correct}\nUser chose: ${chosen}\nUser was ${wrong ? 'wrong' : 'correct'}.`;
+    if (!isOpenAIConfigured()) {
+      setExplainText('OpenAI is not configured. Add EXPO_PUBLIC_OPENAI_API_KEY to .env to get AI explanations.');
+      setExplainChatMessages([{ role: 'assistant', content: 'OpenAI is not configured. Add EXPO_PUBLIC_OPENAI_API_KEY to .env to get AI explanations.' }]);
+      setExplainLoading(false);
+      return;
+    }
+    callOpenAIText(systemPrompt, userPrompt, { maxTokens: 256 })
+      .then((text) => {
+        setExplainText(text);
+        setExplainChatMessages([{ role: 'assistant', content: text }]);
+      })
+      .catch(() => {
+        setExplainText('Could not load explanation. Please try again.');
+        setExplainChatMessages([{ role: 'assistant', content: 'Could not load explanation. Please try again.' }]);
+      })
+      .finally(() => setExplainLoading(false));
+  };
+
+  const sendExplainChat = (suggestion?: string) => {
+    const msg = (suggestion ?? explainChatInput.trim()).trim();
+    if (!msg || explainChatSending) return;
+    const userMsg = { role: 'user' as const, content: msg };
+    setExplainChatMessages((prev) => [...prev, userMsg]);
+    if (!suggestion) setExplainChatInput('');
+    setExplainChatSending(true);
+    const systemMsg = { role: 'system' as const, content: `You are a study tutor. Context: Quiz question: "${quizData.question}". Correct answer: "${(quizData.options ?? [])[quizData.correct_answer_index ?? 0] ?? ''}". User's answer: "${selectedAnswer !== null ? (quizData.options ?? [])[selectedAnswer] ?? '' : ''}". Keep responses clear and concise.` };
+    callOpenAIChat([systemMsg, ...explainChatMessages, userMsg], { maxTokens: 256 })
+      .then((reply) => {
+        setExplainChatMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      })
+      .catch(() => {
+        setExplainChatMessages((prev) => [...prev, { role: 'assistant', content: 'Could not get response. Try again.' }]);
+      })
+      .finally(() => setExplainChatSending(false));
+  };
+
   const getAnswerCardStyle = (i: number) => {
     if (!answered) return [styles.answerCard];
     const isCorrect = i === correctIndex;
@@ -381,6 +448,9 @@ export default function GenerateQuizScreen() {
     setSessionQuizCorrect(newCorrect);
     setSelectedAnswer(null);
     setQuestionIndex((i) => i + 1);
+    setExplainOpen(false);
+    setExplainChatMessages([]);
+    setExplainText('');
   };
 
   return (
@@ -530,6 +600,12 @@ export default function GenerateQuizScreen() {
               </Pressable>
             ))}
           </ScrollView>
+          {answered && (
+            <Pressable style={styles.explainBtn} onPress={openExplain}>
+              <Ionicons name="star" size={20} color={PURPLE} />
+              <Text style={styles.explainBtnText}>Explain</Text>
+            </Pressable>
+          )}
           <Pressable style={styles.nextBtn} onPress={answered ? goNext : undefined} disabled={!answered}>
             <Text style={styles.nextBtnText}>
               {questionIndex < totalQuestions - 1 ? 'Next' : 'Finish'}
@@ -539,6 +615,77 @@ export default function GenerateQuizScreen() {
       )}
       {!['notes', 'tutor', 'flashcards', 'written', 'fill', 'quiz'].includes(activeTab) && (
         <View style={styles.body}><Text style={styles.question}>Coming soon</Text></View>
+      )}
+      {explainOpen && (
+        <>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setExplainOpen(false)} />
+          <Animated.View
+            style={[
+              styles.explainPanel,
+              { height: explainPanelHeight, transform: [{ translateY: explainSlideAnim.interpolate({ inputRange: [0, 1], outputRange: [explainPanelHeight, 0] }) }] },
+            ]}
+          >
+            <View style={styles.explainHeader}>
+              <Text style={styles.explainTitle}>AI Tutor</Text>
+              <Pressable onPress={() => setExplainOpen(false)} hitSlop={12}>
+                <Ionicons name="close" size={24} color="#333" />
+              </Pressable>
+            </View>
+            {explainLoading ? (
+              <View style={styles.explainLoadingWrap}>
+                <ActivityIndicator size="large" color={PURPLE} />
+                <Text style={styles.explainLoadingText}>Getting explanation…</Text>
+              </View>
+            ) : (
+              <>
+                <ScrollView
+                  ref={explainChatScrollRef}
+                  style={styles.explainChat}
+                  contentContainerStyle={styles.explainChatContent}
+                  keyboardShouldPersistTaps="handled"
+                  onContentSizeChange={() => explainChatScrollRef.current?.scrollToEnd({ animated: true })}
+                >
+                  {explainChatMessages.map((msg, i) => (
+                    <View key={i} style={[styles.explainBubble, msg.role === 'user' && styles.explainBubbleUser]}>
+                      <Text style={[styles.explainBubbleText, msg.role === 'user' && styles.explainBubbleTextUser]}>{msg.content}</Text>
+                    </View>
+                  ))}
+                  {explainChatSending && (
+                    <View style={[styles.explainBubble, styles.explainBubbleUser]}>
+                      <ActivityIndicator size="small" color={PURPLE} />
+                    </View>
+                  )}
+                </ScrollView>
+                <Pressable
+                  style={styles.explainSuggestionBtn}
+                  onPress={() => sendExplainChat("Explain this to me like I'm 10")}
+                  disabled={explainChatSending}
+                >
+                  <Text style={styles.explainSuggestionText}>explain this to me like I'm 10</Text>
+                </Pressable>
+                <View style={styles.explainInputRow}>
+                  <TextInput
+                    style={styles.explainInput}
+                    placeholder="Ask a follow-up…"
+                    placeholderTextColor="#999"
+                    value={explainChatInput}
+                    onChangeText={setExplainChatInput}
+                    editable={!explainChatSending}
+                    multiline
+                    maxLength={500}
+                  />
+                  <Pressable
+                    style={[styles.explainSendBtn, (!explainChatInput.trim() || explainChatSending) && styles.explainSendBtnDisabled]}
+                  onPress={() => sendExplainChat()}
+                  disabled={!explainChatInput.trim() || explainChatSending}
+                  >
+                    <Ionicons name="send" size={20} color="#fff" />
+                  </Pressable>
+                </View>
+              </>
+            )}
+          </Animated.View>
+        </>
       )}
     </View>
   );
@@ -761,5 +908,137 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: 18,
     color: '#fff',
+  },
+  explainBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    gap: 8,
+    alignSelf: 'flex-start',
+  },
+  explainBtnText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: PURPLE,
+  },
+  explainPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  explainHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  explainTitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 20,
+    color: '#333',
+  },
+  explainLoadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  explainLoadingText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: PURPLE,
+  },
+  explainChat: {
+    flex: 1,
+  },
+  explainChatContent: {
+    paddingBottom: 16,
+    gap: 12,
+  },
+  explainBubble: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 16,
+    padding: 12,
+    maxWidth: '85%',
+    alignSelf: 'flex-start',
+  },
+  explainBubbleUser: {
+    backgroundColor: PURPLE,
+    alignSelf: 'flex-end',
+  },
+  explainBubbleText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 15,
+    color: '#333',
+  },
+  explainBubbleTextUser: {
+    color: '#fff',
+  },
+  explainSuggestionBtn: {
+    alignSelf: 'center',
+    backgroundColor: '#F2E4E4',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginTop: 12,
+    shadowColor: '#999',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  explainSuggestionText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 14,
+    color: '#444',
+  },
+  explainInputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  explainInput: {
+    flex: 1,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 15,
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxHeight: 80,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  explainSendBtn: {
+    backgroundColor: PURPLE,
+    borderRadius: 20,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  explainSendBtnDisabled: {
+    opacity: 0.5,
   },
 });
