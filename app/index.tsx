@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { Audio } from 'expo-av';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -61,6 +62,7 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const logoStyle = useLogoAnimation();
   const welcomeSound = useRef<Audio.Sound | null>(null);
+  const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     let mounted = true;
@@ -96,7 +98,7 @@ export default function OnboardingScreen() {
         <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
-        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push('/paywall')}>
+        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push(superwallAvailable ? '/paywall' : '/create-account')}>
           <Text style={[styles.btnText, styles.btnLoginText]}>Login</Text>
         </Pressable>
       </View>

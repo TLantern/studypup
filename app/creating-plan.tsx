@@ -1,21 +1,26 @@
 import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 
 const DURATION_MS = 6000;
 
 export default function CreatingPlanScreen() {
   const lottieRef = useRef<LottieView>(null);
+  const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     lottieRef.current?.play();
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => router.replace('/paywall'), DURATION_MS);
+    const t = setTimeout(
+      () => router.replace(superwallAvailable ? '/paywall' : '/create-account'),
+      DURATION_MS
+    );
     return () => clearTimeout(t);
-  }, []);
+  }, [superwallAvailable]);
 
   return (
     <View style={styles.container}>

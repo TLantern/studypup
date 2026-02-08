@@ -25,7 +25,7 @@ const GRADES = [
 
 export default function GradeLevelScreen() {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState('highschool');
+  const [selected, setSelected] = useState<string | null>(null);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
@@ -53,11 +53,13 @@ export default function GradeLevelScreen() {
             contentFit="contain"
           />
           <Pressable
-            style={styles.continueBtn}
+            style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
             onPress={async () => {
+              if (!selected) return;
               await updateOnboarding({ grade_level: selected });
               router.push('/subjects');
             }}
+            disabled={!selected}
           >
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
@@ -124,4 +126,5 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnDisabled: { opacity: 0.6 },
 });

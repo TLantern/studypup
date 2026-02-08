@@ -80,8 +80,8 @@ const styles = StyleSheet.create({
     minHeight: 280,
   },
   lottie: {
-    width: 280,
-    height: 280,
+    width: 480,
+    height: 480,
   },
   endWrap: {
     alignItems: 'center',

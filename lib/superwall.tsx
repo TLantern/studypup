@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -51,8 +51,9 @@ function PaywallTriggerInner({
 
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
+  const value = useMemo(() => ({ showPaywall: setPlacementToShow }), []);
   return (
-    <PaywallTriggerContext.Provider value={{ showPaywall: setPlacementToShow }}>
+    <PaywallTriggerContext.Provider value={value}>
       {children}
       {usePlacementHook != null && (
         <PaywallTriggerInner placementToShow={placementToShow} onClear={() => setPlacementToShow(null)} />

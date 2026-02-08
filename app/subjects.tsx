@@ -59,11 +59,13 @@ export default function SubjectsScreen() {
         </ScrollView>
         <View style={styles.buttons}>
           <Pressable
-            style={styles.continueBtn}
+            style={[styles.continueBtn, selected.size === 0 && styles.continueBtnDisabled]}
             onPress={async () => {
+              if (selected.size === 0) return;
               await updateOnboarding({ subjects: Array.from(selected) });
               router.push('/study-duration');
             }}
+            disabled={selected.size === 0}
           >
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
@@ -108,4 +110,5 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnDisabled: { opacity: 0.6 },
 });

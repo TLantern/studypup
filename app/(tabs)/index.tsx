@@ -132,7 +132,6 @@ export default function HomeScreen() {
       });
       getStreak().then((s) => setStreakCount(s.count));
       if (superwallAvailable) showPaywall(PLACEMENT_APP_OPEN);
-      else router.push('/paywall');
     }, [showPaywall, superwallAvailable])
   );
 
@@ -1168,7 +1167,7 @@ export default function HomeScreen() {
               onPress={() => {
                 setShowSettingsModal(false);
                 if (superwallAvailable) showPaywall(PLACEMENT_GET_UNLIMITED);
-                else router.push('/paywall');
+                else router.push('/create-account');
               }}
             >
               <Animated.View style={[styles.unlimitedBtnInner, unlimitedBtnAnimatedStyle]}>

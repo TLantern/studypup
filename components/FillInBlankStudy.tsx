@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { callOpenAI, callOpenAIChat } from '@/lib/openai-service';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { callOpenAI, callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
 const SALMON = '#FD8A8A';
 const GREEN = '#BCFFC0';
@@ -46,6 +46,10 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatSending, setChatSending] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const chatScrollRef = useRef<ScrollView>(null);
+  const explainPanelHeight = Dimensions.get('window').height * 0.5;
 
   const list = items.length ? items : SCAFFOLD_ITEMS;
   const item = list[index];
@@ -100,75 +104,61 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
     setAnswer('');
   };
 
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: showExplain ? 1 : 0,
+      duration: 280,
+      useNativeDriver: true,
+    }).start();
+  }, [showExplain, slideAnim]);
+
   const openExplain = async () => {
+    slideAnim.setValue(0);
     setShowExplain(true);
     setChatMessages([]);
     setChatLoading(true);
+    if (!isOpenAIConfigured()) {
+      setChatMessages([{ role: 'assistant', content: 'OpenAI is not configured. Add EXPO_PUBLIC_OPENAI_API_KEY to .env to get AI explanations.' }]);
+      setChatLoading(false);
+      return;
+    }
     try {
-      const systemPrompt = `You are a helpful tutor explaining answers to students. 
-Be clear, concise, and encouraging. Break down concepts into simple terms.
-Start by greeting the student and explaining the answer to their question.`;
-      
-      const userPrompt = `Fill-in-the-blank question: ${item.text}
-Student's answer: ${answer}
-Expected answer: ${item.answer}
-${currentResult?.explanation ? `Why it was incorrect: ${currentResult.explanation}` : ''}
-
-Please explain the correct answer and help the student understand why their response was ${currentResult?.correct ? 'correct' : 'incorrect'}.`;
-
-      const initialResponse = await callOpenAIChat([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ]);
-
-      setChatMessages([
-        { role: 'assistant', content: initialResponse },
-      ]);
+      const systemPrompt = "You are a study tutor. In 2-4 sentences explain why the user's answer was wrong or right and clarify the concept. Be clear and encouraging.";
+      const userPrompt = `Fill-in-the-blank: ${item.text}\nExpected answer: ${item.answer}\nStudent's answer: ${answer}\n${currentResult?.explanation ? `Why it was incorrect: ${currentResult.explanation}\n` : ''}Student was ${currentResult?.correct ? 'correct' : 'incorrect'}.`;
+      const text = await callOpenAIText(systemPrompt, userPrompt, { maxTokens: 256 });
+      setChatMessages([{ role: 'assistant', content: text }]);
     } catch (error) {
       console.error('Failed to get explanation:', error);
-      setChatMessages([
-        { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' },
-      ]);
+      setChatMessages([{ role: 'assistant', content: 'Could not load explanation. Please try again.' }]);
     } finally {
       setChatLoading(false);
     }
   };
 
-  const sendChat = async () => {
-    if (!chatInput.trim() || chatLoading) return;
-    
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    setChatMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
-    setChatLoading(true);
-
-    try {
-      const systemPrompt = `You are a helpful tutor. The student is asking about this fill-in-the-blank question: "${item.text}". 
-Keep your responses clear, concise, and educational.`;
-
-      const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
-        { role: 'system', content: systemPrompt },
-        ...chatMessages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-        { role: 'user', content: userMessage },
-      ];
-
-      const response = await callOpenAIChat(messages);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: response }]);
-    } catch (error) {
-      console.error('Failed to send chat:', error);
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error.' }]);
-    } finally {
-      setChatLoading(false);
-    }
+  const sendChat = async (suggestion?: string) => {
+    const msg = (suggestion ?? chatInput.trim()).trim();
+    if (!msg || chatSending) return;
+    setChatMessages((prev) => [...prev, { role: 'user', content: msg }]);
+    if (!suggestion) setChatInput('');
+    setChatSending(true);
+    const systemMsg = { role: 'system' as const, content: `You are a study tutor. Context: Fill-in-the-blank: "${item.text}". Expected: "${item.answer}". Student's answer: "${answer}". Keep responses clear and concise.` };
+    const messages = [systemMsg, ...chatMessages, { role: 'user' as const, content: msg }];
+    callOpenAIChat(messages, { maxTokens: 256 })
+      .then((reply) => setChatMessages((prev) => [...prev, { role: 'assistant', content: reply }]))
+      .catch(() => setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Could not get response. Try again.' }]))
+      .finally(() => setChatSending(false));
   };
 
   const closeExplain = () => {
-    setShowExplain(false);
-    setChatMessages([]);
+    Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => {
+      setShowExplain(false);
+      setChatMessages([]);
+    });
   };
 
   return (
-    <ScrollView style={styles.wrap} contentContainerStyle={styles.wrapContent} showsVerticalScrollIndicator={false}>
+    <View style={styles.wrap}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.wrapContent} showsVerticalScrollIndicator={false}>
       <Text style={styles.question}>{item.text}</Text>
       <TextInput
         style={styles.input}
@@ -217,61 +207,6 @@ Keep your responses clear, concise, and educational.`;
         </>
       )}
       
-      <Modal visible={showExplain} animationType="slide" transparent onRequestClose={closeExplain}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <View style={styles.explainCard}>
-            <View style={styles.explainHeader}>
-              <Text style={styles.explainHeaderText}>AI Tutor</Text>
-              <Pressable onPress={closeExplain} hitSlop={12}>
-                <Ionicons name="close" size={28} color="#333" />
-              </Pressable>
-            </View>
-            
-            <ScrollView style={styles.chatScroll} contentContainerStyle={styles.chatContent}>
-              {chatMessages.length === 0 && chatLoading ? (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={PURPLE} />
-                  <Text style={styles.loadingText}>AI Tutor is thinking...</Text>
-                </View>
-              ) : (
-                <>
-                  {chatMessages.map((msg, i) => (
-                    <View key={i} style={msg.role === 'user' ? styles.userMessage : styles.assistantMessage}>
-                      <Text style={msg.role === 'user' ? styles.userMessageText : styles.assistantMessageText}>
-                        {msg.content}
-                      </Text>
-                    </View>
-                  ))}
-                  {chatLoading && chatMessages.length > 0 && (
-                    <View style={styles.assistantMessage}>
-                      <ActivityIndicator color={PURPLE} />
-                    </View>
-                  )}
-                </>
-              )}
-            </ScrollView>
-            
-            <View style={styles.chatInputContainer}>
-              <TextInput
-                style={styles.chatInput}
-                placeholder="Ask a follow-up question..."
-                placeholderTextColor="#999"
-                value={chatInput}
-                onChangeText={setChatInput}
-                onSubmitEditing={sendChat}
-                returnKeyType="send"
-              />
-              <Pressable style={styles.chatSendBtn} onPress={sendChat} disabled={!chatInput.trim() || chatLoading}>
-                <Ionicons name="send" size={20} color="#fff" />
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-      
       <View style={styles.nav}>
         <Pressable onPress={prev} style={styles.navBtn} disabled={index === 0}>
           <Ionicons name="chevron-back" size={24} color={index === 0 ? '#999' : '#fff'} />
@@ -282,6 +217,74 @@ Keep your responses clear, concise, and educational.`;
         </Pressable>
       </View>
     </ScrollView>
+    {showExplain && (
+      <>
+        <Pressable style={StyleSheet.absoluteFill} onPress={closeExplain} />
+        <Animated.View
+          style={[
+            styles.explainPanel,
+            { height: explainPanelHeight, transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [explainPanelHeight, 0] }) }] },
+          ]}
+        >
+          <View style={styles.explainHeader}>
+            <Text style={styles.explainTitle}>AI Tutor</Text>
+            <Pressable onPress={closeExplain} hitSlop={12}>
+              <Ionicons name="close" size={24} color="#333" />
+            </Pressable>
+          </View>
+          {chatLoading ? (
+            <View style={styles.explainLoadingWrap}>
+              <ActivityIndicator size="large" color={PURPLE} />
+              <Text style={styles.explainLoadingText}>Getting explanation…</Text>
+            </View>
+          ) : (
+            <>
+              <ScrollView
+                ref={chatScrollRef}
+                style={styles.explainChat}
+                contentContainerStyle={styles.explainChatContent}
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
+              >
+                {chatMessages.map((msg, i) => (
+                  <View key={i} style={[styles.explainBubble, msg.role === 'user' && styles.explainBubbleUser]}>
+                    <Text style={[styles.explainBubbleText, msg.role === 'user' && styles.explainBubbleTextUser]}>{msg.content}</Text>
+                  </View>
+                ))}
+                {chatSending && (
+                  <View style={[styles.explainBubble, styles.explainBubbleUser]}>
+                    <ActivityIndicator size="small" color={PURPLE} />
+                  </View>
+                )}
+              </ScrollView>
+              <Pressable style={styles.explainSuggestionBtn} onPress={() => sendChat("Explain this to me like I'm 10")} disabled={chatSending}>
+                <Text style={styles.explainSuggestionText}>explain this to me like I'm 10</Text>
+              </Pressable>
+              <View style={styles.explainInputRow}>
+                <TextInput
+                  style={styles.explainInput}
+                  placeholder="Ask a follow-up…"
+                  placeholderTextColor="#999"
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  editable={!chatSending}
+                  multiline
+                  maxLength={500}
+                />
+                <Pressable
+                  style={[styles.explainSendBtn, (!chatInput.trim() || chatSending) && styles.explainSendBtnDisabled]}
+                  onPress={() => sendChat()}
+                  disabled={!chatInput.trim() || chatSending}
+                >
+                  <Ionicons name="send" size={20} color="#fff" />
+                </Pressable>
+              </View>
+            </>
+          )}
+        </Animated.View>
+      </>
+    )}
+    </View>
   );
 }
 
@@ -325,6 +328,7 @@ Is this answer correct or close enough?`;
 
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
+  scroll: { flex: 1 },
   wrapContent: { paddingVertical: 24, paddingBottom: 48 },
   question: {
     fontFamily: 'Fredoka_400Regular',
@@ -396,98 +400,64 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   explainText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#fff' },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  explainCard: {
+  explainPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '85%',
-    paddingTop: 20,
-  },
-  explainHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    overflow: 'hidden',
     paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 20,
+    paddingBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 12,
   },
-  explainHeaderText: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: 20,
-    color: '#333',
-  },
-  chatScroll: { flex: 1 },
-  chatContent: { padding: 20, paddingBottom: 32 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#999',
+  explainHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  explainTitle: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#333' },
+  explainLoadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  explainLoadingText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
+  explainChat: { flex: 1 },
+  explainChatContent: { paddingBottom: 16, gap: 12 },
+  explainBubble: { backgroundColor: '#f0f0f0', borderRadius: 16, padding: 12, maxWidth: '85%', alignSelf: 'flex-start' },
+  explainBubbleUser: { backgroundColor: PURPLE, alignSelf: 'flex-end' },
+  explainBubbleText: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#333' },
+  explainBubbleTextUser: { color: '#fff' },
+  explainSuggestionBtn: {
+    alignSelf: 'center',
+    backgroundColor: '#F2E4E4',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     marginTop: 12,
+    shadowColor: '#999',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  userMessage: {
-    alignSelf: 'flex-end',
-    backgroundColor: PURPLE,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    maxWidth: '80%',
-  },
-  userMessageText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#fff',
-  },
-  assistantMessage: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    maxWidth: '80%',
-  },
-  assistantMessageText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#333',
-  },
-  chatInputContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    backgroundColor: '#fff',
-  },
-  chatInput: {
+  explainSuggestionText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#444' },
+  explainInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e0e0e0' },
+  explainInput: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     fontFamily: 'Fredoka_400Regular',
     fontSize: 15,
     color: '#333',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    maxHeight: 80,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  chatSendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: PURPLE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  explainSendBtn: { backgroundColor: PURPLE, borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  explainSendBtnDisabled: { opacity: 0.5 },
   explanationBox: {
     backgroundColor: '#fff',
     borderRadius: 12,

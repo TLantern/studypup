@@ -44,9 +44,12 @@ function PaywallWithSuperwall() {
   return null;
 }
 
+const didRedirectRef = { current: false };
+
 function PaywallWithoutSuperwall() {
   useEffect(() => {
-    console.log('[Paywall] Superwall not available, redirecting to create-account');
+    if (didRedirectRef.current) return;
+    didRedirectRef.current = true;
     router.replace('/create-account');
   }, []);
   return null;
@@ -54,6 +57,5 @@ function PaywallWithoutSuperwall() {
 
 export default function PaywallScreen() {
   const superwallAvailable = useContext(SuperwallAvailableContext);
-  console.log('[Paywall] PaywallScreen mounted, superwallAvailable:', superwallAvailable);
   return superwallAvailable ? <PaywallWithSuperwall /> : <PaywallWithoutSuperwall />;
 }

@@ -47,13 +47,13 @@ export default function TargetGpaScreen() {
         </ScrollView>
         <View style={styles.buttons}>
           <Pressable
-            style={styles.continueBtn}
+            style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
             onPress={async () => {
-              if (selected) {
-                await updateOnboarding({ target_gpa: selected });
-                router.push('/plan-usage');
-              }
+              if (!selected) return;
+              await updateOnboarding({ target_gpa: selected });
+              router.push('/plan-usage');
             }}
+            disabled={!selected}
           >
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
@@ -95,4 +95,5 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnDisabled: { opacity: 0.6 },
 });

@@ -49,7 +49,7 @@ export default function ChooseMethodsScreen() {
     const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
     if (freeUsed === 'true') {
       if (superwallAvailable) showPaywall(PLACEMENT_GENERATE);
-      else router.push('/paywall');
+      else router.push('/create-account');
       return;
     }
     setIsGenerating(true);

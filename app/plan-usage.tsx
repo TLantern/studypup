@@ -33,7 +33,7 @@ const OPTIONS = [
 export default function PlanUsageScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const [selected, setSelected] = useState<string[]>(['recording']);
+  const [selected, setSelected] = useState<string[]>([]);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
@@ -57,13 +57,15 @@ export default function PlanUsageScreen() {
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
           <Pressable
-          style={styles.continueBtn}
+          style={[styles.continueBtn, selected.length === 0 && styles.continueBtnDisabled]}
           onPress={async () => {
+            if (selected.length === 0) return;
             await updateOnboarding({ plan_usage: selected });
             await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
             if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
             router.push('/review');
           }}
+          disabled={selected.length === 0}
         >
           <Text style={styles.continueBtnText}>Continue</Text>
         </Pressable>
@@ -111,4 +113,5 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnDisabled: { opacity: 0.6 },
 });
