@@ -1,15 +1,16 @@
 {
   "project_info": {
     "project_number": "114632107142",
+    "firebase_url": "https://studypup-b3973-default-rtdb.firebaseio.com",
     "project_id": "studypup-b3973",
     "storage_bucket": "studypup-b3973.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:114632107142:android:cf04ce24c09df3a97b9d07",
+        "mobilesdk_app_id": "1:114632107142:android:8b1d2ff72d9ab3e97b9d07",
         "android_client_info": {
-          "package_name": "com.studypup.app"
+          "package_name": "com.teniola.studypup"
         }
       },
       "oauth_client": [

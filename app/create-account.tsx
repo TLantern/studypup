@@ -7,7 +7,7 @@ import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-store';
 import { getItem, setItem } from '@/lib/storage';
-import { confirmPhoneOtp, sendMagicLink, signInBypass, startPhoneSignIn } from '@/lib/auth';
+import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
 
 const BUTTON_SHADOW = {
@@ -227,24 +227,6 @@ export default function CreateAccountScreen() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <Pressable
-          style={styles.bypassBtn}
-          onPress={async () => {
-            setBusy(true);
-            setError(null);
-            try {
-              await signInBypass();
-            } catch (e: any) {
-              setError(e?.message ?? 'Bypass failed.');
-            } finally {
-              setBusy(false);
-            }
-          }}
-          disabled={busy}
-        >
-          <Text style={styles.bypassBtnText}>Skip (dev)</Text>
-        </Pressable>
-
         {false && (
           <>
             <View style={styles.dividerRow}>
@@ -343,8 +325,6 @@ const styles = StyleSheet.create({
   },
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#fff' },
-  bypassBtn: { alignItems: 'center', paddingVertical: 12, marginTop: 8 },
-  bypassBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666', textDecorationLine: 'underline' },
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: -16, marginBottom: 16, textAlign: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },

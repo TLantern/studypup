@@ -23,7 +23,7 @@
         "dark": "./assets/icons/appcovericon.png",
         "tinted": "./assets/icons/appcovericon.png"
       },
-      "bundleIdentifier": "com.studypup.app"
+      "bundleIdentifier": "com.teniola.studypup"
     },
     "android": {
       "googleServicesFile": "./google-services.json",
