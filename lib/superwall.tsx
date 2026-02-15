@@ -35,16 +35,41 @@ function PaywallTriggerInner({
   onClear: () => void;
 }) {
   const usePlacement = usePlacementHook!;
-  const { registerPlacement } = usePlacement({
-    onDismiss: onClear,
-    onSkip: onClear,
-    onError: onClear,
+  const { registerPlacement, state } = usePlacement({
+    onPresent: (paywallInfo) => {
+      console.log('[Superwall] Paywall PRESENTED!', paywallInfo);
+    },
+    onDismiss: (paywallInfo, result) => {
+      console.log('[Superwall] Paywall dismissed:', result);
+      onClear();
+    },
+    onSkip: (reason) => {
+      console.log('[Superwall] Paywall SKIPPED:', reason);
+      onClear();
+    },
+    onError: (error) => {
+      console.error('[Superwall] Paywall error:', error);
+      onClear();
+    },
   });
+
+  useEffect(() => {
+    if (state.status !== 'idle') {
+      console.log('[Superwall] State changed to:', state);
+    }
+  }, [state]);
   useEffect(() => {
     if (!placementToShow) return;
+    console.log('[Superwall] registerPlacement called with:', placementToShow);
     registerPlacement({ placement: placementToShow, feature: () => {} })
-      .then(onClear)
-      .catch(onClear);
+      .then(() => {
+        console.log('[Superwall] registerPlacement success for:', placementToShow);
+        onClear();
+      })
+      .catch((error) => {
+        console.error('[Superwall] registerPlacement failed for:', placementToShow, error);
+        onClear();
+      });
   }, [placementToShow]);
   return null;
 }
@@ -52,11 +77,21 @@ function PaywallTriggerInner({
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
   const value = useMemo(() => ({ showPaywall: setPlacementToShow }), []);
+  
+  useEffect(() => {
+    if (placementToShow) {
+      console.log('[Superwall] PaywallTriggerProvider placementToShow changed to:', placementToShow);
+      console.log('[Superwall] usePlacementHook available?', !!usePlacementHook);
+    }
+  }, [placementToShow]);
+  
   return (
     <PaywallTriggerContext.Provider value={value}>
       {children}
-      {usePlacementHook != null && (
+      {usePlacementHook != null ? (
         <PaywallTriggerInner placementToShow={placementToShow} onClear={() => setPlacementToShow(null)} />
+      ) : (
+        placementToShow && console.warn('[Superwall] usePlacementHook is null, cannot show paywall for:', placementToShow)
       )}
     </PaywallTriggerContext.Provider>
   );

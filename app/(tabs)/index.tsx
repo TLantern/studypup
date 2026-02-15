@@ -1372,7 +1372,15 @@ export default function HomeScreen() {
               <Pressable style={styles.settingsItem} onPress={() => {
                 Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
                   { text: 'Cancel', style: 'cancel' },
-                  { text: 'Sign Out', style: 'destructive', onPress: () => signOut().then(() => router.replace('/')) }
+                  { text: 'Sign Out', style: 'destructive', onPress: async () => {
+                    try {
+                      await signOut();
+                      router.replace('/');
+                    } catch (error) {
+                      console.error('Sign out error:', error);
+                      Alert.alert('Error', 'Failed to sign out. Please try again.');
+                    }
+                  }}
                 ]);
               }}>
                 <View style={styles.settingsItemLeft}>

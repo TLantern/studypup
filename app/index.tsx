@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   logoWrap: {
     alignSelf: 'center',
     marginVertical: 24,
-    marginBottom: 40,
+    marginBottom: 0,
   },
   logo: {
     width: 200,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     marginRight: -15,
   },
   userChoiceBadge: { width: 440, height: 88 },
-  buttons: { gap: 16, paddingTop: 140 },
+  buttons: { gap: 16, paddingTop: 100 },
   btn: {
     borderRadius: 35,
     paddingVertical: 12,

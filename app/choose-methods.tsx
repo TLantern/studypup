@@ -47,13 +47,32 @@ export default function ChooseMethodsScreen() {
   };
 
   const canGenerate = selected.length >= 1 && contentItems.length > 0 && !isGenerating;
+  if (__DEV__ && contentItems.length > 0) console.log('[Studypup] Generate button state:', { selectedCount: selected.length, contentCount: contentItems.length, isGenerating, canGenerate });
 
   const handleGenerate = async () => {
-    if (!canGenerate) return;
+    console.log('[Studypup] handleGenerate called!'); // Always show this
+    if (!canGenerate) {
+      if (__DEV__) console.log('[Studypup] Generate button pressed but disabled:', { selectedCount: selected.length, contentCount: contentItems.length, isGenerating });
+      return;
+    }
     const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
+    console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
     if (freeUsed === 'true') {
-      if (superwallAvailable) showPaywall(PLACEMENT_GENERATE);
-      else router.push('/create-account');
+      console.log('[Studypup] Free limit hit, showing paywall or create-account');
+      if (superwallAvailable) {
+        console.log('[Studypup] Showing Superwall paywall');
+        try {
+          console.log('[Studypup] PLACEMENT_GENERATE:', PLACEMENT_GENERATE);
+          console.log('[Studypup] showPaywall function:', typeof showPaywall);
+          await showPaywall(PLACEMENT_GENERATE);
+          console.log('[Studypup] showPaywall completed');
+        } catch (error) {
+          console.error('[Studypup] showPaywall error:', error);
+        }
+      } else {
+        console.log('[Studypup] Superwall not available, pushing to create-account');
+        router.push('/create-account');
+      }
       return;
     }
     setIsGenerating(true);
