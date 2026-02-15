@@ -98,7 +98,7 @@ export default function OnboardingScreen() {
         <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
-        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push(superwallAvailable ? '/paywall' : '/create-account')}>
+        <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push(superwallAvailable ? { pathname: '/create-account', params: { then: 'paywall' } } : '/create-account')}>
           <Text style={[styles.btnText, styles.btnLoginText]}>Login</Text>
         </Pressable>
       </View>

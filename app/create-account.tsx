@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
@@ -22,6 +22,7 @@ const PENDING_EMAIL_KEY = 'auth:pendingEmail';
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ then?: string }>();
   const { uid } = useAuth();
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
@@ -47,8 +48,10 @@ export default function CreateAccountScreen() {
   );
 
   useEffect(() => {
-    if (uid) router.replace('/(tabs)');
-  }, [uid]);
+    if (!uid) return;
+    if (params.then === 'paywall') router.replace('/paywall');
+    else router.replace('/(tabs)');
+  }, [uid, params.then]);
 
   useEffect(() => {
     if (cooldown <= 0) return;

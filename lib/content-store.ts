@@ -17,12 +17,15 @@ export type ContentItem = {
 };
 
 export async function savePendingContent(items: ContentItem[]): Promise<void> {
+  if (__DEV__) console.log('[Studypup] content-store savePendingContent', items.length);
   await AsyncStorage.setItem(PENDING_CONTENT_KEY, JSON.stringify(items));
 }
 
 export async function getPendingContent(): Promise<ContentItem[]> {
   const data = await AsyncStorage.getItem(PENDING_CONTENT_KEY);
-  return data ? JSON.parse(data) : [];
+  const out = data ? JSON.parse(data) : [];
+  if (__DEV__) console.log('[Studypup] content-store getPendingContent', out.length);
+  return out;
 }
 
 export async function clearPendingContent(): Promise<void> {

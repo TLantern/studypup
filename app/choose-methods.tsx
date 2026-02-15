@@ -35,7 +35,11 @@ export default function ChooseMethodsScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    getPendingContent().then(setContentItems);
+    getPendingContent().then((items) => {
+      if (__DEV__) console.log('[Studypup] ChooseMethods loaded pending content:', items.length, items.map((c) => c.name));
+      if (items.length === 0) console.warn('[Studypup] No pending content on choose-methods — savePendingContent may not have run or AsyncStorage failed');
+      setContentItems(items);
+    });
   }, []);
 
   const toggle = (id: string) => {
@@ -54,16 +58,21 @@ export default function ChooseMethodsScreen() {
     }
     setIsGenerating(true);
     try {
+      if (__DEV__) console.log('[Studypup] handleGenerate start, contentItems:', contentItems.length, 'selected:', selected);
       const text = await contentToText(contentItems, () => {});
+      if (__DEV__) console.log('[Studypup] contentToText result length:', text?.length ?? 0);
       if (!text.trim()) {
         Alert.alert('No content', 'Could not extract text from your content. Please try different files.');
         return;
       }
       const userId = (await getItem('userId')) ?? 'local_user';
+      if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials start');
       const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, selected);
+      if (__DEV__) console.log('[Studypup] materials generated, notes length:', materials.notes?.length ?? 0);
       await setItem(FREE_GENERATION_USED_KEY, 'true');
       router.push({ pathname: '/generate-quiz', params: { methods: selected.join(','), materialId: materials.id } });
     } catch (err: any) {
+      if (__DEV__) console.error('[Studypup] handleGenerate error:', err);
       Alert.alert('Generation failed', err.message ?? 'Please try again.');
     } finally {
       setIsGenerating(false);

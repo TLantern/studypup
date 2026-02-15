@@ -182,6 +182,7 @@ export async function processContentAndGenerateMaterials(
 }> {
   const contentHash = await hashContent(content);
   const selectedTypes = [...new Set(selectedMethods.map((m) => METHOD_TO_TYPE[m]).filter(Boolean))];
+  if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials start', { userId, contentLen: content.length, selectedTypes });
 
   // Step 1: Get or create knowledge graph
   let graph = await getKnowledgeGraphByContentHash(userId, contentHash);
@@ -235,6 +236,7 @@ export async function processContentAndGenerateMaterials(
     updated_at: new Date().toISOString(),
   };
 
+  if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials done', { notesLen: merged.notes?.length ?? 0 });
   if (existingMaterials) {
     await updateMaterials(merged.id, {
       flashcards: merged.flashcards,

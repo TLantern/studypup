@@ -27,7 +27,9 @@ import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getStreak, recordMasteryAchieved } from '@/lib/streak';
 import { useAuth } from '@/lib/auth-store';
+import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
 import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext } from '@/lib/superwall';
+import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import * as StoreReview from 'expo-store-review';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 import LottieView from 'lottie-react-native';
@@ -62,14 +64,17 @@ const MenuItem = ({
   isExpanded,
   index,
   onPress,
+  isTablet,
 }: {
   item: typeof MENU_ITEMS[0];
   isExpanded: any;
   index: number;
   onPress?: (itemId: string) => void;
+  isTablet?: boolean;
 }) => {
+  const offset = isTablet ? 90 : OFFSET;
   const animatedStyle = useAnimatedStyle(() => {
-    const moveValue = isExpanded.value ? OFFSET * index : 0;
+    const moveValue = isExpanded.value ? offset * index : 0;
     const translateValue = withSpring(-moveValue, SPRING_CONFIG);
     const delay = index * 100;
     const scaleValue = isExpanded.value ? 1 : 0;
@@ -100,6 +105,8 @@ const OVERLAY_ANIM_DURATION = 450;
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const isTablet = screenWidth > 600;
+  const isLargeTablet = screenWidth > 900;
   const isExpanded = useSharedValue(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [materials, setMaterials] = useState<StudyMaterialSet[]>([]);
@@ -109,9 +116,28 @@ export default function HomeScreen() {
   const [streakCount, setStreakCount] = useState(0);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, deleteUser, user } = useAuth();
   const { showPaywall } = useContext(PaywallTriggerContext);
   const superwallAvailable = useContext(SuperwallAvailableContext);
+  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [reauthCode, setReauthCode] = useState('');
+  const [reauthBusy, setReauthBusy] = useState(false);
+  const [reauthError, setReauthError] = useState<string | null>(null);
+  const [reauthVerificationId, setReauthVerificationId] = useState<string | null>(null);
+  const [reauthCooldown, setReauthCooldown] = useState(0);
+
+  const firebaseConfig = useMemo(
+    () => ({
+      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    }),
+    []
+  );
   const unlimitedShimmer = useSharedValue(0);
   const unlimitedScale = useSharedValue(1);
   const [savedRecordings, setSavedRecordings] = useState<{ uri: string; name: string; duration: number }[]>([]);
@@ -138,6 +164,12 @@ export default function HomeScreen() {
   useEffect(() => {
     if (materials.length === 0) emptyArrowLottieRef.current?.play();
   }, [materials.length]);
+
+  useEffect(() => {
+    if (reauthCooldown <= 0) return;
+    const t = setInterval(() => setReauthCooldown((c) => (c > 0 ? c - 1 : 0)), 1000);
+    return () => clearInterval(t);
+  }, [reauthCooldown]);
 
   const displayNotes = useMemo((): Note[] => {
     const q = searchQuery.trim().toLowerCase();
@@ -185,6 +217,9 @@ export default function HomeScreen() {
 
   const overlayWidth = screenWidth;
   const overlayHeight = screenHeight;
+  const fabSize = isTablet ? 120 : 96;
+  const fabIconSize = isTablet ? 64 : 52;
+  const contentPadding = isTablet ? 40 : 20;
 
   useEffect(() => {
     if (!showRecordModal || !pendingRecordRef.current) return;
@@ -517,9 +552,9 @@ export default function HomeScreen() {
     ]);
   };
 
-  const recordModalHeight = Math.max(screenHeight / 4, 240);
-  const playbackModalHeight = Math.max(screenHeight / 3, 280);
-  const notesModalHeight = Math.min(screenHeight * 0.6, 480);
+  const recordModalHeight = Math.max(screenHeight / (isTablet ? 5 : 4), isTablet ? 300 : 240);
+  const playbackModalHeight = Math.max(screenHeight / (isTablet ? 4 : 3), isTablet ? 350 : 280);
+  const notesModalHeight = Math.min(screenHeight * (isTablet ? 0.5 : 0.6), isTablet ? 600 : 480);
   const recordModalStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: recordModalHeight * recordModalOffset.value }],
   }));
@@ -581,8 +616,8 @@ export default function HomeScreen() {
     openContentConfirmModal([{ uri: finalUrl || '', name, type: 'notes', text: finalText }]);
   };
 
-  const uploadModalHeight = Math.min(screenHeight * 0.6, 480);
-  const contentConfirmModalHeight = Math.min(screenHeight * 0.65, 520);
+  const uploadModalHeight = Math.min(screenHeight * (isTablet ? 0.5 : 0.6), isTablet ? 600 : 480);
+  const contentConfirmModalHeight = Math.min(screenHeight * (isTablet ? 0.55 : 0.65), isTablet ? 650 : 520);
   const uploadModalStyle = useAnimatedStyle(() => ({
     opacity: uploadModalOffset.value,
   }));
@@ -664,8 +699,10 @@ export default function HomeScreen() {
   };
 
   const onContentConfirmNext = async () => {
+    if (__DEV__) console.log('[Studypup] Saving pending content, items:', contentItems.length, contentItems.map((c) => ({ name: c.name, type: c.type })));
     const { savePendingContent } = await import('@/lib/content-store');
     await savePendingContent(contentItems);
+    if (__DEV__) console.log('[Studypup] Saved, pushing to choose-methods');
     closeContentConfirmModal();
     router.push('/choose-methods');
   };
@@ -711,7 +748,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
         <View style={styles.streakBadge}>
           <Image source={require('../../assets/firestreakicon.png')} style={styles.streakIcon} />
@@ -729,7 +766,7 @@ export default function HomeScreen() {
       <View style={styles.headerDivider} />
 
       {showSearchBar && (
-        <View style={styles.searchBarRow}>
+        <View style={[styles.searchBarRow, { paddingHorizontal: contentPadding }]}>
           <TextInput
             style={styles.searchInput}
             placeholder="Search notes..."
@@ -750,14 +787,14 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.content, { paddingHorizontal: contentPadding }]} showsVerticalScrollIndicator={false}>
         {materials.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Create Your First Study Set</Text>
-              <Text style={styles.cardDesc}>
-                Transform your study materials into methods that actually work.
-              </Text>
+                  <Text style={[styles.cardTitle, { fontSize: isTablet ? 28 : 20 }]}>Create Your First Study Set</Text>
+                  <Text style={[styles.cardDesc, { fontSize: isTablet ? 20 : 16 }]}>
+                    Transform your study materials into methods that actually work.
+                  </Text>
               <Pressable style={styles.continueBtnWrap} onPress={openMenu}>
                 <LinearGradient
                   colors={['#C4C4C4', '#AADDDD']}
@@ -779,12 +816,15 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.notesContainer}>
-            <Text style={styles.myNotesTitle}>My Notes</Text>
+            <Text style={[styles.myNotesTitle, { fontSize: isTablet ? 36 : 28 }]}>My Notes</Text>
             {materials.length > 0 && displayNotes.length === 0 && (
               <Text style={styles.searchNoResults}>No notes match your search.</Text>
             )}
             {displayNotes.map((note) => (
-              <Pressable key={note.id} style={styles.noteCard} onPress={() => router.push(`/study-set/${note.id}`)}>
+              <Pressable key={note.id} style={[styles.noteCard, {
+                marginHorizontal: isTablet ? 'auto' : 0,
+                maxWidth: isTablet ? 500 : undefined
+              }]} onPress={() => router.push(`/study-set/${note.id}`)}>
                 <View style={styles.noteCardInner}>
                   <View style={styles.noteEmojiContainer}>
                     <Text style={styles.noteEmoji}>{note.emoji}</Text>
@@ -838,7 +878,10 @@ export default function HomeScreen() {
         <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
       </Animated.View>
 
-      <View style={[styles.fabMenuContainer, { bottom: 80, right: 80 }]}>
+      <View style={[styles.fabMenuContainer, { 
+        bottom: isTablet ? 120 : 80, 
+        right: isTablet ? 120 : 80 
+      }]}>
         {MENU_ITEMS.map((item, index) => (
           <MenuItem
             key={item.id}
@@ -846,15 +889,26 @@ export default function HomeScreen() {
             isExpanded={isExpanded}
             index={index + 1}
             onPress={handleMenuItemPress}
+            isTablet={isTablet}
           />
         ))}
       </View>
 
       {!showRecordModal && !showPlaybackModal && !showNotesModal && !showUploadModal && !showContentConfirmModal && (
-        <View style={[styles.fabContainer, { bottom: 24 + insets.bottom, right: 24 }]}>
+        <View style={[styles.fabContainer, { 
+          bottom: 24 + insets.bottom, 
+          right: isTablet ? 40 : 24 
+        }]}>
           <Animated.View style={[fabRotationStyle, fabTranslateStyle]}>
-            <AnimatedPressable onPress={toggleMenu} style={styles.fab}>
-              <Image source={require('../../assets/plus-circle.png')} style={styles.fabIcon} />
+            <AnimatedPressable onPress={toggleMenu} style={[styles.fab, {
+              width: fabSize,
+              height: fabSize,
+              borderRadius: fabSize / 2
+            }]}>
+              <Image source={require('../../assets/plus-circle.png')} style={[styles.fabIcon, {
+                width: fabIconSize,
+                height: fabIconSize
+              }]} />
             </AnimatedPressable>
           </Animated.View>
         </View>
@@ -1001,7 +1055,11 @@ export default function HomeScreen() {
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]}
             onPress={closeNotesModal}
           />
-          <View style={[styles.notesCard, { maxHeight: notesModalHeight }]}>
+          <View style={[styles.notesCard, { 
+            maxHeight: notesModalHeight,
+            width: isTablet ? '70%' : '100%',
+            maxWidth: isLargeTablet ? 600 : undefined
+          }]}>
             <LinearGradient
               colors={['#AADDDD', '#C4C4C4']}
               locations={[0, 0.43]}
@@ -1012,7 +1070,7 @@ export default function HomeScreen() {
                 <Image source={require('../../assets/fi_link.png')} style={styles.notesUrlIcon} />
                 <TextInput
                   style={styles.notesUrlInput}
-                  placeholder="https://example.com"
+                  placeholder="https://youtube.com/watch?v=example"
                   placeholderTextColor="#999"
                   value={notesUrl}
                   onChangeText={setNotesUrl}
@@ -1070,7 +1128,11 @@ export default function HomeScreen() {
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]}
             onPress={closeUploadModal}
           />
-          <View style={[styles.uploadCard, { maxHeight: uploadModalHeight }]}>
+          <View style={[styles.uploadCard, { 
+            maxHeight: uploadModalHeight,
+            width: isTablet ? '70%' : '100%',
+            maxWidth: isLargeTablet ? 600 : undefined
+          }]}>
             <View style={[styles.uploadCardInner, { paddingBottom: 24 + insets.bottom }]}>
               <Text style={styles.uploadCardTitle}>Add files, photos, or documents</Text>
               <Pressable style={styles.uploadDropZone} onPress={addUploadFiles}>
@@ -1113,7 +1175,11 @@ export default function HomeScreen() {
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]}
             onPress={closeContentConfirmModal}
           />
-          <View style={[styles.contentConfirmCard, { maxHeight: contentConfirmModalHeight }]}>
+          <View style={[styles.contentConfirmCard, { 
+            maxHeight: contentConfirmModalHeight,
+            width: isTablet ? '70%' : '100%',
+            maxWidth: isLargeTablet ? 650 : undefined
+          }]}>
             <View style={[styles.contentConfirmInner, { paddingBottom: 24 + insets.bottom }]}>
               <Text style={styles.contentConfirmTitle}>Please upload your file</Text>
               <Text style={styles.contentConfirmSubtitle}>
@@ -1238,7 +1304,7 @@ export default function HomeScreen() {
             <Text style={styles.settingsSectionTitle}>Support & feedback</Text>
             <View style={styles.settingsSection}>
               <Pressable style={styles.settingsItem} onPress={() => {
-                Linking.openURL('https://studypup.com/help');
+                Linking.openURL('https://studystudypup.lovable.app/support');
               }}>
                 <View style={styles.settingsItemLeft}>
                   <Ionicons name="chatbox" size={24} color="#000" />
@@ -1286,7 +1352,7 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </Pressable>
               <Pressable style={styles.settingsItem} onPress={() => {
-                Linking.openURL('https://studypup.com/terms');
+                Linking.openURL('https://studystudypup.lovable.app/terms');
               }}>
                 <View style={styles.settingsItemLeft}>
                   <Ionicons name="lock-closed" size={24} color="#000" />
@@ -1295,7 +1361,7 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </Pressable>
               <Pressable style={styles.settingsItem} onPress={() => {
-                Linking.openURL('https://studypup.com/privacy');
+                Linking.openURL('https://studystudypup.lovable.app/privacy');
               }}>
                 <View style={styles.settingsItemLeft}>
                   <Ionicons name="shield-checkmark" size={24} color="#000" />
@@ -1317,9 +1383,21 @@ export default function HomeScreen() {
               <Pressable style={styles.settingsItem} onPress={() => {
                 Alert.alert('Delete Account', 'This action cannot be undone. All your data will be permanently deleted.', [
                   { text: 'Cancel', style: 'cancel' },
-                  { text: 'Delete', style: 'destructive', onPress: () => {
-                    Alert.alert('Account Deleted', 'Your account has been deleted.');
-                    router.push('/login');
+                  { text: 'Delete', style: 'destructive', onPress: async () => {
+                    try {
+                      await deleteUser();
+                      setShowSettingsModal(false);
+                      router.replace('/');
+                    } catch (e: any) {
+                      if (e?.code === 'auth/requires-recent-login' && user?.phoneNumber && user?.providerData?.some((p) => p.providerId === 'phone')) {
+                        setShowReauthModal(true);
+                        setReauthVerificationId(null);
+                        setReauthCode('');
+                        setReauthError(null);
+                      } else {
+                        Alert.alert('Error', 'Could not delete account. Try signing out and back in, then try again.');
+                      }
+                    }
                   }}
                 ]);
               }}>
@@ -1330,6 +1408,82 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={showReauthModal} transparent animationType="slide" onRequestClose={() => setShowReauthModal(false)}>
+        <View style={styles.settingsContainer}>
+          <View style={styles.settingsHeader}>
+            <Pressable onPress={() => setShowReauthModal(false)} style={{ padding: 8 }}>
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </Pressable>
+            <Text style={styles.settingsTitle}>Verify identity</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={{ padding: 24, flex: 1 }}>
+            <Text style={{ fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', marginBottom: 16 }}>
+              For security, enter the code sent to {user?.phoneNumber ?? ''}
+            </Text>
+            {reauthVerificationId === null ? (
+              <Pressable
+                style={[styles.continueBtn, { backgroundColor: SALMON }, (reauthBusy || reauthCooldown > 0) && { opacity: 0.6 }]}
+                onPress={async () => {
+                  if (!user?.phoneNumber || reauthBusy || reauthCooldown > 0) return;
+                  setReauthBusy(true);
+                  setReauthError(null);
+                  try {
+                    const vid = await sendReauthOtp(user.phoneNumber, recaptchaRef);
+                    setReauthVerificationId(vid);
+                    setReauthCooldown(45);
+                  } catch (err: any) {
+                    setReauthError(err?.message ?? 'Failed to send code.');
+                  } finally {
+                    setReauthBusy(false);
+                  }
+                }}
+                disabled={reauthBusy || reauthCooldown > 0}
+              >
+                <Text style={styles.continueBtnText}>{reauthCooldown > 0 ? `Resend in ${reauthCooldown}s` : 'Send code'}</Text>
+              </Pressable>
+            ) : (
+              <>
+                <TextInput
+                  style={styles.otpInput}
+                  placeholder="Enter 6-digit code"
+                  placeholderTextColor="#999"
+                  keyboardType="number-pad"
+                  value={reauthCode}
+                  onChangeText={setReauthCode}
+                  editable={!reauthBusy}
+                  maxLength={6}
+                />
+                <Pressable
+                  style={[styles.continueBtn, { backgroundColor: SALMON }, (reauthBusy || reauthCode.trim().length < 6) && { opacity: 0.6 }]}
+                  onPress={async () => {
+                    if (!reauthVerificationId || !user || reauthBusy || reauthCode.trim().length < 6) return;
+                    setReauthBusy(true);
+                    setReauthError(null);
+                    try {
+                      await reauthenticateWithOtp(user, reauthVerificationId, reauthCode.trim());
+                      await deleteUser();
+                      setShowReauthModal(false);
+                      setShowSettingsModal(false);
+                      router.replace('/');
+                    } catch (err: any) {
+                      setReauthError(err?.message ?? 'Invalid code. Try again.');
+                    } finally {
+                      setReauthBusy(false);
+                    }
+                  }}
+                  disabled={reauthBusy || reauthCode.trim().length < 6}
+                >
+                  <Text style={styles.continueBtnText}>{reauthBusy ? 'Verifying…' : 'Verify & delete'}</Text>
+                </Pressable>
+              </>
+            )}
+            {reauthError ? <Text style={{ color: '#FF4444', marginTop: 12, fontFamily: 'Fredoka_400Regular' }}>{reauthError}</Text> : null}
+          </View>
+          <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
         </View>
       </Modal>
 
@@ -1397,7 +1551,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#AADDDD' },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18, paddingHorizontal: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 8 },
   avatar: { width: 48, height: 48, borderRadius: 24 },
   streakBadge: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
@@ -1405,12 +1559,12 @@ const styles = StyleSheet.create({
   streakNum: { fontFamily: 'Fredoka_400Regular', fontSize: 20, marginLeft: 4, marginTop: 4 },
   headerRight: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto', gap: 16 },
   headerIcon: { width: 24, height: 24 },
-  searchBarRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, gap: 8, backgroundColor: '#AADDDD' },
+  searchBarRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8, backgroundColor: '#AADDDD' },
   searchInput: { flex: 1, height: 40, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, fontSize: 16 },
   searchCloseBtn: { paddingVertical: 8, paddingHorizontal: 12 },
   searchCloseText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333' },
   searchNoResults: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666', marginBottom: 12 },
-  content: { flex: 1, paddingHorizontal: 20 },
+  content: { flex: 1 },
   emptyStateContainer: { paddingTop: 20 },
   emptyArrowWrap: { alignItems: 'center', marginTop: 8 },
   emptyArrowLottie: { width: 80, height: 80 },
@@ -1507,6 +1661,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
+  otpInput: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    marginBottom: 16,
+  },
   smallCardsRow: {
     flexDirection: 'row',
     gap: 16,
@@ -1579,16 +1744,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fab: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1,
     marginBottom: -60,
     marginRight: -20,
   },
-  fabIcon: { width: 52, height: 52 },
+  fabIcon: {},
   menuItem: {
     position: 'absolute',
     flexDirection: 'row',

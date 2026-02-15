@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { deleteUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirebase } from '@/lib/firebase';
 import { ensureUserDoc } from '@/lib/user-profile';
 
@@ -10,6 +10,7 @@ type AuthState = {
   uid: string | null;
   authProvider: string | null;
   signOut: () => Promise<void>;
+  deleteUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -36,6 +37,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       uid: user?.uid ?? null,
       authProvider,
       signOut: () => signOut(auth),
+      deleteUser: async () => {
+        if (!user) throw new Error('No user');
+        await deleteUser(user);
+      },
     };
   }, [auth, loading, user]);
 

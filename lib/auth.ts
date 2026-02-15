@@ -8,7 +8,9 @@ import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import {
   GoogleAuthProvider,
   OAuthProvider,
+  PhoneAuthProvider,
   linkWithCredential,
+  reauthenticateWithCredential,
   signInAnonymously,
   signInWithCredential,
   signInWithPhoneNumber,
@@ -141,5 +143,20 @@ export async function linkEmailWithLink(user: User, email: string, link: string)
   const { EmailAuthProvider } = await import('firebase/auth');
   const cred = EmailAuthProvider.credentialWithLink(email, link);
   return await linkWithCredential(user, cred);
+}
+
+export async function sendReauthOtp(
+  phoneNumber: string,
+  recaptchaRef: { current: FirebaseRecaptchaVerifierModal | null }
+): Promise<string> {
+  const { auth } = getFirebase();
+  const provider = new PhoneAuthProvider(auth);
+  const verifier = recaptchaRef.current as any;
+  return await provider.verifyPhoneNumber(phoneNumber, verifier);
+}
+
+export async function reauthenticateWithOtp(user: User, verificationId: string, code: string): Promise<void> {
+  const cred = PhoneAuthProvider.credential(verificationId, code);
+  await reauthenticateWithCredential(user, cred);
 }
 
