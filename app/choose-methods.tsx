@@ -2,6 +2,15 @@ import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
 import { getItem, setItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
 import { PaywallTriggerContext, PLACEMENT_GENERATE, SuperwallAvailableContext } from '@/lib/superwall';
+
+// Import useUser for entitlement checking
+let useUser: typeof import('expo-superwall').useUser | null = null;
+try {
+  const sw = require('expo-superwall');
+  useUser = sw.useUser;
+} catch (err) {
+  console.warn('[choose-methods] useUser not available:', err);
+}
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,6 +59,16 @@ export default function ChooseMethodsScreen() {
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Check subscription status for pro entitlement
+  let subscriptionStatus = null;
+  if (useUser) {
+    try {
+      ({ subscriptionStatus } = useUser());
+    } catch (error) {
+      console.warn('[choose-methods] useUser error:', error);
+    }
+  }
+
   useEffect(() => {
     getPendingContent().then((items) => {
       if (__DEV__) console.log('[Studypup] ChooseMethods loaded pending content:', items.length, items.map((c) => c.name));
@@ -71,25 +90,39 @@ export default function ChooseMethodsScreen() {
       if (__DEV__) console.log('[Studypup] Generate button pressed but disabled:', { selectedCount: selected.length, contentCount: contentItems.length, isGenerating });
       return;
     }
-    const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
-    console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
-    if (freeUsed === 'true') {
-      console.log('[Studypup] Free limit hit, showing paywall or create-account');
-      if (superwallAvailable) {
-        console.log('[Studypup] Showing Superwall paywall');
-        try {
-          console.log('[Studypup] PLACEMENT_GENERATE:', PLACEMENT_GENERATE);
-          console.log('[Studypup] showPaywall function:', typeof showPaywall);
-          await showPaywall(PLACEMENT_GENERATE);
-          console.log('[Studypup] showPaywall completed');
-        } catch (error) {
-          console.error('[Studypup] showPaywall error:', error);
+    // Check if user has pro entitlement (bypass free generation limit)
+    const hasProEntitlement = subscriptionStatus?.status === 'ACTIVE' && 
+      (subscriptionStatus as any)?.entitlements?.some((entitlement: any) => entitlement.id === 'pro');
+    
+    console.log('[Studypup] Subscription check:', { 
+      status: subscriptionStatus?.status, 
+      hasProEntitlement, 
+      entitlements: (subscriptionStatus as any)?.entitlements?.map((e: any) => e.id) 
+    });
+
+    if (!hasProEntitlement) {
+      const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
+      console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
+      if (freeUsed === 'true') {
+        console.log('[Studypup] Free limit hit, showing paywall or create-account');
+        if (superwallAvailable) {
+          console.log('[Studypup] Showing Superwall paywall');
+          try {
+            console.log('[Studypup] PLACEMENT_GENERATE:', PLACEMENT_GENERATE);
+            console.log('[Studypup] showPaywall function:', typeof showPaywall);
+            await showPaywall(PLACEMENT_GENERATE);
+            console.log('[Studypup] showPaywall completed');
+          } catch (error) {
+            console.error('[Studypup] showPaywall error:', error);
+          }
+        } else {
+          console.log('[Studypup] Superwall not available, pushing to create-account');
+          router.push('/create-account');
         }
-      } else {
-        console.log('[Studypup] Superwall not available, pushing to create-account');
-        router.push('/create-account');
+        return;
       }
-      return;
+    } else {
+      console.log('[Studypup] Pro user - bypassing free generation limit');
     }
     setIsGenerating(true);
     try {
@@ -104,7 +137,15 @@ export default function ChooseMethodsScreen() {
       if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials start');
       const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, selected);
       if (__DEV__) console.log('[Studypup] materials generated, notes length:', materials.notes?.length ?? 0);
-      await setItem(FREE_GENERATION_USED_KEY, 'true');
+      
+      // Only set free generation used flag for non-pro users
+      if (!hasProEntitlement) {
+        await setItem(FREE_GENERATION_USED_KEY, 'true');
+        console.log('[Studypup] Set free generation used flag');
+      } else {
+        console.log('[Studypup] Pro user - not setting free generation used flag');
+      }
+      
       router.push({ pathname: '/generate-quiz', params: { methods: selected.join(','), materialId: materials.id } });
     } catch (err: any) {
       if (__DEV__) console.error('[Studypup] handleGenerate error:', err);
