@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth-store';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { setItem as storageSetItem } from '@/lib/storage';
 import { ensureUserDoc } from '@/lib/user-profile';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 
@@ -50,7 +51,7 @@ export default function PlanUsageScreen() {
               onPress={() => setSelected(prev => prev.includes(o.id) ? prev.filter(id => id !== o.id) : [...prev, o.id])}
             >
               <Text style={styles.optionText}>{o.label}</Text>
-              <Ionicons name={o.icon} size={24} color={selected.includes(o.id) ? '#7c3aed' : '#666'} />
+              <Ionicons name={o.icon} size={RESPONSIVE.iconSmall} color={selected.includes(o.id) ? '#7c3aed' : '#666'} />
             </Pressable>
           ))}
         </ScrollView>
@@ -77,41 +78,41 @@ export default function PlanUsageScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 24, color: '#000', textAlign: 'center', marginBottom: 24 },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 16 },
+  scrollContent: { paddingBottom: scaleSize(16) },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(16),
+    marginBottom: scaleSize(10),
     borderWidth: 1,
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
   optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
-  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1, marginBottom: -34 },
+  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
+  bottomSection: { marginTop: 'auto', paddingTop: scaleSize(6), position: 'relative', alignItems: 'center' },
+  puppy: { position: 'absolute', bottom: scaleSize(51), width: scaleSize(140), height: scaleSize(120), zIndex: 1, marginBottom: scaleSize(-34) },
   continueBtn: {
-    marginBottom: -34,
+    marginBottom: scaleSize(-34),
     backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
+    borderRadius: RESPONSIVE.buttonRadius,
+    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
     width: '100%',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
 });

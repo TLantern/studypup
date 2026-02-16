@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { callOpenAI, callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
 const SALMON = '#FD8A8A';
@@ -154,7 +154,8 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   };
 
   return (
-    <View style={styles.wrap}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.wrap}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.wrapContent} showsVerticalScrollIndicator={false}>
       <Text style={styles.question}>{item.question}</Text>
       <TextInput
@@ -282,7 +283,8 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
         </Animated.View>
       </>
     )}
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
+import { scaleFont, scaleSize, SCREEN_WIDTH, SCREEN_HEIGHT, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -12,22 +13,6 @@ const BUTTON_SHADOW = {
   shadowOpacity: 0.35,
   shadowRadius: 6,
   elevation: 6,
-};
-
-// Get screen dimensions for responsive sizing
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Responsive scaling functions
-const scaleFont = (size: number) => {
-  const baseWidth = 375; // iPhone X base width
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
-
-const scaleSize = (size: number) => {
-  const baseWidth = 375;
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
 };
 
 export default function RecordScreen() {
@@ -54,24 +39,24 @@ export default function RecordScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06 },
+  container: { flex: 1, paddingHorizontal: RESPONSIVE.containerPadding },
   progress: { width: scaleSize(120), height: scaleSize(16), alignSelf: 'center', marginBottom: scaleSize(24) },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(-64) },
+  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: scaleSize(-64) },
   heroWrap: { width: '100%', height: SCREEN_HEIGHT * 0.7, alignSelf: 'center' },
   hero: { width: '100%', height: '100%'},
   buttons: { marginTop: scaleSize(-10)},
   btn: {
-    borderRadius: scaleSize(35),
-    paddingVertical: scaleSize(18),
-    paddingHorizontal: scaleSize(32),
+    borderRadius: RESPONSIVE.buttonRadius,
+    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
     alignItems: 'center',
     borderWidth: 2,
     backgroundColor: '#FD8A8A',
     borderColor: '#CA6E6E',
-    minHeight: scaleSize(56),
+    minHeight: RESPONSIVE.buttonMinHeight,
     ...BUTTON_SHADOW,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(24) },
+  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button },
   btnPrimaryText: { color: '#fff' },
 });

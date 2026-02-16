@@ -2,9 +2,10 @@ import { Image } from 'expo-image';
 import { Audio } from 'expo-av';
 import { router } from 'expo-router';
 import { useContext, useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scaleFont, scaleSize, SCREEN_WIDTH, SCREEN_HEIGHT, RESPONSIVE } from '@/lib/responsive';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -58,34 +59,12 @@ function useLogoAnimation() {
 
 const WELCOME_MP3 = require('../audio/welcomeaudio.mp3');
 
-// Get screen dimensions for responsive sizing
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Responsive scaling functions
-const scaleFont = (size: number) => {
-  const baseWidth = 375; // iPhone X base width
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
-
-const scaleSize = (size: number) => {
-  const baseWidth = 375;
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
-
-// Responsive dimensions
-const RESPONSIVE = {
+// Screen-specific responsive dimensions
+const WELCOME_RESPONSIVE = {
   titleFontSize: scaleFont(36),
-  subtextFontSize: scaleFont(20),
-  buttonFontSize: scaleFont(22),
   logoSize: Math.min(SCREEN_WIDTH * 0.5, 200),
-  buttonPaddingVertical: scaleSize(16),
-  buttonPaddingHorizontal: scaleSize(40),
-  buttonRadius: scaleSize(35),
   userChoiceBadgeWidth: SCREEN_WIDTH * 0.9,
   userChoiceBadgeHeight: scaleSize(75),
-  containerPadding: SCREEN_WIDTH * 0.06,
 };
 
 export default function OnboardingScreen() {
@@ -144,14 +123,14 @@ const styles = StyleSheet.create({
   },
   title: { 
     fontFamily: 'FredokaOne_400Regular', 
-    fontSize: RESPONSIVE.titleFontSize, 
+    fontSize: WELCOME_RESPONSIVE.titleFontSize, 
     color: '#000', 
     textAlign: 'center', 
-    lineHeight: RESPONSIVE.titleFontSize + 2 
+    lineHeight: WELCOME_RESPONSIVE.titleFontSize + 2 
   },
   subtext: { 
     fontFamily: 'Fredoka_400Regular', 
-    fontSize: RESPONSIVE.subtextFontSize, 
+    fontSize: scaleFont(20), 
     color: '#333', 
     textAlign: 'center', 
     marginTop: scaleSize(8) 
@@ -162,8 +141,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   logo: {
-    width: RESPONSIVE.logoSize,
-    height: RESPONSIVE.logoSize,
+    width: WELCOME_RESPONSIVE.logoSize,
+    height: WELCOME_RESPONSIVE.logoSize,
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -179,9 +158,9 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(8),
   },
   userChoiceBadge: { 
-    width: RESPONSIVE.userChoiceBadgeWidth, 
-    height: RESPONSIVE.userChoiceBadgeHeight,
-    maxWidth: 440,
+    width: WELCOME_RESPONSIVE.userChoiceBadgeWidth, 
+    height: WELCOME_RESPONSIVE.userChoiceBadgeHeight,
+    maxWidth: scaleSize(440),
   },
   buttons: { 
     gap: scaleSize(16), 
@@ -190,19 +169,19 @@ const styles = StyleSheet.create({
   },
   btn: {
     borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
-    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(40),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    minHeight: scaleSize(56),
+    minHeight: RESPONSIVE.buttonMinHeight,
     ...BUTTON_SHADOW,
   },
   btnPrimary: { backgroundColor: '#FD8A8A', borderColor: '#CA6E6E' },
   btnLogin: { backgroundColor: '#E8E8E8', borderColor: '#B9B9B9' },
   btnText: { 
     fontFamily: 'Fredoka_400Regular', 
-    fontSize: RESPONSIVE.buttonFontSize,
+    fontSize: scaleFont(22),
     textAlign: 'center',
   },
   btnPrimaryText: { color: '#fff' },

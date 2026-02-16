@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, Dimensions } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth-store';
 import { getItem, setItem } from '@/lib/storage';
 import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
+import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -19,22 +20,6 @@ const BUTTON_SHADOW = {
 };
 
 const PENDING_EMAIL_KEY = 'auth:pendingEmail';
-
-// Get screen dimensions for responsive sizing
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Responsive scaling functions
-const scaleFont = (size: number) => {
-  const baseWidth = 375; // iPhone X base width
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
-
-const scaleSize = (size: number) => {
-  const baseWidth = 375;
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -187,7 +172,8 @@ export default function CreateAccountScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.title}>Create an Account</Text>
         <Text style={styles.subtitle}>Sign up with your phone number</Text>
 
@@ -275,7 +261,8 @@ export default function CreateAccountScreen() {
             ) : null}
           </>
         )}
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
     </LinearGradient>
   );
 }

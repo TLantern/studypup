@@ -13,11 +13,12 @@ try {
 }
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
+import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Dimensions } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PURPLE = '#7c3aed';
@@ -34,22 +35,6 @@ const METHODS = [
 const SALMON = '#FD8A8A';
 
 const FREE_GENERATION_USED_KEY = 'free_generation_used';
-
-// Get screen dimensions for responsive sizing
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Responsive scaling functions
-const scaleFont = (size: number) => {
-  const baseWidth = 375; // iPhone X base width
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
-
-const scaleSize = (size: number) => {
-  const baseWidth = 375;
-  const ratio = SCREEN_WIDTH / baseWidth;
-  return Math.round(size * ratio);
-};
 
 export default function ChooseMethodsScreen() {
   const insets = useSafeAreaInsets();
@@ -217,7 +202,7 @@ export default function ChooseMethodsScreen() {
 
 const styles = StyleSheet.create({
   generatingWrap: { flex: 1, backgroundColor: '#f8fafc' },
-  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: SCREEN_WIDTH * 0.06 },
+  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: RESPONSIVE.containerPadding },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -235,14 +220,14 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    gap: 10,
+    marginBottom: scaleSize(24),
+    gap: scaleSize(10),
   },
-  contentIcon: { width: 24, height: 24 },
+  contentIcon: { width: RESPONSIVE.iconSmall, height: RESPONSIVE.iconSmall },
   contentLabel: {
     flex: 1,
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 18,
+    fontSize: RESPONSIVE.subtitle,
     color: '#333',
   },
   addBtn: {
@@ -256,11 +241,11 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(16),
+    fontSize: RESPONSIVE.body,
     color: '#333',
   },
   list: { flex: 1 },
-  listContent: { paddingBottom: 24 },
+  listContent: { paddingBottom: scaleSize(24) },
   methodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -284,16 +269,16 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   methodBtnSelected: { borderColor: PURPLE, borderWidth: 2 },
-  methodIcon: { width: 28, height: 28 },
-  methodIconWrap: { width: 28, height: 28, justifyContent: 'center', alignItems: 'center' },
+  methodIcon: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium },
+  methodIconWrap: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium, justifyContent: 'center', alignItems: 'center' },
   methodCustomIcon: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 24,
+    fontSize: RESPONSIVE.titleSmall,
     color: '#333',
   },
   methodLabel: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(18),
+    fontSize: RESPONSIVE.subtitle,
     color: '#333',
   },
   generateBtnDisabled: { opacity: 0.5 },
@@ -305,11 +290,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: scaleSize(16),
-    minHeight: scaleSize(56),
+    minHeight: RESPONSIVE.buttonMinHeight,
   },
   generateBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(18),
+    fontSize: RESPONSIVE.subtitle,
     color: '#fff',
   },
 });

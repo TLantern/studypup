@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator } from 'react-native';
+import { InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -747,7 +747,8 @@ export default function HomeScreen() {
   });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
         <View style={styles.streakBadge}>
@@ -1553,7 +1554,8 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -13,6 +13,8 @@ import {
   Text,
   TextInput,
   View,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 
 const SALMON = '#FD8A8A';
@@ -97,7 +99,9 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <ScrollView
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -149,6 +153,8 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
           <Ionicons name="send" size={20} color="#fff" />
         </Pressable>
       </View>
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

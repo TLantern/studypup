@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -41,7 +42,7 @@ export default function StudyDurationScreen() {
               style={[styles.optionBtn, selected === o.id && styles.optionBtnSelected]}
               onPress={() => setSelected(o.id)}
             >
-              <Ionicons name={o.icon} size={24} color="#000" />
+              <Ionicons name={o.icon} size={RESPONSIVE.iconSmall} color="#000" />
               <Text style={styles.optionText}>{o.label}</Text>
             </Pressable>
           ))}
@@ -66,38 +67,38 @@ export default function StudyDurationScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 24, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000', textAlign: 'center', marginBottom: 24 },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 16 },
+  scrollContent: { paddingBottom: scaleSize(16) },
   optionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: scaleSize(12),
     backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(16),
+    marginBottom: scaleSize(10),
     borderWidth: 1,
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
   optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
+  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
+  buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },
   continueBtn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: 18,
+    borderRadius: RESPONSIVE.buttonRadius,
+    paddingVertical: RESPONSIVE.buttonPaddingVertical,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
 });
