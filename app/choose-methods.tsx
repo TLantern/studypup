@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PURPLE = '#7c3aed';
@@ -25,6 +25,22 @@ const METHODS = [
 const SALMON = '#FD8A8A';
 
 const FREE_GENERATION_USED_KEY = 'free_generation_used';
+
+// Get screen dimensions for responsive sizing
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Responsive scaling functions
+const scaleFont = (size: number) => {
+  const baseWidth = 375; // iPhone X base width
+  const ratio = SCREEN_WIDTH / baseWidth;
+  return Math.round(size * ratio);
+};
+
+const scaleSize = (size: number) => {
+  const baseWidth = 375;
+  const ratio = SCREEN_WIDTH / baseWidth;
+  return Math.round(size * ratio);
+};
 
 export default function ChooseMethodsScreen() {
   const insets = useSafeAreaInsets();
@@ -160,18 +176,18 @@ export default function ChooseMethodsScreen() {
 
 const styles = StyleSheet.create({
   generatingWrap: { flex: 1, backgroundColor: '#f8fafc' },
-  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: SCREEN_WIDTH * 0.06 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingVertical: 8,
+    marginBottom: scaleSize(24),
+    paddingVertical: scaleSize(8),
   },
-  backBtn: { padding: 4 },
+  backBtn: { padding: scaleSize(4) },
   title: {
     flex: 1,
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 22,
+    fontSize: scaleFont(22),
     color: '#333',
     textAlign: 'center',
   },
@@ -190,16 +206,16 @@ const styles = StyleSheet.create({
   },
   addBtn: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 150,
+    borderRadius: scaleSize(20),
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(16),
+    marginRight: SCREEN_WIDTH * 0.4,
     borderWidth: 1,
     borderColor: '#ccc',
   },
   addBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: '#333',
   },
   list: { flex: 1 },
@@ -208,16 +224,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    borderRadius: scaleSize(16),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(20),
+    marginBottom: scaleSize(12),
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
-    gap: 16,
+    gap: scaleSize(16),
+    minHeight: scaleSize(60),
   },
   methodBtnFlat: {
     shadowOpacity: 0,
@@ -235,21 +252,23 @@ const styles = StyleSheet.create({
   },
   methodLabel: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     color: '#333',
   },
   generateBtnDisabled: { opacity: 0.5 },
   generateBtn: {
     backgroundColor: SALMON,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: scaleSize(16),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(20),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: scaleSize(16),
+    minHeight: scaleSize(56),
   },
   generateBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     color: '#fff',
   },
 });

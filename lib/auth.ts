@@ -153,9 +153,7 @@ export async function sendReauthOtp(
   const provider = new PhoneAuthProvider(auth);
   const verifier = recaptchaRef.current as any;
   return await provider.verifyPhoneNumber(phoneNumber, verifier);
-}
-
-export async function reauthenticateWithOtp(user: User, verificationId: string, code: string): Promise<void> {
+}export async function reauthenticateWithOtp(user: User, verificationId: string, code: string): Promise<void> {
   const cred = PhoneAuthProvider.credential(verificationId, code);
   await reauthenticateWithCredential(user, cred);
 }

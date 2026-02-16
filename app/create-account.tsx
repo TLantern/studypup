@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -19,6 +19,22 @@ const BUTTON_SHADOW = {
 };
 
 const PENDING_EMAIL_KEY = 'auth:pendingEmail';
+
+// Get screen dimensions for responsive sizing
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Responsive scaling functions
+const scaleFont = (size: number) => {
+  const baseWidth = 375; // iPhone X base width
+  const ratio = SCREEN_WIDTH / baseWidth;
+  return Math.round(size * ratio);
+};
+
+const scaleSize = (size: number) => {
+  const baseWidth = 375;
+  const ratio = SCREEN_WIDTH / baseWidth;
+  return Math.round(size * ratio);
+};
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -266,38 +282,38 @@ export default function CreateAccountScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 32 },
+  container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06 },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: scaleSize(12),
     borderWidth: 1,
     borderColor: '#ddd',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
     overflow: 'hidden',
   },
   countryCode: {
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(16),
     borderRightWidth: 1,
     borderRightColor: '#ddd',
   },
-  countryCodeText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  phoneInput: { flex: 1, paddingHorizontal: 16, paddingVertical: 16, fontFamily: 'Fredoka_400Regular', fontSize: 16 },
-  otpRow: { marginBottom: 16 },
+  countryCodeText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#000' },
+  phoneInput: { flex: 1, paddingHorizontal: scaleSize(16), paddingVertical: scaleSize(16), fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16) },
+  otpRow: { marginBottom: scaleSize(16) },
   otpInput: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: scaleSize(12),
     borderWidth: 1,
     borderColor: '#ddd',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(16),
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
   otpHint: {
     fontFamily: 'Fredoka_400Regular',
@@ -308,26 +324,28 @@ const styles = StyleSheet.create({
   },
   resendBtn: {
     alignItems: 'center',
-    marginBottom: 16,
-    paddingVertical: 8,
+    marginBottom: scaleSize(16),
+    paddingVertical: scaleSize(8),
   },
   resendBtnDisabled: { opacity: 0.5 },
   resendBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     color: '#333',
     textDecorationLine: 'underline',
   },
   continueBtn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(20),
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: scaleSize(32),
+    minHeight: scaleSize(56),
     ...BUTTON_SHADOW,
   },
   continueBtnDisabled: { opacity: 0.6 },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(20), color: '#fff' },
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: -16, marginBottom: 16, textAlign: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
