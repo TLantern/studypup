@@ -16,7 +16,8 @@
         "NSMicrophoneUsageDescription": "StudyPup uses the microphone to record lectures and study notes.",
         "NSCameraUsageDescription": "StudyPup uses the camera to capture notes and study materials.",
         "NSPhotoLibraryUsageDescription": "StudyPup needs access to your photos to import study materials and images.",
-        "NSPhotoLibraryAddUsageDescription": "StudyPup saves recordings and captures to your photo library."
+        "NSPhotoLibraryAddUsageDescription": "StudyPup saves recordings and captures to your photo library.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "icon": {
         "light": "./assets/icons/appcovericon.png",
@@ -82,7 +83,9 @@
       [
         "expo-build-properties",
         {
-          "android": { "minSdkVersion": 21 },
+          "android": {
+            "minSdkVersion": 21
+          },
           "ios": {
             "deploymentTarget": "15.1",
             "useFrameworks": "static"
