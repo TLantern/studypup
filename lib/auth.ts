@@ -159,4 +159,3 @@ export async function reauthenticateWithOtp(user: User, verificationId: string, 
   const cred = PhoneAuthProvider.credential(verificationId, code);
   await reauthenticateWithCredential(user, cred);
 }
-
