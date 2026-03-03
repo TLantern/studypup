@@ -16,7 +16,7 @@ export default function CreatingPlanScreen() {
 
   useEffect(() => {
     const t = setTimeout(
-      () => router.replace(superwallAvailable ? '/paywall' : '/create-account'),
+      () => router.replace('/plan-ready'),
       DURATION_MS
     );
     return () => clearTimeout(t);
