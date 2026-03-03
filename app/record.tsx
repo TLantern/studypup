@@ -20,7 +20,7 @@ export default function RecordScreen() {
   const hoverStyle = useHoverFloatStyle();
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 30 }]}>
         <Image source={require('../assets/images/progresspill1.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Record Your Lectures</Text>
         <Text style={styles.subtext}>Capture audio from classes and turn them into study notes.</Text>
