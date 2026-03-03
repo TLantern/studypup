@@ -35,7 +35,7 @@ export const calculateMastery = (stats: Note['stats']): number => {
     }
   }
   if (totalQuestions === 0) return 0;
-  return Math.round((totalCorrect / totalQuestions) * 100);
+  return Math.min(100, Math.round((totalCorrect / totalQuestions) * 100));
 };
 
 export const createNote = (

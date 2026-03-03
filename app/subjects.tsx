@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
-  subjectBtnSelected: { backgroundColor: '#D4C4B0' },
+  subjectBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   subjectEmoji: { fontSize: RESPONSIVE.titleSmall },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },

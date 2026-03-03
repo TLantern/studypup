@@ -43,6 +43,12 @@ export function NotesStudy({ notes = SCAFFOLD_NOTES }: Props) {
       style={styles.wrap}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      bounces={true}
+      alwaysBounceVertical={false}
+      removeClippedSubviews={false}
+      scrollEventThrottle={16}
+      nestedScrollEnabled={true}
     >
       <View style={noteStyles.card}>
         {parseMarkdown(content)}

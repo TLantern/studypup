@@ -16,6 +16,9 @@ type Props = {
   materialId?: string;
   savedAnswers?: Record<string, { answer: string; correct: boolean; explanation?: string }>;
   onAnswersUpdate?: (answers: Record<string, { answer: string; correct: boolean; explanation?: string }>) => void;
+  initialIndex?: number;
+  displayTotal?: number;
+  displayIndexMap?: Record<string, number>;
 };
 
 type GradeResult = {
@@ -34,8 +37,8 @@ type ChatMessage = {
   content: string;
 };
 
-export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate }: Props) {
-  const [index, setIndex] = useState(0);
+export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap }: Props) {
+  const [index, setIndex] = useState(initialIndex);
   const [answer, setAnswer] = useState('');
   const [results, setResults] = useState<Record<string, GradeResult>>(savedAnswers);
   const [checking, setChecking] = useState(false);
@@ -47,6 +50,7 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   const slideAnim = useRef(new Animated.Value(0)).current;
   const chatScrollRef = useRef<ScrollView>(null);
   const explainPanelHeight = Dimensions.get('window').height * 0.5;
+  const hydratedRef = useRef(false);
 
   const list = items.length ? items : SCAFFOLD_ITEMS;
   const item = list[index];
@@ -54,7 +58,10 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   const currentResult = results[item.id];
 
   useEffect(() => {
-    if (Object.keys(savedAnswers).length > 0) setResults(savedAnswers);
+    if (!hydratedRef.current && Object.keys(savedAnswers).length > 0) {
+      hydratedRef.current = true;
+      setResults(savedAnswers);
+    }
   }, [savedAnswers]);
   
   useEffect(() => {
@@ -69,7 +76,8 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
     const correct = Object.values(results).filter((r) => r.correct).length;
     onProgressUpdate?.(correct, total);
     onAnswersUpdate?.(results);
-  }, [results, total, onProgressUpdate, onAnswersUpdate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, total]);
 
   const submit = async () => {
     if (!answer.trim() || checking || currentResult) return;
@@ -186,10 +194,18 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
         </Pressable>
       )}
       {currentResult?.correct && (
-        <View style={styles.resultCorrect}>
-          <Ionicons name="checkmark-circle" size={32} color="#16a34a" />
-          <Text style={styles.resultCorrectText}>Correct</Text>
-        </View>
+        <>
+          <View style={styles.resultCorrect}>
+            <Ionicons name="checkmark-circle" size={32} color="#16a34a" />
+            <Text style={styles.resultCorrectText}>Correct</Text>
+          </View>
+          <View style={styles.buttonRowCenter}>
+            <Pressable style={styles.explainBtnSolo} onPress={openExplain}>
+              <Ionicons name="star" size={20} color="#fff" />
+              <Text style={styles.explainTextRow}>Explain</Text>
+            </Pressable>
+          </View>
+        </>
       )}
       {currentResult && !currentResult.correct && (
         <>
@@ -197,25 +213,29 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
             <Ionicons name="close-circle" size={32} color="#dc2626" />
             <Text style={styles.resultWrongText}>Incorrect</Text>
           </View>
-          <Pressable style={styles.tryAgainBtn} onPress={tryAgain}>
-            <Text style={styles.tryAgainText}>Try again</Text>
-          </Pressable>
-          <Pressable style={styles.explainBtn} onPress={openExplain}>
-            <Text style={styles.explainText}>Explain</Text>
-          </Pressable>
+          <View style={styles.buttonRow}>
+            <Pressable style={styles.explainBtnRow} onPress={openExplain}>
+              <Ionicons name="star" size={20} color="#fff" />
+              <Text style={styles.explainTextRow}>Explain</Text>
+            </Pressable>
+            <Pressable style={styles.tryAgainBtnRow} onPress={tryAgain}>
+              <Text style={styles.tryAgainTextRow}>Try again</Text>
+            </Pressable>
+          </View>
         </>
       )}
       
-      <View style={styles.nav}>
-        <Pressable onPress={prev} style={styles.navBtn} disabled={index === 0}>
-          <Ionicons name="chevron-back" size={24} color={index === 0 ? '#999' : '#fff'} />
-        </Pressable>
-        <Text style={styles.counter}>{index + 1}/{total}</Text>
-        <Pressable onPress={next} style={styles.navBtn} disabled={index === total - 1}>
-          <Ionicons name="chevron-forward" size={24} color={index === total - 1 ? '#999' : '#fff'} />
-        </Pressable>
-      </View>
     </ScrollView>
+    <View style={styles.divider} />
+    <View style={styles.nav}>
+      <Pressable onPress={prev} style={styles.navBtn} disabled={index === 0}>
+        <Ionicons name="chevron-back" size={24} color={index === 0 ? '#999' : '#fff'} />
+      </Pressable>
+      <Text style={styles.counter}>{displayIndexMap?.[item.id] ?? (index + 1)}/{displayTotal ?? total}</Text>
+      <Pressable onPress={next} style={styles.navBtn} disabled={index === total - 1}>
+        <Ionicons name="chevron-forward" size={24} color={index === total - 1 ? '#999' : '#fff'} />
+      </Pressable>
+    </View>
     {showExplain && (
       <>
         <Pressable style={StyleSheet.absoluteFill} onPress={closeExplain} />
@@ -395,13 +415,66 @@ const styles = StyleSheet.create({
   },
   tryAgainText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
   explainBtn: {
-    backgroundColor: PURPLE,
-    borderRadius: 12,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 8,
+    alignSelf: 'flex-start',
   },
   explainText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#fff' },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+  },
+  buttonRowCenter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  explainBtnSolo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: PURPLE,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  tryAgainBtnRow: {
+    flex: 1,
+    backgroundColor: '#333',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  tryAgainTextRow: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#fff',
+  },
+  explainBtnRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: PURPLE,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  explainTextRow: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#fff',
+  },
   explainPanel: {
     position: 'absolute',
     bottom: 0,
@@ -473,7 +546,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
   },
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 },
+  divider: { height: 1, backgroundColor: '#ddd', marginHorizontal: -24, marginTop: 16, marginBottom: 0 },
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 },
   navBtn: {
     width: 48,
     height: 48,

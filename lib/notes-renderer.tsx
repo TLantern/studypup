@@ -49,6 +49,13 @@ export function parseMarkdown(md: string): ReactNode[] {
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
     if (trimmed.startsWith('## ')) {
+      // Skip section if next non-empty line is "Not applicable"
+      const nextContent = lines.slice(i + 1).find((l) => l.trim() !== '');
+      if (nextContent?.trim().toLowerCase() === 'not applicable') {
+        while (i + 1 < lines.length && lines[i + 1].trim().toLowerCase() !== 'not applicable') i++;
+        i++; // skip the "Not applicable" line too
+        continue;
+      }
       nodes.push(<Text key={i} style={noteStyles.h2}>{trimmed.slice(3)}</Text>);
     } else if (trimmed.startsWith('### ')) {
       nodes.push(<Text key={i} style={noteStyles.h3}>{trimmed.slice(4)}</Text>);

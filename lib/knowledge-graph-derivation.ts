@@ -239,9 +239,6 @@ ${coreIdea.trim()}
 ## ⚙️ Key Sections
 ${sections.join('\n')}
 
-## 🧮 Equations / Formulas (if applicable)
-Not applicable
-
 ## ✨ Simplified Summary
 Key concepts from the material for quick review.
 

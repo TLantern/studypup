@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Image as RNImage, InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -748,7 +748,7 @@ export default function HomeScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
         <View style={styles.streakBadge}>
@@ -788,7 +788,15 @@ export default function HomeScreen() {
         </View>
       )}
 
-      <ScrollView style={[styles.content, { paddingHorizontal: contentPadding }]} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={[styles.content, { paddingHorizontal: contentPadding }]} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bounces={true}
+        alwaysBounceVertical={false}
+        removeClippedSubviews={false}
+        scrollEventThrottle={16}
+      >
         {materials.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.card}>
@@ -832,8 +840,20 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.noteDetails}>
                     <Text style={styles.noteName}>{note.name}</Text>
-                    <Text style={styles.noteDate}>{note.date}</Text>
-                    <Text style={styles.noteMastery}>Mastery: {note.mastery}%</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <View>
+                        <Text style={styles.noteDate}>{note.date}</Text>
+                        <Text style={styles.noteMastery}>Mastery: {note.mastery}%</Text>
+                      </View>
+                      <Pressable
+                        style={styles.viewReportBtn}
+                        onPress={(e) => { e.stopPropagation?.(); router.push(`/report?materialId=${note.id}`); }}
+                        hitSlop={8}
+                      >
+                        <Text style={styles.viewReportText}>View Report</Text>
+                        <RNImage source={require('../../assets/icons/arrow-right.png')} style={styles.viewReportArrow} />
+                      </Pressable>
+                    </View>
                     <View style={styles.progressBarContainer}>
                       <View
                         style={[
@@ -846,7 +866,6 @@ export default function HomeScreen() {
                       />
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={22} color="#999" style={styles.noteChevron} />
                 </View>
               </Pressable>
             ))}
@@ -1142,7 +1161,13 @@ export default function HomeScreen() {
               <Pressable style={styles.uploadDropZoneSecondary} onPress={addUploadPhotos}>
                 <Text style={styles.uploadDropZoneText}>Add from photo library</Text>
               </Pressable>
-              <ScrollView style={styles.uploadFileList} nestedScrollEnabled>
+              <ScrollView 
+                style={styles.uploadFileList} 
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+                bounces={true}
+                showsVerticalScrollIndicator={false}
+              >
                 {uploadFiles.map((f, i) => (
                   <View key={`${f.uri}-${i}`} style={styles.uploadFileRow}>
                     <Text style={styles.uploadFileName} numberOfLines={1}>{f.name}</Text>
@@ -1186,7 +1211,14 @@ export default function HomeScreen() {
               <Text style={styles.contentConfirmSubtitle}>
                 Transform your notes into effective study methods.
               </Text>
-              <ScrollView style={styles.contentConfirmList} nestedScrollEnabled showsVerticalScrollIndicator={false}>
+              <ScrollView 
+                style={styles.contentConfirmList} 
+                nestedScrollEnabled 
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                bounces={true}
+                alwaysBounceVertical={false}
+              >
                 {contentItems.map((item, i) => (
                   <View key={`${item.uri}-${i}`} style={styles.contentConfirmRow}>
                     <View style={styles.contentConfirmRowInner}>
@@ -1234,7 +1266,13 @@ export default function HomeScreen() {
               <Ionicons name="close" size={28} color="#000" />
             </Pressable>
           </View>
-          <ScrollView style={styles.settingsScroll} showsVerticalScrollIndicator={false}>
+          <ScrollView 
+            style={styles.settingsScroll} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={true}
+            alwaysBounceVertical={false}
+          >
             <Pressable
               style={styles.unlimitedBtnWrap}
               onPressIn={() => { unlimitedScale.value = withSpring(0.97); }}
@@ -1578,7 +1616,7 @@ const styles = StyleSheet.create({
   emptyStateContainer: { paddingTop: 20 },
   emptyArrowWrap: { alignItems: 'center', marginTop: 8 },
   emptyArrowLottie: { width: 80, height: 80 },
-  notesContainer: { paddingTop: 20, paddingBottom: 140, flexDirection: 'column' },
+  notesContainer: { paddingTop: 12, paddingBottom: 140, flexDirection: 'column' },
   myNotesTitle: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 28,
@@ -1611,7 +1649,33 @@ const styles = StyleSheet.create({
   },
   noteEmoji: { fontSize: 32 },
   noteDetails: { flex: 1 },
-  noteChevron: { marginLeft: 8 },
+  viewReportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(51,51,51,0.20)',
+    shadowColor: '#333333',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 4,
+    gap: 4,
+  },
+  viewReportText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 13,
+    color: '#000',
+  },
+  viewReportArrow: {
+    width: 14,
+    height: 14,
+    resizeMode: 'contain',
+  },
   noteName: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 18,
@@ -1628,7 +1692,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: 14,
     color: '#000',
-    marginBottom: 8,
+    marginTop: 4,
   },
   progressBarContainer: {
     height: 8,
@@ -2143,6 +2207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+    marginRight: 16,
   },
   contentConfirmCheckText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   contentConfirmReplace: {

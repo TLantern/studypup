@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scaleFont, scaleSize, SCREEN_WIDTH, SCREEN_HEIGHT, RESPONSIVE } from '@/lib/responsive';
+import { useAuth } from '@/lib/auth-store';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -72,8 +73,16 @@ export default function OnboardingScreen() {
   const logoStyle = useLogoAnimation();
   const welcomeSound = useRef<Audio.Sound | null>(null);
   const superwallAvailable = useContext(SuperwallAvailableContext);
+  const { uid, loading } = useAuth();
 
   useEffect(() => {
+    if (!loading && uid) {
+      router.replace('/(tabs)');
+    }
+  }, [uid, loading]);
+
+  useEffect(() => {
+    if (uid) return;
     let mounted = true;
     (async () => {
       try {
@@ -91,7 +100,11 @@ export default function OnboardingScreen() {
       mounted = false;
       welcomeSound.current?.unloadAsync();
     };
-  }, []);
+  }, [uid]);
+
+  if (loading || uid) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 80, paddingBottom: insets.bottom + 24 }]}>

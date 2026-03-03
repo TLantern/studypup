@@ -5,7 +5,7 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithou
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAuth } from '@/lib/auth-store';
+import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
 import { getItem, setItem } from '@/lib/storage';
 import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
@@ -35,6 +35,7 @@ export default function CreateAccountScreen() {
   const [resendCount, setResendCount] = useState(0);
   const [email, setEmail] = useState('');
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [phoneLoadedFromStorage, setPhoneLoadedFromStorage] = useState(false);
 
   const firebaseConfig = useMemo(
     () => ({
@@ -47,6 +48,28 @@ export default function CreateAccountScreen() {
     }),
     []
   );
+
+  // Load stored phone number on mount
+  useEffect(() => {
+    let mounted = true;
+    const loadStoredPhone = async () => {
+      try {
+        const storedPhone = await getStoredPhoneNumber();
+        if (mounted && storedPhone && !phone) {
+          // Remove +1 prefix for display
+          const displayPhone = storedPhone.startsWith('+1') ? storedPhone.slice(2) : storedPhone.replace('+', '');
+          setPhone(displayPhone);
+          setPhoneLoadedFromStorage(true);
+        }
+      } catch (error) {
+        console.error('Failed to load stored phone number:', error);
+      }
+    };
+    loadStoredPhone();
+    return () => {
+      mounted = false;
+    };
+  }, [phone]);
 
   useEffect(() => {
     if (!uid) return;
@@ -175,7 +198,9 @@ export default function CreateAccountScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.title}>Create an Account</Text>
-        <Text style={styles.subtitle}>Sign up with your phone number</Text>
+        <Text style={styles.subtitle}>
+          {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
+        </Text>
 
         <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
 

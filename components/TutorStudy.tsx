@@ -1,5 +1,6 @@
 import { callOpenAIChat, isOpenAIConfigured } from '@/lib/openai-service';
 import { noteStyles, parseMarkdown } from '@/lib/notes-renderer';
+import { VoiceChatModal } from '@/components/VoiceChatModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -53,6 +54,7 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -96,20 +98,24 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
   return (
     <KeyboardAvoidingView
       style={styles.wrap}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        onContentSizeChange={scrollToEnd}
-      >
-        <View style={noteStyles.card}>{parseMarkdown(content)}</View>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={scrollToEnd}
+          bounces={true}
+          alwaysBounceVertical={false}
+          removeClippedSubviews={false}
+          scrollEventThrottle={16}
+          nestedScrollEnabled={true}
+        >
+            <View style={noteStyles.card}>{parseMarkdown(content)}</View>
 
         <View style={styles.promptCard}>
           <Text style={styles.promptTitle}>📝 Your turn</Text>
@@ -134,27 +140,32 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
         <View style={styles.spacer} />
       </ScrollView>
 
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type your message..."
-          placeholderTextColor="#999"
-          value={input}
-          onChangeText={setInput}
-          multiline
-          maxLength={1000}
-          editable={!loading}
-        />
-        <Pressable
-          style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
-          onPress={send}
-          disabled={!input.trim() || loading}
-        >
-          <Ionicons name="send" size={20} color="#fff" />
-        </Pressable>
-      </View>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type your message..."
+            placeholderTextColor="#999"
+            value={input}
+            onChangeText={setInput}
+            multiline
+            maxLength={1000}
+            editable={!loading}
+          />
+          <Pressable style={styles.micBtn} onPress={() => setVoiceOpen(true)}>
+            <Ionicons name="mic" size={20} color="#fff" />
+          </Pressable>
+          <Pressable
+            style={[styles.sendBtn, (!input.trim() || loading) && styles.sendBtnDisabled]}
+            onPress={send}
+            disabled={!input.trim() || loading}
+          >
+            <Ionicons name="send" size={20} color="#fff" />
+          </Pressable>
         </View>
       </TouchableWithoutFeedback>
+      <VoiceChatModal visible={voiceOpen} onClose={() => setVoiceOpen(false)} context={content} />
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -232,6 +243,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     maxHeight: 100,
+  },
+  micBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#5BBCBC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendBtn: {
     width: 44,

@@ -263,7 +263,7 @@ FORMAT (use exactly this):
   - <bullet>
 
 ## 🧮 Equations / Formulas (if applicable)
-<LaTeX or "Not applicable">
+<LaTeX only — omit this entire section if there are no equations>
 
 ## ✨ Simplified Summary
 <plain-English takeaway>

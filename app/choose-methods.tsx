@@ -13,7 +13,7 @@ try {
 }
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
-import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -159,8 +159,8 @@ export default function ChooseMethodsScreen() {
 
       <View style={styles.contentRow}>
         <Image source={require('../assets/icons/contenticon.png')} style={styles.contentIcon} />
-        <Text style={styles.contentLabel}>
-          {contentItems.length > 0 ? `${contentItems.length} item(s)` : 'Content'}
+        <Text style={styles.contentLabel} numberOfLines={1}>
+          {`${selected.length} item${selected.length === 1 ? '' : 's'}`}
         </Text>
         <Pressable style={styles.addBtn} onPress={() => router.back()}>
           <Text style={styles.addBtnText}>{contentItems.length > 0 ? 'Change' : '+ Add'}</Text>
@@ -221,11 +221,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: scaleSize(24),
-    gap: scaleSize(10),
+    gap: scaleSize(14),
   },
   contentIcon: { width: RESPONSIVE.iconSmall, height: RESPONSIVE.iconSmall },
   contentLabel: {
     flex: 1,
+    flexShrink: 0,
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
     color: '#333',
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(10),
     paddingHorizontal: scaleSize(16),
-    marginRight: SCREEN_WIDTH * 0.4,
+    marginRight: scaleSize(120),
     borderWidth: 1,
     borderColor: '#ccc',
   },
