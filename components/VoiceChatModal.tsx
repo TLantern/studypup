@@ -1,6 +1,7 @@
 import { callOpenAIChat } from '@/lib/openai-service';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Speech from 'expo-speech';
 import { useEffect, useRef, useState } from 'react';
@@ -67,8 +68,10 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
       setAiReply('');
       fillerIdxRef.current = 0;
       setFillerIdx(0);
+      deactivateKeepAwake();
     } else {
       cancelledRef.current = false;
+      activateKeepAwakeAsync();
       // Use PlayAndRecord throughout so mic + speaker coexist (like a phone call)
       Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true }).catch(() => {});
     }

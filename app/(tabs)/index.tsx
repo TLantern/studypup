@@ -16,6 +16,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as DocumentPicker from 'expo-document-picker';
@@ -152,7 +153,10 @@ export default function HomeScreen() {
         const has75 = notes.some((n) => n.mastery >= 75);
         if (has75) {
           recordMasteryAchieved().then((newStreak) => {
-            if (newStreak !== null) setStreakPopup(newStreak);
+            if (newStreak !== null) {
+              setStreakPopup(newStreak);
+              setStreakCount(newStreak);
+            }
           });
         }
       });
@@ -365,6 +369,7 @@ export default function HomeScreen() {
       setRecordingDuration(0);
       setIsPaused(false);
       setRecordingMetering(null);
+      activateKeepAwakeAsync();
       newRecording.setOnRecordingStatusUpdate((status) => {
         if (status.metering != null) setRecordingMetering(status.metering);
       });
@@ -384,6 +389,7 @@ export default function HomeScreen() {
       setIsPaused(true);
       setRecordingMetering(null);
       if (timerRef.current) clearInterval(timerRef.current);
+      deactivateKeepAwake();
     }
   };
 
@@ -391,6 +397,7 @@ export default function HomeScreen() {
     if (recording && isPaused) {
       await recording.startAsync();
       setIsPaused(false);
+      activateKeepAwakeAsync();
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
@@ -410,6 +417,7 @@ export default function HomeScreen() {
     if (!recording) return;
 
     if (timerRef.current) clearInterval(timerRef.current);
+    deactivateKeepAwake();
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     const durationSec = recordingDuration;

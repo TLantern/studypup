@@ -35,6 +35,8 @@ import {
   updateMaterials,
 } from './study-materials-storage';
 import { callOpenAI, isOpenAIConfigured } from './openai-service';
+import { chunkText } from './text-chunker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const METHOD_TO_TYPE: Record<string, MaterialType> = {
   notes: 'notes',
@@ -184,6 +186,9 @@ export async function processContentAndGenerateMaterials(
   const selectedTypes = [...new Set(selectedMethods.map((m) => METHOD_TO_TYPE[m]).filter(Boolean))];
   if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials start', { userId, contentLen: content.length, selectedTypes });
 
+  // Persist extracted text + chunks for future search
+  await saveExtractedChunks(contentHash, content);
+
   // Step 1: Get or create knowledge graph
   let graph = await getKnowledgeGraphByContentHash(userId, contentHash);
   if (graph) {
@@ -284,6 +289,24 @@ async function generateSelectedMaterials(
     fillBlanks: types.includes('fill') ? all.fillBlanks : [],
     notes: types.includes('notes') ? all.notes : '',
   };
+}
+
+/**
+ * Chunk extracted text and write to the documents directory.
+ * Skips silently if the file already exists (same hash = same content).
+ */
+async function saveExtractedChunks(contentHash: string, content: string): Promise<void> {
+  try {
+    const dir = FileSystem.documentDirectory ?? '';
+    const path = `${dir}chunks_${contentHash}.json`;
+    const info = await FileSystem.getInfoAsync(path);
+    if (info.exists) return;
+    const chunks = chunkText(content);
+    await FileSystem.writeAsStringAsync(path, JSON.stringify({ contentHash, chunks }));
+    if (__DEV__) console.log(`[Studypup] Saved ${chunks.length} chunks → ${path}`);
+  } catch (err) {
+    console.warn('[Studypup] saveExtractedChunks failed (non-fatal):', err);
+  }
 }
 
 /**

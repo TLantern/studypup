@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -17,6 +17,7 @@ try {
 export const SuperwallAvailableContext = createContext(!!SuperwallProvider);
 export { SuperwallProvider, usePlacementHook };
 
+export const PLACEMENT_VALUE_SCREEN = 'value_screen';
 /** Superwall placement for paywall on app open (when user is unsubscribed). Create this placement in Superwall dashboard and attach your paywall. */
 export const PLACEMENT_APP_OPEN = 'app_open';
 /** Superwall placement for "Get Unlimited Notes" button. Create in Superwall if not already. */
@@ -26,6 +27,41 @@ export const PLACEMENT_GENERATE = 'generate';
 
 type PaywallTriggerContextValue = { showPaywall: (placement: string) => void };
 export const PaywallTriggerContext = createContext<PaywallTriggerContextValue>({ showPaywall: () => {} });
+
+/** Fires value_screen placement; on feature callback calls onFeature to proceed to actual paywall. */
+function ValueScreenInner({
+  active,
+  onFeature,
+  onClear,
+}: {
+  active: boolean;
+  onFeature: () => void;
+  onClear: () => void;
+}) {
+  const usePlacement = usePlacementHook!;
+  const didRegisterRef = useRef(false);
+  const onFeatureRef = useRef(onFeature);
+  const onClearRef = useRef(onClear);
+  onFeatureRef.current = onFeature;
+  onClearRef.current = onClear;
+
+  const proceed = () => { didRegisterRef.current = false; setTimeout(() => onFeatureRef.current(), 600); };
+
+  const { registerPlacement } = usePlacement({
+    onDismiss: proceed,
+    onSkip: proceed,
+    onError: () => { didRegisterRef.current = false; onClearRef.current(); },
+  });
+
+  useEffect(() => {
+    if (!active || didRegisterRef.current) return;
+    didRegisterRef.current = true;
+    registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: proceed })
+      .catch(() => { didRegisterRef.current = false; onClearRef.current(); });
+  }, [active, registerPlacement]);
+
+  return null;
+}
 
 function PaywallTriggerInner({
   placementToShow,
@@ -75,19 +111,36 @@ function PaywallTriggerInner({
 }
 
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [pendingPlacement, setPendingPlacement] = useState<string | null>(null);
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
-  const value = useMemo(() => ({ showPaywall: setPlacementToShow }), []);
-  
+
+  const showPaywall = useMemo(() => (placement: string) => {
+    setPendingPlacement(placement);
+  }, []);
+
+  const value = useMemo(() => ({ showPaywall }), [showPaywall]);
+
   useEffect(() => {
     if (placementToShow) {
       console.log('[Superwall] PaywallTriggerProvider placementToShow changed to:', placementToShow);
       console.log('[Superwall] usePlacementHook available?', !!usePlacementHook);
     }
   }, [placementToShow]);
-  
+
   return (
     <PaywallTriggerContext.Provider value={value}>
       {children}
+      {usePlacementHook != null && (
+        <ValueScreenInner
+          active={!!pendingPlacement}
+          onFeature={() => {
+            const p = pendingPlacement;
+            setPendingPlacement(null);
+            setPlacementToShow(p);
+          }}
+          onClear={() => setPendingPlacement(null)}
+        />
+      )}
       {usePlacementHook != null ? (
         <PaywallTriggerInner placementToShow={placementToShow} onClear={() => setPlacementToShow(null)} />
       ) : (

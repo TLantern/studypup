@@ -104,15 +104,28 @@ export default function QuizResultsScreen() {
 
         {/* Insight card */}
         <View style={styles.insightCard}>
-          <Text style={styles.insightText}>
-            You're currently on track for a <Text style={styles.bold}>{currentLetter}</Text>.
-          </Text>
-          <Text style={styles.insightText}>
-            Your biggest gap is <Text style={styles.bold}>{weakConcept}</Text> — this is likely costing you points on every exam that tests it.
-          </Text>
-          <Text style={styles.insightText}>
-            With structured review, you could reach a <Text style={styles.bold}>{improvedLetter}</Text>.
-          </Text>
+          {currentLetter === 'A' ? (
+            <>
+              <Text style={styles.insightText}>
+                You're already on the right track — seriously, <Text style={styles.bold}>nice work</Text>.
+              </Text>
+              <Text style={styles.insightText}>
+                The goal now is keeping it there. Consistent review is what separates a <Text style={styles.bold}>one-time A</Text> from always getting one.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.insightText}>
+                You're currently on track for a <Text style={styles.bold}>{currentLetter}</Text>.
+              </Text>
+              <Text style={styles.insightText}>
+                Your biggest gap is <Text style={styles.bold}>{weakConcept}</Text> — this is likely costing you points on every exam that tests it.
+              </Text>
+              <Text style={styles.insightText}>
+                With structured review, you could reach a <Text style={styles.bold}>{improvedLetter}</Text>.
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={styles.ctaWrap}>

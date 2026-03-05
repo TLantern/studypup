@@ -5,6 +5,7 @@
 import type { ContentItem } from './content-store';
 import { transcribeAudio } from './transcription';
 import { extractTextFromImage } from './ocr';
+import { extractDocumentText } from './document-extractor';
 
 export type ConversionProgress = {
   current: number;
@@ -49,13 +50,7 @@ export async function contentToText(
           break;
 
         case 'file':
-          // For files, check if image by extension
-          if (/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(item.name)) {
-            text = await extractTextFromImage(item.uri);
-          } else {
-            // Non-image files (PDF, etc.) - skip or add placeholder
-            text = `[File: ${item.name} - OCR not supported for this file type]`;
-          }
+          text = await extractDocumentText(item.uri, item.name);
           break;
 
         default:
