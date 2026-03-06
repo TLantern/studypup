@@ -2,7 +2,18 @@ import { useFonts, Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 import { LogBox, View } from 'react-native';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);

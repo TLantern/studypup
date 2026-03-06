@@ -79,6 +79,7 @@
           "imageWidth": 200
         }
       ],
+      "expo-notifications",
       "expo-font",
       [
         "expo-build-properties",

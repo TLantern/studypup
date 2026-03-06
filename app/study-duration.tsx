@@ -53,7 +53,7 @@ export default function StudyDurationScreen() {
             onPress={async () => {
               if (!selected) return;
               await updateOnboarding({ study_duration: selected });
-              router.push('/current-gpa');
+              router.push('/notification-optin');
             }}
             disabled={!selected}
           >

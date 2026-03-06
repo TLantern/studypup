@@ -1,74 +1,130 @@
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useEffect } from 'react';
-import * as Notifications from 'expo-notifications';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  applyNotifPrefs,
+  getNotifPrefs,
+  NotifPrefs,
+  requestPermissions,
+  saveNotifPrefs,
+} from '@/lib/notifications';
 
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
+const ITEMS: { key: keyof NotifPrefs; label: string; sub: string }[] = [
+  { key: 'dailyReminder', label: 'Daily Reminder', sub: 'Every day at 7:00 PM' },
+  { key: 'streakProtection', label: 'Streak Protection', sub: 'Every day at 8:00 PM' },
+  { key: 'spacedRepetition', label: 'Spaced Repetition', sub: '3 days after last review' },
+  { key: 'weeklySummary', label: 'Weekly Check-in', sub: 'Every Sunday at 7:00 PM' },
+];
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
+  const [prefs, setPrefs] = useState<NotifPrefs>({
+    dailyReminder: true,
+    streakProtection: true,
+    spacedRepetition: true,
+    weeklySummary: true,
+  });
+  const [permitted, setPermitted] = useState(true);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      Notifications.requestPermissionsAsync();
-    }, 1500);
-    return () => clearTimeout(timer);
+    (async () => {
+      const loaded = await getNotifPrefs();
+      setPrefs(loaded);
+    })();
   }, []);
+
+  async function toggle(key: keyof NotifPrefs, value: boolean) {
+    if (value && !permitted) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert('Permission needed', 'Enable notifications in Settings to use this feature.');
+        return;
+      }
+      setPermitted(true);
+    }
+    const updated = { ...prefs, [key]: value };
+    setPrefs(updated);
+    await saveNotifPrefs(updated);
+    await applyNotifPrefs(updated);
+  }
+
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Stay on Track</Text>
-        <Text style={styles.subtext}>Get reminders to study and never miss a test date.</Text>
-        <View style={styles.bellContainer}>
-          <Image source={require('../assets/faintelipse.png')} style={styles.faintElipse} contentFit="contain" />
-          <Image source={require('../assets/solidelipse.png')} style={styles.solidElipse} contentFit="contain" />
-          <Image source={require('../assets/icons/notification.png')} style={styles.bell} contentFit="contain" />
-        </View>
-        <View style={styles.bottomSection}>
-          <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
-          <Pressable style={styles.continueBtn} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
-        </View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </Pressable>
+        <Text style={styles.title}>Notifications</Text>
+        <View style={{ width: 40 }} />
       </View>
-    </LinearGradient>
+
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionTitle}>Engagement</Text>
+        <View style={styles.section}>
+          {ITEMS.map((item, i) => (
+            <View
+              key={item.key}
+              style={[styles.row, i < ITEMS.length - 1 && styles.rowBorder]}
+            >
+              <View style={styles.rowText}>
+                <Text style={styles.rowLabel}>{item.label}</Text>
+                <Text style={styles.rowSub}>{item.sub}</Text>
+              </View>
+              <Switch
+                value={prefs[item.key]}
+                onValueChange={v => toggle(item.key, v)}
+                trackColor={{ true: '#FD8A8A', false: '#E0E0E0' }}
+                thumbColor="#fff"
+              />
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 32 },
-  bellContainer: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: '#F5F5F5' },
+  header: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  faintElipse: { position: 'absolute', width: 280, height: 280 },
-  solidElipse: { position: 'absolute', width: 200, height: 200 },
-  bell: { position: 'absolute', width: 120, height: 120 },
-  bottomSection: { marginTop: 'auto', paddingTop: 16, position: 'relative', alignItems: 'center' },
-  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1 },
-  continueBtn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    width: '100%',
+  backBtn: { width: 40, alignItems: 'flex-start' },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#000' },
+  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  sectionTitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#666',
+    marginTop: 24,
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  section: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  row: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  rowText: { flex: 1, marginRight: 12 },
+  rowLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
+  rowSub: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#999', marginTop: 2 },
 });

@@ -31,6 +31,9 @@ import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
 import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext } from '@/lib/superwall';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+import { PaymentWarningModal } from '@/components/PaymentWarningModal';
+import { schedulePaymentWarningNotifications } from '@/lib/notifications';
+import { useBillingRetryCheck } from '@/lib/useBillingRetryCheck';
 import * as StoreReview from 'expo-store-review';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 import LottieView from 'lottie-react-native';
@@ -117,9 +120,12 @@ export default function HomeScreen() {
   const [streakCount, setStreakCount] = useState(0);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showPaymentWarning, setShowPaymentWarning] = useState(false);
   const { signOut, deleteUser, user } = useAuth();
   const { showPaywall } = useContext(PaywallTriggerContext);
   const superwallAvailable = useContext(SuperwallAvailableContext);
+
+  useBillingRetryCheck(() => setShowPaymentWarning(true));
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [reauthCode, setReauthCode] = useState('');
@@ -1234,7 +1240,7 @@ export default function HomeScreen() {
                         <Image source={{ uri: item.uri }} style={styles.contentConfirmThumb} />
                       ) : (
                         <View style={styles.contentConfirmIconWrap}>
-                          <Image source={require('../../assets/fi_link.png')} style={styles.contentConfirmIcon} />
+                          <Text style={{ fontSize: 22 }}>📝</Text>
                         </View>
                       )}
                       <Text
@@ -1584,6 +1590,12 @@ export default function HomeScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <PaymentWarningModal
+        visible={showPaymentWarning}
+        onRenew={() => { setShowPaymentWarning(false); Linking.openURL('https://apps.apple.com/account/subscriptions'); }}
+        onDismiss={() => setShowPaymentWarning(false)}
+      />
 
       <Modal visible={streakPopup !== null} transparent animationType="fade" onRequestClose={() => setStreakPopup(null)}>
         <Pressable style={styles.streakOverlay} onPress={() => setStreakPopup(null)}>
