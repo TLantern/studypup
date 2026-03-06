@@ -25,12 +25,13 @@ export async function stopElevenLabsAudio() {
 export async function speakWithElevenLabs(
   text: string,
   onDone?: () => void,
-  onError?: (e: unknown) => void
+  onError?: (e: unknown) => void,
+  voiceIdOverride?: string
 ): Promise<void> {
   await stopElevenLabsAudio();
 
   try {
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceIdOverride ?? VOICE_ID}`, {
       method: 'POST',
       headers: {
         'xi-api-key': API_KEY,
@@ -44,7 +45,12 @@ export async function speakWithElevenLabs(
       }),
     });
 
-    if (!response.ok) throw new Error(`ElevenLabs error ${response.status}`);
+    if (!response.ok) {
+      let body = '';
+      try { body = await response.text(); } catch {}
+      console.error(`[ElevenLabs] HTTP ${response.status}${response.status === 402 ? ' — quota exceeded or insufficient credits' : ''}. Body: ${body}`);
+      throw new Error(`ElevenLabs error ${response.status}`);
+    }
 
     const blob = await response.blob();
     const reader = new FileReader();
@@ -58,7 +64,8 @@ export async function speakWithElevenLabs(
     await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });
 
     // Keep allowsRecordingIOS: true so barge-in monitor can run simultaneously
-    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: true });
+    // defaultToSpeaker: true forces audio through loudspeaker even in recording mode
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: true, defaultToSpeaker: true });
     const { sound } = await Audio.Sound.createAsync({ uri: path }, { shouldPlay: true });
     currentSound = sound;
 
