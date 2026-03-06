@@ -1,5 +1,8 @@
 import { noteStyles, parseMarkdown } from '@/lib/notes-renderer';
 import { getMaterials } from '@/lib/study-materials-storage';
+import { getKnowledgeGraph } from '@/lib/knowledge-graph-storage';
+import { ChatModal } from '@/components/ChatModal';
+import { VoiceChatModal } from '@/components/VoiceChatModal';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,7 +29,10 @@ export default function StudySetScreen() {
   const [emoji, setEmoji] = useState('📚');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [sources, setSources] = useState<Array<{ name: string; type: string; emoji: string }>>([]);
   const [loading, setLoading] = useState(!!id);
+  const [showChat, setShowChat] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -36,6 +42,16 @@ export default function StudySetScreen() {
       setEmoji(m.emoji ?? '📚');
       setDate(new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
       setNotes(m.notes ?? '');
+      let srcs = m.sources ?? [];
+      if (srcs.length === 0 && m.knowledge_graph_id) {
+        const kg = await getKnowledgeGraph(m.knowledge_graph_id);
+        if (kg?.source) {
+          const typeMap: Record<string, string> = { lecture: '🎤', text: '📝', upload: '📄', manual: '✏️' };
+          const nameMap: Record<string, string> = { lecture: 'Lecture Recording', text: 'Text / URL', upload: 'Uploaded File', manual: 'Manual Entry' };
+          srcs = [{ name: nameMap[kg.source.type] ?? kg.source.type, type: kg.source.type as any, emoji: typeMap[kg.source.type] ?? '📄' }];
+        }
+      }
+      setSources(srcs);
     }
     setLoading(false);
   }, [id]);
@@ -93,6 +109,20 @@ export default function StudySetScreen() {
           ))}
         </View>
 
+        <View style={styles.sourceDivider}>
+          <View style={styles.sourceDividerLine} />
+          <Text style={styles.sourceDividerLabel}>Source Material</Text>
+          <View style={styles.sourceDividerLine} />
+        </View>
+
+        <Pressable style={styles.sourceBtn} onPress={() => router.push({ pathname: '/study-set/sources' as any, params: { materialId: id } })}>
+          <Text style={styles.sourceBtnEmoji}>📝</Text>
+          <Text style={styles.sourceBtnLabel}>{sources.length === 1 ? 'Source' : 'Sources'} ({sources.length})</Text>
+        </Pressable>
+
+        <View style={[noteStyles.card, styles.notesCard]}>
+          {notes.trim() ? parseMarkdown(notes) : <Text style={styles.emptyNotes}>No notes yet.</Text>}
+        </View>
         <Pressable
           style={styles.notesActionBtn}
           onPress={() => router.push({ pathname: '/generate-quiz', params: { methods: 'notes', materialId: id } })}
@@ -100,10 +130,30 @@ export default function StudySetScreen() {
           <Image source={require('../../assets/icons/notesicon.png')} style={styles.notesActionIcon} />
           <Text style={styles.notesActionLabel}>{notes.trim() ? 'Edit note' : 'Notes — Generate'}</Text>
         </Pressable>
-        <View style={[noteStyles.card, styles.notesCard]}>
-          {notes.trim() ? parseMarkdown(notes) : <Text style={styles.emptyNotes}>No notes yet.</Text>}
-        </View>
       </ScrollView>
+
+      <View style={[styles.stickyBar, { paddingBottom: insets.bottom + 8 }]}>
+        <Pressable style={styles.stickyCard} onPress={() => setShowChat(true)}>
+          <Text style={styles.stickyEmoji}>💬</Text>
+          <Text style={styles.stickyLabel} numberOfLines={1}>Chat with notes</Text>
+        </Pressable>
+        <Pressable style={styles.stickyCard} onPress={() => setShowVoice(true)}>
+          <Text style={styles.stickyEmoji}>🎙️</Text>
+          <Text style={styles.stickyLabel} numberOfLines={1}>Voice chat</Text>
+        </Pressable>
+      </View>
+
+      <ChatModal
+        visible={showChat}
+        onClose={() => setShowChat(false)}
+        notes={notes}
+        title={title}
+      />
+      <VoiceChatModal
+        visible={showVoice}
+        onClose={() => setShowVoice(false)}
+        context={notes}
+      />
     </View>
   );
 }
@@ -114,13 +164,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.08)',
   },
   backBtn: { padding: 4 },
-  headerCenter: { flex: 1, alignItems: 'center' },
+  headerCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' },
   headerEmoji: { fontSize: 28 },
   shareBtn: {
     flexDirection: 'row',
@@ -133,7 +184,7 @@ const styles = StyleSheet.create({
   },
   shareBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#333' },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 32 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
   title: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 24,
@@ -147,7 +198,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
-    marginBottom: 28,
+    marginBottom: 4,
   },
   methodBtn: {
     flexDirection: 'row',
@@ -165,17 +216,70 @@ const styles = StyleSheet.create({
   notesActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    marginBottom: 12,
+    marginTop: 12,
     gap: 12,
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   notesActionIcon: { width: 24, height: 24 },
   notesActionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
-  notesCard: { marginTop: 0 },
+  notesCard: { marginTop: 24, marginBottom: 0 },
   emptyNotes: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#888' },
+  stickyBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.07)',
+  },
+  stickyCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#f4f4f4',
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  stickyEmoji: { fontSize: 17 },
+  stickyLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 12, color: '#444', lineHeight: 15 },
+  sourceDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 10,
+    gap: 10,
+  },
+  sourceDividerLine: { flex: 1, height: 1, backgroundColor: '#e0e0e0' },
+  sourceDividerLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#999' },
+  sourceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f4f4f4',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    marginBottom: 10,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: '#ebebeb',
+  },
+  sourceBtnEmoji: { fontSize: 20 },
+  sourceBtnLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#555', flex: 1 },
 });

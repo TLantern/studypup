@@ -126,6 +126,8 @@ export type StudyMaterialSet = {
   title?: string;
   /** Display emoji (from knowledge graph) */
   emoji?: string;
+  /** Source materials used to generate this study set */
+  sources?: Array<{ name: string; type: 'audio' | 'image' | 'file' | 'notes'; emoji: string }>;
   /** Completed-question counts per category (correct answers). Totals come from array lengths. */
   progress?: {
     multipleChoice?: number;

@@ -185,7 +185,7 @@ export async function saveMaterials(materials: StudyMaterialSet): Promise<void> 
 
 export async function updateMaterials(
   materialId: string,
-  updates: Partial<Pick<StudyMaterialSet, 'flashcards' | 'quiz_questions' | 'written_questions' | 'fill_in_blank_questions' | 'notes' | 'progress' | 'user_answers' | 'updated_at'>>
+  updates: Partial<Pick<StudyMaterialSet, 'flashcards' | 'quiz_questions' | 'written_questions' | 'fill_in_blank_questions' | 'notes' | 'progress' | 'user_answers' | 'updated_at' | 'sources'>>
 ): Promise<StudyMaterialSet | null> {
   const existing = await getMaterialsLocally(materialId);
   if (!existing) return null;

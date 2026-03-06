@@ -1,453 +1,341 @@
-import { callOpenAIChat } from '@/lib/openai-service';
+import { callOpenAIChat, isOpenAIConfigured } from '@/lib/openai-service';
+import { transcribeAudio } from '@/lib/transcription';
+import { speakWithElevenLabs, stopElevenLabsAudio, isElevenLabsConfigured } from '@/lib/elevenlabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as Speech from 'expo-speech';
-import { useEffect, useRef, useState } from 'react';
+import LottieView from 'lottie-react-native';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Animated,
   Modal,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TEAL = '#5BBCBC';
-const OPENAI_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? '';
-const EL_KEY = process.env.EXPO_PUBLIC_ELEVENLABS_API_KEY ?? '';
-const EL_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel
-const EL_MODEL = 'eleven_flash_v2_5';
+const PURPLE = '#7c3aed';
 
-const FILLERS = [
-  "Hmm... that's a good question",
-  "Let me consult my notes... and my feelings",
-  "Please hold, your call is important to us",
-  "Thinking really hard right now...",
-  "Almost got it, just untangling some brain cells",
-];
+// VAD config
+const SPEECH_THRESHOLD = -35;   // dB — above = speech detected
+const SILENCE_DURATION = 1500;  // ms of silence before we stop recording
+const MIN_SPEECH_MS = 400;      // ignore blips shorter than this
+// Barge-in config (stricter than VAD to avoid AI audio bleed-through)
+const BARGE_IN_THRESHOLD = -20; // louder threshold — only loud user speech
+const BARGE_IN_FRAMES = 5;      // consecutive 100ms frames required (~500ms of sustained speech)
 
-const SYSTEM_PROMPT = `You are "Pup", a witty study buddy. You explain things clearly but can't resist throwing in a funny analogy or a dry joke. Keep it helpful and short (2-3 sentences). No markdown, no asterisks.`;
+type Phase = 'idle' | 'listening' | 'thinking' | 'speaking';
+type Message = { role: 'user' | 'assistant'; content: string };
 
-type Phase = 'idle' | 'listening' | 'processing' | 'speaking';
-
-type Props = {
+interface Props {
   visible: boolean;
   onClose: () => void;
   context: string;
-};
+}
+
+const SYSTEM_PROMPT = `You are StudyPup, a friendly voice study assistant. Keep ALL responses to 2-3 short sentences max unless the user asks for more. Be warm and conversational.\n\nStudent notes:\n`;
+
+const INTRO = "Hey! How can I help you understand your notes today?";
+
+const THINKING_FILLERS = [
+  "Hmm, let me think about that…",
+  "Good question, give me one sec…",
+  "Let me check your notes real quick…",
+  "Okay, thinking hard about this…",
+  "Ooh, interesting — working it out…",
+  "Let me see… I've got some thoughts on this…",
+];
 
 export function VoiceChatModal({ visible, onClose, context }: Props) {
-  const [phase, setPhase] = useState<Phase>('idle');
-  const [transcript, setTranscript] = useState('');
-  const [aiReply, setAiReply] = useState('');
-  const [fillerIdx, setFillerIdx] = useState(0);
-
+  const insets = useSafeAreaInsets();
+  const lottieRef = useRef<LottieView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const meteringIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const vadRecRef = useRef<Audio.Recording | null>(null);
-  const vadIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const ttsSoundRef = useRef<Audio.Sound | null>(null);
-  const aiReplyRef = useRef<string | null>(null);
-  const fillerIdxRef = useRef(0);
-  const cancelledRef = useRef(false);
-  const historyRef = useRef<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const monitorRef = useRef<Audio.Recording | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const speechStartedRef = useRef(false);
+  const speechStartTimeRef = useRef(0);
+  const listeningRef = useRef(false);
+  const pendingReplyRef = useRef<string | null>(null);
+  const fillerActiveRef = useRef(false);
+  const speakFillerRef = useRef<() => void>(() => {});
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [history, setHistory] = useState<Message[]>([]);
+  const historyRef = useRef<Message[]>([]);
 
-  const pulse1 = useRef(new Animated.Value(1)).current;
-  const pulse2 = useRef(new Animated.Value(1)).current;
-  const pulse3 = useRef(new Animated.Value(1)).current;
-  const bars = useRef([0, 1, 2, 3, 4].map(() => new Animated.Value(0.3))).current;
+  // Keep historyRef in sync
+  useEffect(() => { historyRef.current = history; }, [history]);
 
   useEffect(() => {
     if (!visible) {
-      cancelledRef.current = true;
       cleanup();
       setPhase('idle');
-      setTranscript('');
-      setAiReply('');
-      fillerIdxRef.current = 0;
-      setFillerIdx(0);
-      deactivateKeepAwake();
-    } else {
-      cancelledRef.current = false;
-      activateKeepAwakeAsync();
-      // Use PlayAndRecord throughout so mic + speaker coexist (like a phone call)
-      Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true }).catch(() => {});
+      setHistory([]);
+      historyRef.current = [];
     }
   }, [visible]);
 
-  useEffect(() => {
-    if (phase === 'listening') startPulse(); else stopPulse();
-    if (phase === 'speaking') { startBars(); startVADMonitor(); }
-    else { stopBars(); stopVADMonitor(); }
-  }, [phase]);
+  const stopBargeInMonitor = async () => {
+    const rec = monitorRef.current;
+    if (!rec) return;
+    monitorRef.current = null;
+    try { await rec.stopAndUnloadAsync(); } catch {}
+  };
 
-  // --- VAD during AI speech ---
-  async function startVADMonitor() {
-    try {
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync({
-        ...Audio.RecordingOptionsPresets.LOW_QUALITY,
-        isMeteringEnabled: true,
-      });
-      await rec.startAsync();
-      vadRecRef.current = rec;
+  const cleanup = useCallback(() => {
+    listeningRef.current = false;
+    pendingReplyRef.current = null;
+    fillerActiveRef.current = false;
+    stopRecording(false);
+    stopBargeInMonitor();
+    stopElevenLabsAudio();
+    Speech.stop();
+    lottieRef.current?.pause();
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+  }, []);
 
-      const VOICE_THRESHOLD_DB = -30;
-      vadIntervalRef.current = setInterval(async () => {
-        if (cancelledRef.current) { stopVADMonitor(); return; }
-        try {
-          const status = await rec.getStatusAsync();
-          const db = (status as any).metering ?? -100;
-          if (db > VOICE_THRESHOLD_DB) {
-            await interrupt();
-          }
-        } catch { stopVADMonitor(); }
-      }, 150);
-    } catch (e) {
-      console.error('VAD monitor error', e);
+  const playAnim = () => lottieRef.current?.play();
+  const pauseAnim = () => lottieRef.current?.pause();
+
+  // Speak via ElevenLabs (fallback to expo-speech) with barge-in support
+  const speak = useCallback((text: string, onDone?: () => void) => {
+    setPhase('speaking');
+    playAnim();
+
+    const done = () => {
+      stopBargeInMonitor();
+      pauseAnim();
+      setPhase('idle');
+      onDone?.();
+      if (listeningRef.current) startVAD();
+    };
+
+    if (isElevenLabsConfigured()) {
+      speakWithElevenLabs(text, done, () => done());
+    } else {
+      Speech.stop();
+      Speech.speak(text, { rate: 0.95, onDone: done, onStopped: done });
     }
-  }
 
-  async function stopVADMonitor() {
-    if (vadIntervalRef.current) { clearInterval(vadIntervalRef.current); vadIntervalRef.current = null; }
-    if (vadRecRef.current) {
-      const rec = vadRecRef.current;
-      vadRecRef.current = null;
-      await rec.stopAndUnloadAsync().catch(() => {});
-    }
-  }
+    // Start barge-in monitor after delay to let AI audio route through speaker first
+    setTimeout(() => startBargeInMonitor(), 1000);
+  }, []);
 
-  function startPulse() {
-    const make = (anim: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(anim, { toValue: 1.5, duration: 900, useNativeDriver: true }),
-          Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
-        ])
-      ).start();
-    make(pulse1, 0);
-    make(pulse2, 300);
-    make(pulse3, 600);
-  }
-
-  function stopPulse() {
-    [pulse1, pulse2, pulse3].forEach((p) => { p.stopAnimation(); p.setValue(1); });
-  }
-
-  function startBars() {
-    bars.forEach((b, i) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(i * 120),
-          Animated.timing(b, { toValue: 1, duration: 350, useNativeDriver: true }),
-          Animated.timing(b, { toValue: 0.2, duration: 350, useNativeDriver: true }),
-        ])
-      ).start()
-    );
-  }
-
-  function stopBars() {
-    bars.forEach((b) => { b.stopAnimation(); b.setValue(0.3); });
-  }
-
-  // --- ElevenLabs TTS ---
-  async function speakWithEL(text: string, onDone: () => void) {
-    if (cancelledRef.current) return;
-    try {
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE_ID}`, {
-        method: 'POST',
-        headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          model_id: EL_MODEL,
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-        }),
-      });
-      if (!res.ok) throw new Error(`ElevenLabs ${res.status}`);
-
-      const buffer = await res.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64 = btoa(binary);
-
-      const fileUri = `${FileSystem.cacheDirectory}tts_${Date.now()}.mp3`;
-      await FileSystem.writeAsStringAsync(fileUri, base64, {
-        encoding: 'base64' as any,
-      });
-
-      if (cancelledRef.current) { FileSystem.deleteAsync(fileUri, { idempotent: true }); return; }
-
-      const { sound } = await Audio.Sound.createAsync({ uri: fileUri }, { shouldPlay: true });
-      ttsSoundRef.current = sound;
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          sound.unloadAsync().catch(() => {});
-          FileSystem.deleteAsync(fileUri, { idempotent: true }).catch(() => {});
-          ttsSoundRef.current = null;
-          if (!cancelledRef.current) onDone();
-        }
-      });
-    } catch (e: any) {
-      console.error('speakWithEL error', e);
-      // Fallback to device TTS if ElevenLabs fails (quota, network, etc.)
-      if (!cancelledRef.current) {
-        Speech.speak(text, { onDone: onDone, onError: onDone });
+  // Speak a filler phrase while waiting for API; loops until pendingReplyRef is set
+  speakFillerRef.current = () => {
+    if (!listeningRef.current) return;
+    const text = THINKING_FILLERS[Math.floor(Math.random() * THINKING_FILLERS.length)];
+    fillerActiveRef.current = true;
+    playAnim();
+    const onDone = () => {
+      fillerActiveRef.current = false;
+      if (!listeningRef.current) return;
+      if (pendingReplyRef.current !== null) {
+        const reply = pendingReplyRef.current;
+        pendingReplyRef.current = null;
+        speak(reply);
+      } else {
+        speakFillerRef.current(); // still waiting — say another
       }
+    };
+    if (isElevenLabsConfigured()) {
+      speakWithElevenLabs(text, onDone, onDone);
+    } else {
+      Speech.stop();
+      Speech.speak(text, { rate: 0.95, onDone, onStopped: onDone });
     }
-  }
+  };
 
-  // --- Recording ---
-  async function startListening() {
-    if (cancelledRef.current) return;
-    try {
-      // Unload any leftover recording before creating a new one
-      if (recordingRef.current) {
-        await recordingRef.current.stopAndUnloadAsync().catch(() => {});
-        recordingRef.current = null;
-      }
-
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) return;
-
-      const rec = new Audio.Recording();
-      await rec.prepareToRecordAsync({
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-        isMeteringEnabled: true,
-      });
-      await rec.startAsync();
-      recordingRef.current = rec;
+  // Interrupt AI and start listening immediately
+  const handleBargeIn = useCallback(async () => {
+    pendingReplyRef.current = null;
+    fillerActiveRef.current = false;
+    stopElevenLabsAudio();
+    Speech.stop();
+    await stopBargeInMonitor();
+    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    if (listeningRef.current) {
       setPhase('listening');
-      startSilenceDetection(rec);
-    } catch (e) {
-      console.error('startListening error', e);
+      pauseAnim();
+      startVAD();
     }
-  }
+  }, []);
 
-  function startSilenceDetection(rec: Audio.Recording) {
-    let silentMs = 0;
-    const INTERVAL = 200;
-    const THRESHOLD_DB = -40;
-    const SILENCE_MS = 3000;
-
-    meteringIntervalRef.current = setInterval(async () => {
-      if (cancelledRef.current) { clearInterval(meteringIntervalRef.current!); return; }
-      try {
-        const status = await rec.getStatusAsync();
-        if (!status.isRecording) return;
-        const db = (status as any).metering ?? 0;
-        if (db < THRESHOLD_DB) {
-          silentMs += INTERVAL;
-          if (silentMs >= SILENCE_MS) {
-            clearInterval(meteringIntervalRef.current!);
-            meteringIntervalRef.current = null;
-            await finishRecording();
-          }
+  // Monitor mic during AI speech — triggers barge-in if user speaks
+  const startBargeInMonitor = useCallback(async () => {
+    if (monitorRef.current) return; // already running
+    try {
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      monitorRef.current = recording;
+      let consecutiveFrames = 0;
+      recording.setOnRecordingStatusUpdate((status) => {
+        if (!status.isRecording || !listeningRef.current || !monitorRef.current) return;
+        if ((status.metering ?? -160) > BARGE_IN_THRESHOLD) {
+          consecutiveFrames++;
+          if (consecutiveFrames >= BARGE_IN_FRAMES) handleBargeIn();
         } else {
-          silentMs = 0;
+          consecutiveFrames = 0;
         }
-      } catch {
-        clearInterval(meteringIntervalRef.current!);
-      }
-    }, INTERVAL);
-  }
+      });
+      recording.setProgressUpdateInterval(100);
+    } catch {}
+  }, [handleBargeIn]);
 
-  async function finishRecording() {
+  // Stop current recording (optionally process it)
+  const stopRecording = async (process = true) => {
+    if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
     const rec = recordingRef.current;
-    if (!rec || cancelledRef.current) return;
+    if (!rec) return;
     recordingRef.current = null;
-    setPhase('processing');
-    aiReplyRef.current = null;
-    fillerIdxRef.current = 0;
-    setFillerIdx(0);
-
     try {
       await rec.stopAndUnloadAsync();
+      if (!process) return;
       const uri = rec.getURI();
-      if (!uri) throw new Error('No recording URI');
+      if (!uri) return;
+      await processAudio(uri);
+    } catch {}
+  };
 
-      speakNextFiller();
-
-      const userText = (await transcribeAudio(uri)).trim();
-      if (cancelledRef.current) return;
-
-      setTranscript(userText);
-      historyRef.current = [...historyRef.current, { role: 'user', content: userText }];
-
-      const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-        { role: 'system', content: SYSTEM_PROMPT + '\n\nStudent notes context:\n' + context },
-        ...historyRef.current,
-      ];
-      const reply = await callOpenAIChat(messages, { maxTokens: 200 });
-      if (cancelledRef.current) return;
-
-      historyRef.current = [...historyRef.current, { role: 'assistant', content: reply }];
-      aiReplyRef.current = reply;
-      setAiReply(reply);
-    } catch (e) {
-      console.error('finishRecording error', e);
-      if (!cancelledRef.current) {
-        aiReplyRef.current = "I ran into a little brain freeze there. Could you try again?";
-        setAiReply(aiReplyRef.current);
+  const processAudio = async (uri: string) => {
+    setPhase('thinking');
+    pendingReplyRef.current = null;
+    fillerActiveRef.current = false;
+    pauseAnim();
+    try {
+      let userText = '';
+      if (isOpenAIConfigured()) {
+        userText = await transcribeAudio(uri);
       }
-    }
-  }
+      if (!userText.trim()) {
+        setPhase('idle');
+        if (listeningRef.current) startVAD();
+        return;
+      }
 
-  function speakNextFiller() {
-    if (cancelledRef.current) return;
-    const idx = fillerIdxRef.current;
-    // Stop cycling if we've exhausted all fillers — just wait silently
-    if (idx >= FILLERS.length) return;
-    const phrase = FILLERS[idx];
-    speakWithEL(phrase, () => {
-      if (cancelledRef.current) return;
-      if (aiReplyRef.current !== null) {
-        playReply(aiReplyRef.current);
+      const newHistory: Message[] = [...historyRef.current, { role: 'user', content: userText }];
+      historyRef.current = newHistory;
+      setHistory(newHistory);
+
+      // Speak a filler while the API call runs
+      speakFillerRef.current();
+
+      const aiReply = isOpenAIConfigured()
+        ? await callOpenAIChat([
+            { role: 'system', content: SYSTEM_PROMPT + context },
+            ...newHistory,
+          ])
+        : "I'd love to help — connect an OpenAI key to enable responses.";
+
+      const finalHistory: Message[] = [...newHistory, { role: 'assistant', content: aiReply }];
+      historyRef.current = finalHistory;
+      setHistory(finalHistory);
+
+      if (fillerActiveRef.current) {
+        // Filler still speaking — queue reply to play right after it finishes
+        pendingReplyRef.current = aiReply;
       } else {
-        fillerIdxRef.current += 1;
-        setFillerIdx(fillerIdxRef.current);
-        speakNextFiller();
+        speak(aiReply);
       }
-    });
-  }
+    } catch (e) {
+      console.error('[VoiceChat]', e);
+      stopElevenLabsAudio();
+      Speech.stop();
+      pendingReplyRef.current = null;
+      fillerActiveRef.current = false;
+      setPhase('idle');
+      if (listeningRef.current) startVAD();
+    }
+  };
 
-  function playReply(reply: string) {
-    if (cancelledRef.current) return;
-    setPhase('speaking');
-    speakWithEL(reply, () => {
-      if (cancelledRef.current) return;
+  // Start VAD recording loop
+  const startVAD = useCallback(async () => {
+    if (!listeningRef.current) return;
+    await stopBargeInMonitor(); // ensure monitor is released before opening a new recording
+    try {
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      recordingRef.current = recording;
+      speechStartedRef.current = false;
+      speechStartTimeRef.current = 0;
       setPhase('listening');
-      startListening();
+
+      recording.setOnRecordingStatusUpdate((status) => {
+        if (!status.isRecording || !listeningRef.current) return;
+        const db = status.metering ?? -160;
+        const isSpeech = db > SPEECH_THRESHOLD;
+
+        if (isSpeech) {
+          if (!speechStartedRef.current) {
+            speechStartedRef.current = true;
+            speechStartTimeRef.current = Date.now();
+          }
+          // Cancel any silence timer
+          if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+        } else if (speechStartedRef.current) {
+          // Start silence timer if not already running
+          if (!silenceTimerRef.current) {
+            silenceTimerRef.current = setTimeout(async () => {
+              silenceTimerRef.current = null;
+              const spokenMs = Date.now() - speechStartTimeRef.current;
+              if (spokenMs >= MIN_SPEECH_MS) {
+                await stopRecording(true);
+              } else {
+                await stopRecording(false);
+                if (listeningRef.current) startVAD();
+              }
+            }, SILENCE_DURATION);
+          }
+        }
+      });
+      recording.setProgressUpdateInterval(100);
+    } catch (e) {
+      console.error('[VAD start]', e);
+    }
+  }, [context]);
+
+  const handleStart = async () => {
+    const ok = await Audio.requestPermissionsAsync();
+    if (ok.status !== 'granted') return;
+    listeningRef.current = true;
+    speak(INTRO, () => {
+      const intro: Message[] = [{ role: 'assistant', content: INTRO }];
+      historyRef.current = intro;
+      setHistory(intro);
     });
-  }
-
-  async function interrupt() {
-    if (phase !== 'speaking') return;
-    if (ttsSoundRef.current) {
-      ttsSoundRef.current.stopAsync().catch(() => {});
-      ttsSoundRef.current.unloadAsync().catch(() => {});
-      ttsSoundRef.current = null;
-    }
-    Speech.stop();
-    await stopVADMonitor(); // wait for VAD recording to fully unload first
-    setPhase('listening');
-    startListening();
-  }
-
-  async function transcribeAudio(uri: string): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
-    formData.append('model', 'whisper-1');
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${OPENAI_KEY}` },
-      body: formData,
-    });
-    const json = await res.json();
-    return json.text ?? '';
-  }
-
-  function cleanup() {
-    stopVADMonitor();
-    if (meteringIntervalRef.current) {
-      clearInterval(meteringIntervalRef.current);
-      meteringIntervalRef.current = null;
-    }
-    if (ttsSoundRef.current) {
-      ttsSoundRef.current.stopAsync().catch(() => {});
-      ttsSoundRef.current.unloadAsync().catch(() => {});
-      ttsSoundRef.current = null;
-    }
-    if (recordingRef.current) {
-      recordingRef.current.stopAndUnloadAsync().catch(() => {});
-      recordingRef.current = null;
-    }
-    aiReplyRef.current = null;
-  }
-
-  function handleClose() {
-    cancelledRef.current = true;
-    cleanup();
-    historyRef.current = [];
-    onClose();
-  }
+  };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Voice Chat</Text>
-            <Pressable onPress={handleClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={22} color="#555" />
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => { cleanup(); onClose(); }}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+        {/* Close */}
+        <Pressable style={[styles.closeBtn, { top: insets.top + 14 }]} onPress={() => { cleanup(); onClose(); }} hitSlop={12}>
+          <Ionicons name="close" size={26} color="#555" />
+        </Pressable>
+
+        {/* Animation */}
+        <View style={styles.animWrap}>
+          <LottieView
+            ref={lottieRef}
+            source={require('../AI logo Foriday.json')}
+            style={styles.lottie}
+            autoPlay={false}
+            loop
+          />
+        </View>
+
+        {/* CTA */}
+        <View style={[styles.ctaWrap, { paddingBottom: insets.bottom + 24 }]}>
+          {phase === 'idle' && history.length === 0 ? (
+            <Pressable style={styles.startBtn} onPress={handleStart}>
+              <Text style={styles.startBtnText}>Start</Text>
             </Pressable>
-          </View>
-
-          <Text style={styles.statusLabel}>
-            {phase === 'idle' && 'Tap the mic to start talking'}
-            {phase === 'listening' && 'Listening...'}
-            {phase === 'processing' && FILLERS[fillerIdx % FILLERS.length]}
-            {phase === 'speaking' && 'Pup is speaking... tap to jump in'}
-          </Text>
-
-          <View style={styles.visualCenter}>
-            {(phase === 'idle' || phase === 'listening') && (
-              <Pressable
-                onPress={() => { if (phase === 'idle') startListening(); }}
-                style={styles.micOuter}
-              >
-                {phase === 'listening' && (
-                  <>
-                    <Animated.View style={[styles.ring, styles.ring3, { transform: [{ scale: pulse3 }] }]} />
-                    <Animated.View style={[styles.ring, styles.ring2, { transform: [{ scale: pulse2 }] }]} />
-                    <Animated.View style={[styles.ring, styles.ring1, { transform: [{ scale: pulse1 }] }]} />
-                  </>
-                )}
-                <View style={[styles.micCircle, phase === 'listening' && styles.micCircleActive]}>
-                  <Ionicons name="mic" size={36} color="#fff" />
-                </View>
-              </Pressable>
-            )}
-
-            {phase === 'processing' && (
-              <View style={styles.pupCircle}>
-                <Text style={styles.pupEmoji}>🐾</Text>
-              </View>
-            )}
-
-            {phase === 'speaking' && (
-              <Pressable style={styles.speakingWrap} onPress={interrupt}>
-                <View style={styles.pupCircle}>
-                  <Text style={styles.pupEmoji}>🐾</Text>
-                </View>
-                <View style={styles.barsRow}>
-                  {bars.map((b, i) => (
-                    <Animated.View
-                      key={i}
-                      style={[styles.bar, { transform: [{ scaleY: b }] }]}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.interruptHint}>tap to interrupt</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {transcript !== '' && (
-            <View style={styles.transcriptBox}>
-              <Text style={styles.transcriptLabel}>You said</Text>
-              <Text style={styles.transcriptText}>{transcript}</Text>
-            </View>
-          )}
-          {aiReply !== '' && (
-            <View style={styles.replyBox}>
-              <Text style={styles.replyLabel}>Pup</Text>
-              <Text style={styles.replyText}>{aiReply}</Text>
-            </View>
+          ) : (
+            <Text style={styles.phaseLabel}>
+              {phase === 'listening' ? 'Listening…' : phase === 'thinking' ? 'Thinking…' : phase === 'speaking' ? 'Speaking…' : ''}
+            </Text>
           )}
         </View>
       </View>
@@ -456,91 +344,12 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  header: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  title: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#333' },
-  closeBtn: { padding: 4 },
-  statusLabel: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#777',
-    marginBottom: 28,
-    textAlign: 'center',
-    minHeight: 22,
-  },
-  visualCenter: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 180,
-    width: '100%',
-    marginBottom: 20,
-  },
-  micOuter: { alignItems: 'center', justifyContent: 'center', width: 140, height: 140 },
-  ring: { position: 'absolute', borderRadius: 100, borderWidth: 2, borderColor: TEAL },
-  ring1: { width: 90, height: 90, opacity: 0.6 },
-  ring2: { width: 115, height: 115, opacity: 0.35 },
-  ring3: { width: 140, height: 140, opacity: 0.15 },
-  micCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#ccc',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  micCircleActive: { backgroundColor: TEAL },
-  speakingWrap: { alignItems: 'center', justifyContent: 'center', gap: 16 },
-  pupCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#F2E4E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pupEmoji: { fontSize: 36 },
-  barsRow: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40 },
-  interruptHint: { fontFamily: 'Fredoka_400Regular', fontSize: 12, color: '#aaa', marginTop: 4 },
-  bar: { width: 8, height: 32, borderRadius: 4, backgroundColor: TEAL },
-  transcriptBox: {
-    width: '100%',
-    backgroundColor: '#F2E4E4',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-  },
-  transcriptLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: '#999', marginBottom: 4 },
-  transcriptText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#444' },
-  replyBox: {
-    width: '100%',
-    backgroundColor: '#E8F7F7',
-    borderRadius: 12,
-    padding: 12,
-  },
-  replyLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: '#999', marginBottom: 4 },
-  replyText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#333' },
+  container: { flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'space-between', paddingTop: 80, paddingHorizontal: 28 },
+  closeBtn: { position: 'absolute', left: 20, zIndex: 10, padding: 4 },
+  animWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  lottie: { width: 240, height: 240 },
+  ctaWrap: { alignItems: 'center', width: '100%' },
+  startBtn: { backgroundColor: '#ede9fe', borderRadius: 24, paddingVertical: 11, paddingHorizontal: 36 },
+  startBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: 17, color: PURPLE },
+  phaseLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666' },
 });

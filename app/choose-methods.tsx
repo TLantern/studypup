@@ -1,6 +1,7 @@
 import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
 import { getItem, setItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
+import { updateMaterials } from '@/lib/study-materials-storage';
 import { PaywallTriggerContext, PLACEMENT_GENERATE, SuperwallAvailableContext } from '@/lib/superwall';
 
 // Import useUser for entitlement checking
@@ -35,6 +36,8 @@ const METHODS = [
 const SALMON = '#FD8A8A';
 
 const FREE_GENERATION_USED_KEY = 'free_generation_used';
+
+const SOURCE_EMOJI: Record<string, string> = { audio: '🎤', image: '📷', file: '📄', notes: '📝' };
 
 export default function ChooseMethodsScreen() {
   const insets = useSafeAreaInsets();
@@ -131,6 +134,12 @@ export default function ChooseMethodsScreen() {
         console.log('[Studypup] Pro user - not setting free generation used flag');
       }
       
+      const sources = contentItems.map((c) => ({
+        name: c.name,
+        type: c.type,
+        emoji: SOURCE_EMOJI[c.type] ?? '📄',
+      }));
+      await updateMaterials(materials.id, { sources });
       router.push({ pathname: '/generate-quiz', params: { methods: selected.join(','), materialId: materials.id } });
     } catch (err: any) {
       if (__DEV__) console.error('[Studypup] handleGenerate error:', err);
