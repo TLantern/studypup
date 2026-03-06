@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: scaleSize(-64) },
   heroWrap: { width: '100%', height: SCREEN_HEIGHT * 0.7, alignSelf: 'center' },
   hero: { width: '100%', height: '100%'},
-  buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(8) },
+  buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(16) },
   btn: {
     borderRadius: scaleSize(35),
     paddingVertical: scaleSize(18),
