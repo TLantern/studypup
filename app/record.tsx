@@ -1,11 +1,11 @@
+import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
+import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
-import { useHoverFloatStyle } from '@/lib/useHoverFloat';
-import { scaleFont, scaleSize, SCREEN_WIDTH, SCREEN_HEIGHT, RESPONSIVE } from '@/lib/responsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -45,18 +45,17 @@ const styles = StyleSheet.create({
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: scaleSize(-64) },
   heroWrap: { width: '100%', height: SCREEN_HEIGHT * 0.7, alignSelf: 'center' },
   hero: { width: '100%', height: '100%'},
-  buttons: { marginTop: scaleSize(-10)},
+  buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(8) },
   btn: {
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
-    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
+    borderRadius: scaleSize(35),
+    paddingVertical: scaleSize(18),
+    paddingHorizontal: scaleSize(32),
     alignItems: 'center',
     borderWidth: 2,
     backgroundColor: '#FD8A8A',
     borderColor: '#CA6E6E',
-    minHeight: RESPONSIVE.buttonMinHeight,
     ...BUTTON_SHADOW,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button },
+  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleSize(24) },
   btnPrimaryText: { color: '#fff' },
 });

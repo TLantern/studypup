@@ -1,7 +1,8 @@
 import { noteStyles, parseMarkdown } from '@/lib/notes-renderer';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
 
-type Props = { notes?: string };
+type Props = { notes?: string; footer?: ReactNode };
 
 const SCAFFOLD_NOTES = `## 📌 Title
 Photosynthesis: Converting Light into Life
@@ -35,7 +36,7 @@ Plants use sunlight + water + CO₂ to make sugar and release oxygen.
 ## ⭐ Why This Matters
 Essential for life on Earth. Common exam topic in biology. Understanding helps with ecology and climate science.`;
 
-export function NotesStudy({ notes = SCAFFOLD_NOTES }: Props) {
+export function NotesStudy({ notes = SCAFFOLD_NOTES, footer }: Props) {
   const content = notes.trim() || SCAFFOLD_NOTES;
 
   return (
@@ -53,6 +54,7 @@ export function NotesStudy({ notes = SCAFFOLD_NOTES }: Props) {
       <View style={noteStyles.card}>
         {parseMarkdown(content)}
       </View>
+      {footer}
     </ScrollView>
   );
 }

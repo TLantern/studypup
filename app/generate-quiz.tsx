@@ -659,16 +659,7 @@ export default function GenerateQuizScreen() {
 
       {activeTab === 'notes' && (
         <View style={styles.notesTabWrap}>
-          {notesContent?.trim() ? (
-            <Pressable
-              style={styles.editNoteBtn}
-              onPress={() => setEditNoteModalVisible(true)}
-              disabled={notesRegenerating}
-            >
-              <Image source={require('../assets/icons/notesicon.png')} style={styles.editNoteIcon} />
-              <Text style={styles.editNoteLabel}>Edit note</Text>
-            </Pressable>
-          ) : (
+          {!notesContent?.trim() && (
             <Pressable
               style={styles.generateNotesBtn}
               onPress={async () => {
@@ -695,7 +686,19 @@ export default function GenerateQuizScreen() {
             </Pressable>
           )}
           <View style={styles.notesStudyWrap}>
-            <NotesStudy notes={notesContent} />
+            <NotesStudy
+              notes={notesContent}
+              footer={notesContent?.trim() ? (
+                <Pressable
+                  style={styles.editNoteBtn}
+                  onPress={() => setEditNoteModalVisible(true)}
+                  disabled={notesRegenerating}
+                >
+                  <Image source={require('../assets/icons/notesicon.png')} style={styles.editNoteIcon} />
+                  <Text style={styles.editNoteLabel}>Edit note</Text>
+                </Pressable>
+              ) : undefined}
+            />
           </View>
           <Modal visible={editNoteModalVisible} transparent animationType="fade">
             <Pressable style={styles.modalBackdrop} onPress={() => setEditNoteModalVisible(false)}>
@@ -1015,14 +1018,17 @@ const styles = StyleSheet.create({
   editNoteBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
     borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 18,
-    marginBottom: 16,
+    marginTop: 12,
     gap: 12,
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   generateNotesBtn: {
     flexDirection: 'row',

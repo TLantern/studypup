@@ -85,7 +85,7 @@ export default function QuizResultsScreen() {
             <View style={styles.barGroup}>
               <View style={{ alignItems: 'center' }}>
                 <View style={styles.improvementBadge}>
-                  <Text style={styles.improvementBadgeText}>+{projected_increase}% Potential</Text>
+                  <Text style={styles.improvementBadgeText}>+{projected_score - mastery}% Potential</Text>
                 </View>
                 <View style={[styles.barTrack, { height: MAX_BAR_HEIGHT }]}>
                   <Animated.View style={[styles.barFill, styles.barRight, { height: rightHeight }]} />
