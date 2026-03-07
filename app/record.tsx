@@ -20,7 +20,7 @@ export default function RecordScreen() {
   const hoverStyle = useHoverFloatStyle();
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 30 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill1.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Record Your Lectures</Text>
         <Text style={styles.subtext}>Capture audio from classes and turn them into study notes.</Text>
@@ -42,10 +42,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: RESPONSIVE.containerPadding },
   progress: { width: scaleSize(120), height: scaleSize(16), alignSelf: 'center', marginBottom: scaleSize(24) },
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: scaleSize(-64) },
-  heroWrap: { width: '100%', height: SCREEN_HEIGHT * 0.7, alignSelf: 'center' },
-  hero: { width: '100%', height: '100%'},
-  buttons: { marginTop: scaleSize(5) },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: 24 },
+  heroWrap: { flex: 1, width: '100%', maxHeight: 460, alignSelf: 'center', marginBottom: 24 },
+  hero: { width: '100%', height: '100%' },
+  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
   btn: {
     borderRadius: RESPONSIVE.buttonRadius,
     paddingVertical: RESPONSIVE.buttonPaddingVertical,
