@@ -1,11 +1,12 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { RESPONSIVE, scaleSize } from '@/lib/responsive';
+import { SuperwallAvailableContext } from '@/lib/superwall';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import { useContext, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -26,6 +27,7 @@ const OPTIONS = [
 
 export default function CurrentGpaScreen() {
   const insets = useSafeAreaInsets();
+  const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string | null>(null);
 
   return (
@@ -48,6 +50,9 @@ export default function CurrentGpaScreen() {
           ))}
         </ScrollView>
         <View style={styles.buttons}>
+          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
           <Pressable
             style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
             onPress={async () => {
@@ -98,4 +103,5 @@ const styles = StyleSheet.create({
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
 });

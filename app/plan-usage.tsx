@@ -1,16 +1,17 @@
+import { ProgressBar } from '@/components/ProgressBar';
+import { useAuth } from '@/lib/auth-store';
+import { updateOnboarding } from '@/lib/onboarding-storage';
+import { RESPONSIVE, scaleSize } from '@/lib/responsive';
+import { SuperwallAvailableContext } from '@/lib/superwall';
+import { setItem as storageSetItem } from '@/lib/storage';
+import { ensureUserDoc } from '@/lib/user-profile';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProgressBar } from '@/components/ProgressBar';
-import { useAuth } from '@/lib/auth-store';
-import { updateOnboarding } from '@/lib/onboarding-storage';
-import { setItem as storageSetItem } from '@/lib/storage';
-import { ensureUserDoc } from '@/lib/user-profile';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 
@@ -34,6 +35,7 @@ const OPTIONS = [
 export default function PlanUsageScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
 
   return (
@@ -57,6 +59,9 @@ export default function PlanUsageScreen() {
         </ScrollView>
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
+          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
           <Pressable
           style={[styles.continueBtn, selected.length === 0 && styles.continueBtnDisabled]}
           onPress={async () => {
@@ -115,4 +120,5 @@ const styles = StyleSheet.create({
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
 });

@@ -2,9 +2,10 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -16,6 +17,7 @@ const BUTTON_SHADOW = {
 
 export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
+  const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     const show = async () => {
@@ -37,6 +39,9 @@ export default function ReviewScreen() {
         </View>
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
+          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
           <Pressable style={styles.continueBtn} onPress={() => router.push('/creating-plan')}>
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
@@ -75,4 +80,5 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
 });
