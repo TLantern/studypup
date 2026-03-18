@@ -28,7 +28,7 @@ const OPTIONS = [
   { id: 'notes', label: 'Generating Notes', icon: 'document-text' as const },
   { id: 'flashcards', label: 'Flashcards', icon: 'layers' as const },
   { id: 'quizzes', label: 'Quizzes', icon: 'locate' as const },
-  { id: 'answers', label: 'Getting Instant Answers', icon: 'flash' as const },
+  { id: 'answers', label: 'AI Tutor', icon: 'school' as const },
   { id: 'other', label: 'Other', icon: 'help-circle' as const },
 ];
 
@@ -44,7 +44,7 @@ export default function PlanUsageScreen() {
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={80} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>How do you plan on using Studypup?</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>What brings you to Studypup?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {OPTIONS.map((o) => (
             <Pressable
@@ -53,7 +53,7 @@ export default function PlanUsageScreen() {
               onPress={() => setSelected(prev => prev.includes(o.id) ? prev.filter(id => id !== o.id) : [...prev, o.id])}
             >
               <Text style={styles.optionText}>{o.label}</Text>
-              <Ionicons name={o.icon} size={RESPONSIVE.iconSmall} color={selected.includes(o.id) ? '#7c3aed' : '#666'} />
+              <Ionicons name={o.icon} size={RESPONSIVE.iconSmall} color={selected.includes(o.id) ? '#FD8A8A' : '#666'} />
             </Pressable>
           ))}
         </ScrollView>
@@ -69,7 +69,7 @@ export default function PlanUsageScreen() {
             await updateOnboarding({ plan_usage: selected });
             await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
             if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
-            router.push('/review');
+            router.push('/rating');
           }}
           disabled={selected.length === 0}
         >
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
-  optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
+  optionBtnSelected: { borderColor: '#FD8A8A', borderWidth: 2 },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   bottomSection: { marginTop: 'auto', paddingTop: scaleSize(6), position: 'relative', alignItems: 'center' },
   puppy: { position: 'absolute', bottom: scaleSize(51), width: scaleSize(140), height: scaleSize(120), zIndex: 1, marginBottom: scaleSize(-34) },
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: scaleSize(12) },
 });

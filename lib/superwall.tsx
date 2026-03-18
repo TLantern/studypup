@@ -2,11 +2,13 @@ import React, { createContext, useEffect, useMemo, useRef, useState } from 'reac
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
+let useUserHook: typeof import('expo-superwall').useUser | null = null;
 
 try {
   const sw = require('expo-superwall');
   SuperwallProvider = sw.SuperwallProvider;
   usePlacementHook = sw.usePlacement;
+  useUserHook = sw.useUser;
   console.log('[Superwall] Native module loaded successfully');
   console.log('[Superwall] SuperwallProvider available:', !!SuperwallProvider);
   console.log('[Superwall] usePlacementHook available:', !!usePlacementHook);
@@ -15,7 +17,7 @@ try {
 }
 
 export const SuperwallAvailableContext = createContext(!!SuperwallProvider);
-export { SuperwallProvider, usePlacementHook };
+export { SuperwallProvider, usePlacementHook, useUserHook };
 
 export const PLACEMENT_VALUE_SCREEN = 'value_screen';
 /** Superwall placement for paywall on app open (when user is unsubscribed). Create this placement in Superwall dashboard and attach your paywall. */
@@ -39,6 +41,9 @@ function ValueScreenInner({
   onClear: () => void;
 }) {
   const usePlacement = usePlacementHook!;
+  const useUser = useUserHook!;
+  const { subscriptionStatus } = useUser();
+  const isSubscribed = subscriptionStatus?.status === 'ACTIVE';
   const didRegisterRef = useRef(false);
   const onFeatureRef = useRef(onFeature);
   const onClearRef = useRef(onClear);
@@ -55,10 +60,11 @@ function ValueScreenInner({
 
   useEffect(() => {
     if (!active || didRegisterRef.current) return;
+    if (isSubscribed) { onFeatureRef.current(); return; }
     didRegisterRef.current = true;
     registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: proceed })
       .catch(() => { didRegisterRef.current = false; onClearRef.current(); });
-  }, [active, registerPlacement]);
+  }, [active, isSubscribed, registerPlacement]);
 
   return null;
 }

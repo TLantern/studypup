@@ -43,7 +43,7 @@ export default function SubjectsScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={60} /></View>
+          <View style={styles.progressWrap}><ProgressBar progress={30} /></View>
         </View>
         <Text style={[styles.title, { marginTop: 24 }]}>Which subjects are you struggling with?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -64,7 +64,7 @@ export default function SubjectsScreen() {
             onPress={async () => {
               if (selected.size === 0) return;
               await updateOnboarding({ subjects: Array.from(selected) });
-              router.push('/study-duration');
+              router.push('/students-stats');
             }}
             disabled={selected.size === 0}
           >
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
-  subjectBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
+  subjectBtnSelected: { borderColor: '#FD8A8A', borderWidth: 2 },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   subjectEmoji: { fontSize: RESPONSIVE.titleSmall },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },

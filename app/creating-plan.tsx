@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useContext, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const DURATION_MS = 6000;
 
@@ -16,7 +17,7 @@ export default function CreatingPlanScreen() {
 
   useEffect(() => {
     const t = setTimeout(
-      () => router.replace('/plan-ready'),
+      () => router.replace(superwallAvailable ? '/paywall' : '/create-account'),
       DURATION_MS
     );
     return () => clearTimeout(t);
@@ -37,29 +38,31 @@ export default function CreatingPlanScreen() {
   );
 }
 
+const LOTTIE_SIZE = scaleSize(260);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   text: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 22,
+    fontSize: scaleFont(22),
     color: '#333',
     textAlign: 'center',
-    marginBottom: 152,
+    marginBottom: scaleSize(40),
   },
   lottieWrap: {
-    width: 280,
-    height: 280,
+    width: LOTTIE_SIZE,
+    height: LOTTIE_SIZE,
     justifyContent: 'center',
     alignItems: 'center',
   },
   lottie: {
-    width: 280,
-    height: 280,
+    width: LOTTIE_SIZE,
+    height: LOTTIE_SIZE,
   },
 });

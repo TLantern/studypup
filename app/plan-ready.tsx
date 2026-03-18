@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { ProgressBar } from '@/components/ProgressBar';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -24,8 +25,11 @@ export default function PlanReadyScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }]}>
+        <ProgressBar progress={100} />
         <View style={styles.middle}>
+          <Text style={styles.title}>Now let's Assess{'\n'}Your Level</Text>
+
           <View style={styles.lottieWrap}>
             <LottieView
               ref={lottieRef}
@@ -35,18 +39,14 @@ export default function PlanReadyScreen() {
             />
           </View>
 
-          <Text style={styles.title}>Your Personalized Study Plan Is Ready</Text>
+          <Text style={styles.body}>Answer 3 quick questions to pinpoint where you stand.</Text>
 
-          <Text style={styles.body}>
-          Answer 3 quick questions to see where you stand.
-          </Text>
-
-          <Text style={styles.hint}>Most students overestimate readiness by 20–30%.</Text>
+          <Text style={styles.hint} numberOfLines={1} adjustsFontSizeToFit>Most students overestimate their readiness by 20–30%.</Text>
         </View>
 
         <View style={styles.ctaWrap}>
           <Pressable style={styles.btn} onPress={() => router.replace('/micro-quiz')}>
-            <Text style={styles.btnText}>Start My Assessment</Text>
+            <Text style={styles.btnText}>Start Assessment</Text>
           </Pressable>
         </View>
       </View>

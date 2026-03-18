@@ -24,7 +24,7 @@ export { SCREEN_WIDTH, SCREEN_HEIGHT };
 export const RESPONSIVE = {
   // Padding
   containerPadding: SCREEN_WIDTH * 0.06,
-  horizontalPadding: 24,
+  horizontalPadding: scaleSize(24),
   
   // Button dimensions
   buttonRadius: scaleSize(35),

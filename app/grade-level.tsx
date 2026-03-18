@@ -31,7 +31,7 @@ export default function GradeLevelScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={40} /></View>
+          <View style={styles.progressWrap}><ProgressBar progress={20} /></View>
         </View>
         <Text style={[styles.title, { marginTop: 24 }]}>What grade level are you?</Text>
         <Text style={styles.subtitle}>I am in...</Text>

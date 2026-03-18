@@ -19,7 +19,7 @@ function higherGrade(letter: string): string {
   return map[letter] ?? 'A';
 }
 
-const MAX_BAR_HEIGHT = 180;
+const MAX_BAR_HEIGHT = scaleSize(180);
 
 export default function QuizResultsScreen() {
   const insets = useSafeAreaInsets();
@@ -57,7 +57,7 @@ export default function QuizResultsScreen() {
   const rightHeight = rightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, (projected_score / 100) * MAX_BAR_HEIGHT] });
 
   const handleUnlock = () => {
-    router.replace(superwallAvailable ? '/paywall' : '/create-account');
+    router.replace('/creating-plan');
   };
 
   return (
@@ -130,7 +130,7 @@ export default function QuizResultsScreen() {
 
         <View style={styles.ctaWrap}>
           <Pressable style={styles.btn} onPress={handleUnlock}>
-            <Text style={styles.btnText}>Increase My Score</Text>
+            <Text style={styles.btnText}>Improve My Grade</Text>
           </Pressable>
         </View>
       </ScrollView>

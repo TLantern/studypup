@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1 },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: scaleSize(10), marginBottom: scaleSize(20) },
   dot: { width: scaleSize(10), height: scaleSize(10), borderRadius: scaleSize(5), backgroundColor: 'rgba(255,255,255,0.5)' },
-  dotActive: { backgroundColor: '#7c3aed' },
+  dotActive: { backgroundColor: '#FD8A8A' },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#555', textAlign: 'center', marginBottom: scaleSize(4) },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   card: {
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  questionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(13), color: '#7c3aed', marginBottom: scaleSize(8) },
+  questionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(13), color: '#FD8A8A', marginBottom: scaleSize(8) },
   questionText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#111', lineHeight: scaleFont(26) },
   optionsWrap: { gap: scaleSize(10), marginBottom: scaleSize(24) },
   option: {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  optionSelected: { borderColor: '#7c3aed', borderWidth: 2, backgroundColor: '#f5f0ff' },
+  optionSelected: { borderColor: '#FD8A8A', borderWidth: 2, backgroundColor: '#fff0f0' },
   optionBullet: {
     width: scaleSize(28),
     height: scaleSize(28),
@@ -368,11 +368,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: scaleSize(12),
   },
-  optionBulletSelected: { backgroundColor: '#7c3aed' },
+  optionBulletSelected: { backgroundColor: '#FD8A8A' },
   optionBulletText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#666' },
   optionBulletTextSelected: { color: '#fff' },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#222', flex: 1 },
-  optionTextSelected: { color: '#4a1d96' },
+  optionTextSelected: { color: '#000' },
   ctaWrap: { marginBottom: scaleSize(-34), gap: scaleSize(8) },
   skipBtn: { alignItems: 'center', paddingVertical: scaleSize(10) },
   skipText: {

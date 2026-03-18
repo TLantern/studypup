@@ -34,7 +34,7 @@ export default function CurrentGpaScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={70} /></View>
+          <View style={styles.progressWrap}><ProgressBar progress={50} /></View>
         </View>
         <Text style={[styles.title, { marginTop: 24 }]}>What's your current GPA?</Text>
         <Text style={styles.subtitle}>This helps tailor your study plan.</Text>
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
-  optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
+  optionBtnSelected: { borderColor: '#FD8A8A', borderWidth: 2 },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },
   continueBtn: {
@@ -103,5 +103,5 @@ const styles = StyleSheet.create({
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: scaleSize(12) },
 });

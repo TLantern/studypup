@@ -11,6 +11,6 @@ export function ProgressBar({ progress }: { progress: number }) {
 }
 
 const styles = StyleSheet.create({
-  track: { height: 4, backgroundColor: 'rgba(0,0,0,0.1)', width: '100%' },
-  fill: { height: '100%', backgroundColor: FILL_COLOR },
+  track: { height: 8, backgroundColor: 'rgba(0,0,0,0.12)', width: '100%', borderRadius: 4 },
+  fill: { height: '100%', backgroundColor: FILL_COLOR, borderRadius: 4 },
 });

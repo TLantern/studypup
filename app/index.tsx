@@ -121,7 +121,7 @@ export default function OnboardingScreen() {
         <Image source={require('../assets/icons/userchoice.png')} style={styles.userChoiceBadge} contentFit="contain" />
       </View>
       <View style={styles.buttons}>
-        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
+        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/demo-page')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
         <Pressable style={[styles.btn, styles.btnLogin]} onPress={() => router.push(superwallAvailable ? { pathname: '/create-account', params: { then: 'paywall' } } : '/create-account')}>
