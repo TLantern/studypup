@@ -88,7 +88,7 @@ export default function StudentsStatsScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.progressWrap}><ProgressBar progress={40} /></View>
-        <Text style={styles.title}>We got you!</Text>
+        <Text style={styles.title}>You're in the right place!</Text>
         <Animated.Text style={[styles.subtitle, subtitleStyle]}>{displayed}</Animated.Text>
 
         {bulletsVisible && (
@@ -114,19 +114,20 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: scaleFont(40),
+    fontFamily: 'Fredoka',
+    fontWeight: '600',
+    fontSize: scaleFont(32),
     color: '#000',
     textAlign: 'center',
-    marginBottom: scaleSize(16),
+    marginBottom: scaleSize(36),
   },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(20),
+    fontSize: scaleFont(16),
     color: '#333',
     textAlign: 'center',
     marginBottom: scaleSize(36),
-    lineHeight: scaleFont(28),
+    lineHeight: scaleFont(23),
     minHeight: scaleSize(84),
   },
   bulletsWrap: { gap: scaleSize(20) },

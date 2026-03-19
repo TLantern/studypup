@@ -45,7 +45,7 @@ export default function SubjectsScreen() {
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={30} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>Which subjects are you struggling with?</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>Which subjects feel the hardest right now?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {SUBJECTS.map((s) => (
             <Pressable
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: scaleSize(16) },
   subjectBtn: {
@@ -95,9 +95,16 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(10),
     borderWidth: 1,
     borderColor: '#ddd',
-    ...BUTTON_SHADOW,
   },
-  subjectBtnSelected: { borderColor: '#FD8A8A', borderWidth: 2 },
+  subjectBtnSelected: {
+    borderColor: '#FD8A8A',
+    borderWidth: 2,
+    shadowColor: '#FD8A8A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   subjectEmoji: { fontSize: RESPONSIVE.titleSmall },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },

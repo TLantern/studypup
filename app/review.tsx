@@ -54,7 +54,7 @@ export default function ReviewScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 16 },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 16 },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 17,

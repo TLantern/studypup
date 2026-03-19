@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   heroWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   lottie: { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6) },

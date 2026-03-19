@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(28), color: '#000', textAlign: 'center', marginBottom: scaleSize(10) },
+  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(28), color: '#000', textAlign: 'center', marginBottom: scaleSize(10) },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(20), lineHeight: scaleFont(26), minHeight: scaleSize(52) },
   chartWrap: { flex: 1, justifyContent: 'center' },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6) },

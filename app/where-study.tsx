@@ -239,7 +239,7 @@ export default function WhereStudyScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 24 },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 24 },
   dropdownRow: { marginBottom: 52 },
   dropdownBtn: {
     flex: 1,

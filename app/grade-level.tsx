@@ -33,8 +33,8 @@ export default function GradeLevelScreen() {
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={20} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>What grade level are you?</Text>
-        <Text style={styles.subtitle}>I am in...</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>What's your learning level?</Text>
+        <Text style={styles.subtitle}>Choose the one that fits you best</Text>
 
         {GRADES.map((g) => (
           <Pressable
@@ -75,10 +75,10 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleMedium, color: '#000', textAlign: 'center', marginBottom: scaleSize(4) },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: RESPONSIVE.titleMedium, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: RESPONSIVE.subtitle,
+    fontSize: scaleFont(14),
     color: '#333',
     textAlign: 'center',
     marginBottom: scaleSize(24),
@@ -95,9 +95,16 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(10),
     borderWidth: 1,
     borderColor: '#ddd',
-    ...BUTTON_SHADOW,
   },
-  gradeBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
+  gradeBtnSelected: {
+    borderColor: '#FD8A8A',
+    borderWidth: 2,
+    shadowColor: '#FD8A8A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   gradeText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   gradeEmoji: { fontSize: RESPONSIVE.titleSmall },
   bottomSection: {

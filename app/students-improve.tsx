@@ -67,7 +67,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: 'Fredoka',
+    fontWeight: '600',
     fontSize: 28,
     color: '#000',
     textAlign: 'center',

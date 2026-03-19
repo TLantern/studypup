@@ -98,7 +98,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: 'Fredoka',
+    fontWeight: '600',
     fontSize: RESPONSIVE.titleSmall,
     color: '#000',
     textAlign: 'center',

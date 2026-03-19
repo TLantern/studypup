@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   dot: { width: scaleSize(10), height: scaleSize(10), borderRadius: scaleSize(5), backgroundColor: 'rgba(255,255,255,0.5)' },
   dotActive: { backgroundColor: '#FD8A8A' },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#555', textAlign: 'center', marginBottom: scaleSize(4) },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   card: {
     backgroundColor: '#fff',
     borderRadius: scaleSize(16),

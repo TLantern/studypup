@@ -139,7 +139,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.containerPadding 
   },
   title: { 
-    fontFamily: 'FredokaOne_400Regular', 
+    fontFamily: 'Fredoka',
+    fontWeight: '600',
     fontSize: WELCOME_RESPONSIVE.titleFontSize, 
     color: '#000', 
     textAlign: 'center', 

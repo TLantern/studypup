@@ -16,6 +16,7 @@ export default function RatingScreen() {
       if (await StoreReview.hasAction()) {
         await StoreReview.requestReview();
       }
+      await new Promise(resolve => setTimeout(resolve, 1500));
       router.push('/plan-ready' as never);
     })();
   }, []);
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   center: { flex: 1, justifyContent: 'center' },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: scaleSize(12) },
+  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: scaleSize(12) },
   subtext: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
   starsRow: { flexDirection: 'row', justifyContent: 'center', gap: scaleSize(8) },
   star: { fontSize: scaleFont(40) },

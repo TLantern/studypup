@@ -1,4 +1,4 @@
-import { useFonts, Fredoka_400Regular } from '@expo-google-fonts/fredoka';
+import { useFonts, Fredoka_400Regular, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,7 +33,7 @@ const SUPERWALL_IOS_KEY = process.env.EXPO_PUBLIC_SUPERWALL_IOS_KEY ?? '';
 const SUPERWALL_ANDROID_KEY = process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? '';
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Fredoka_400Regular, FredokaOne_400Regular });
+  const [fontsLoaded] = useFonts({ Fredoka_400Regular, Fredoka_600SemiBold, FredokaOne_400Regular, Fredoka: require('../assets/fonts/Fredoka.ttf') });
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
