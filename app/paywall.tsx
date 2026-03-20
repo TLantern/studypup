@@ -13,7 +13,7 @@ function PaywallWithSuperwall() {
     if (shouldReturn) {
       router.back();
     } else {
-      router.replace('/create-account');
+      router.replace('/signup');
     }
   }, [shouldReturn]);
   const didPresentRef = useRef(false);
@@ -62,7 +62,7 @@ function PaywallWithoutSuperwall() {
   useEffect(() => {
     if (didRedirectRef.current) return;
     didRedirectRef.current = true;
-    router.replace('/create-account');
+    router.replace('/signup');
   }, []);
   return null;
 }

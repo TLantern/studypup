@@ -10,6 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "usesAppleSignIn": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "StudyPup needs local network access to connect to the development server for live reload.",
@@ -79,6 +80,12 @@
           "imageWidth": 200
         }
       ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.114632107142-hoch555rj7hlnmhdu7bie4m10rjknmo7"
+        }
+      ],
       "expo-notifications",
       "expo-font",
       [
@@ -93,7 +100,8 @@
           },
           "jsEngine": "hermes"
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true,

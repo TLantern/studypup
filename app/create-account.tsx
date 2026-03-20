@@ -197,7 +197,7 @@ export default function CreateAccountScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Create an Account</Text>
+        <Text style={styles.title}>Phone Sign In</Text>
         <Text style={styles.subtitle}>
           {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
         </Text>

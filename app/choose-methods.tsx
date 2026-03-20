@@ -105,7 +105,7 @@ export default function ChooseMethodsScreen() {
           }
         } else {
           console.log('[Studypup] Superwall not available, pushing to create-account');
-          router.push('/create-account');
+          router.push('/signup');
         }
         return;
       }

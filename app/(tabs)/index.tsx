@@ -1294,7 +1294,7 @@ export default function HomeScreen() {
               onPress={() => {
                 setShowSettingsModal(false);
                 if (superwallAvailable) showPaywall(PLACEMENT_GET_UNLIMITED);
-                else router.push('/create-account');
+                else router.push('/signup');
               }}
             >
               <Animated.View style={[styles.unlimitedBtnInner, unlimitedBtnAnimatedStyle]}>
