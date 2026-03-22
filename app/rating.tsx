@@ -6,8 +6,8 @@ import { useContext, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackEvent } from '@/lib/mixpanel';
-import { scaleFont, scaleSize } from '@/lib/responsive';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { scaleFont, scaleSize } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -49,10 +49,7 @@ export default function RatingScreen() {
         </View>
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
-          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
-            <Text style={styles.skipText}>Skip</Text>
-          </Pressable>
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/creating-plan')}>
+          <Pressable style={styles.continueBtn} onPress={() => router.replace(superwallAvailable ? '/paywall' : '/signup')}>
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
@@ -90,5 +87,4 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
 });

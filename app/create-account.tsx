@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
+import { useUserSafe } from '@/lib/superwall';
 import { getItem, setItem } from '@/lib/storage';
 import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
@@ -25,6 +26,8 @@ export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ then?: string }>();
   const { uid } = useAuth();
+  const { subscriptionStatus } = useUserSafe();
+  const isPro = subscriptionStatus?.status === 'ACTIVE';
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -73,9 +76,9 @@ export default function CreateAccountScreen() {
 
   useEffect(() => {
     if (!uid) return;
-    if (params.then === 'paywall') router.replace('/paywall');
+    if (params.then === 'paywall') router.replace(isPro ? '/(tabs)' : '/paywall');
     else router.replace('/(tabs)');
-  }, [uid, params.then]);
+  }, [uid, params.then, isPro]);
 
   useEffect(() => {
     if (cooldown <= 0) return;

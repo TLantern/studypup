@@ -1,8 +1,7 @@
 import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
-import { useContext, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
@@ -10,7 +9,6 @@ const DURATION_MS = 6000;
 
 export default function CreatingPlanScreen() {
   const lottieRef = useRef<LottieView>(null);
-  const superwallAvailable = useContext(SuperwallAvailableContext);
   const tracked = useRef(false);
 
   useEffect(() => {
@@ -25,11 +23,11 @@ export default function CreatingPlanScreen() {
 
   useEffect(() => {
     const t = setTimeout(
-      () => router.replace(superwallAvailable ? '/paywall' : '/signup'),
+      () => router.replace('/plan-ready'),
       DURATION_MS
     );
     return () => clearTimeout(t);
-  }, [superwallAvailable]);
+  }, []);
 
   return (
     <View style={styles.container}>

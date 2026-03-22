@@ -16,8 +16,11 @@ try {
   console.warn('[Superwall] Native module not available (Expo Go or build issue):', err);
 }
 
+const useUserStub = () => ({ subscriptionStatus: { status: 'INACTIVE' as const } });
+const useUserSafe = useUserHook ?? useUserStub;
+
 export const SuperwallAvailableContext = createContext(!!SuperwallProvider);
-export { SuperwallProvider, usePlacementHook, useUserHook };
+export { SuperwallProvider, usePlacementHook, useUserHook, useUserSafe };
 
 export const PLACEMENT_VALUE_SCREEN = 'value_screen';
 /** Superwall placement for paywall on app open (when user is unsubscribed). Create this placement in Superwall dashboard and attach your paywall. */
@@ -60,7 +63,7 @@ function ValueScreenInner({
 
   useEffect(() => {
     if (!active || didRegisterRef.current) return;
-    if (isSubscribed) { onFeatureRef.current(); return; }
+    if (isSubscribed) { onClearRef.current(); return; }
     didRegisterRef.current = true;
     registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: proceed })
       .catch(() => { didRegisterRef.current = false; onClearRef.current(); });
@@ -77,6 +80,10 @@ function PaywallTriggerInner({
   onClear: () => void;
 }) {
   const usePlacement = usePlacementHook!;
+  const useUser = useUserHook!;
+  const { subscriptionStatus } = useUser();
+  const isPro = subscriptionStatus?.status === 'ACTIVE';
+
   const { registerPlacement, state } = usePlacement({
     onPresent: (paywallInfo) => {
       console.log('[Superwall] Paywall PRESENTED!', paywallInfo);
@@ -102,6 +109,7 @@ function PaywallTriggerInner({
   }, [state]);
   useEffect(() => {
     if (!placementToShow) return;
+    if (isPro) { onClear(); return; }
     console.log('[Superwall] registerPlacement called with:', placementToShow);
     registerPlacement({ placement: placementToShow, feature: () => {} })
       .then(() => {
@@ -112,7 +120,7 @@ function PaywallTriggerInner({
         console.error('[Superwall] registerPlacement failed for:', placementToShow, error);
         onClear();
       });
-  }, [placementToShow]);
+  }, [placementToShow, isPro, onClear]);
   return null;
 }
 
