@@ -47,7 +47,7 @@ export default function SubjectsScreen() {
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={30} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>Which subjects feel the hardest right now?</Text>
+        <Text style={[styles.title, { marginTop: scaleSize(24) }]}>Which subjects feel the hardest right now?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {SUBJECTS.map((s) => (
             <Pressable

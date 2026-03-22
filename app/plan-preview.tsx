@@ -3,7 +3,7 @@ import { trackEvent } from '@/lib/mixpanel';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import GPAChart from '@/components/GPAChart';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
@@ -46,7 +46,7 @@ export default function PlanPreviewScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.progressWrap}><ProgressBar progress={70} /></View>
         <Text style={styles.heading}>First Step Complete</Text>
         <Text style={styles.subtitle}>{displayed}</Text>
@@ -58,14 +58,14 @@ export default function PlanPreviewScreen() {
             <Text style={styles.btnText}>Continue</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
   heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(28), color: '#000', textAlign: 'center', marginBottom: scaleSize(10) },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(20), lineHeight: scaleFont(26), minHeight: scaleSize(52) },

@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { scaleSize } from '@/lib/responsive';
 
 const FILL_COLOR = 'rgba(253, 138, 138, 0.8)';
 
@@ -11,6 +12,6 @@ export function ProgressBar({ progress }: { progress: number }) {
 }
 
 const styles = StyleSheet.create({
-  track: { height: 8, backgroundColor: 'rgba(0,0,0,0.12)', width: '100%', borderRadius: 4 },
-  fill: { height: '100%', backgroundColor: FILL_COLOR, borderRadius: 4 },
+  track: { height: scaleSize(8), backgroundColor: 'rgba(0,0,0,0.12)', width: '100%', borderRadius: scaleSize(4) },
+  fill: { height: '100%', backgroundColor: FILL_COLOR, borderRadius: scaleSize(4) },
 });

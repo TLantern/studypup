@@ -3,19 +3,14 @@ import { Dimensions } from 'react-native';
 // Get screen dimensions for responsive sizing
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Base width for scaling calculations (iPhone X)
 const BASE_WIDTH = 375;
+const MIN_RATIO = 0.85;
+const MAX_RATIO = 1.25;
 
-// Responsive scaling functions
-export const scaleFont = (size: number): number => {
-  const ratio = SCREEN_WIDTH / BASE_WIDTH;
-  return Math.round(size * ratio);
-};
+const scaleRatio = Math.min(MAX_RATIO, Math.max(MIN_RATIO, SCREEN_WIDTH / BASE_WIDTH));
 
-export const scaleSize = (size: number): number => {
-  const ratio = SCREEN_WIDTH / BASE_WIDTH;
-  return Math.round(size * ratio);
-};
+export const scaleFont = (size: number): number => Math.round(size * scaleRatio);
+export const scaleSize = (size: number): number => Math.round(size * scaleRatio);
 
 // Screen dimensions
 export { SCREEN_WIDTH, SCREEN_HEIGHT };

@@ -131,6 +131,6 @@ export default function GPAChart() {
 }
 
 const styles = StyleSheet.create({
-  wrap: { width: '100%', height: scaleSize(300), borderRadius: 24, overflow: 'hidden' },
+  wrap: { width: '100%', height: scaleSize(300), borderRadius: scaleSize(24), overflow: 'hidden' },
   webview: { flex: 1, backgroundColor: 'transparent' },
 });

@@ -2,12 +2,14 @@ import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const DURATION_MS = 6000;
 
 export default function CreatingPlanScreen() {
+  const insets = useSafeAreaInsets();
   const lottieRef = useRef<LottieView>(null);
   const tracked = useRef(false);
 
@@ -30,7 +32,7 @@ export default function CreatingPlanScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <Text style={styles.text}>Creating your Personalized Study Plan</Text>
       <View style={styles.lottieWrap}>
         <LottieView

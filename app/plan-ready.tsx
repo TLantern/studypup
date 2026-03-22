@@ -1,7 +1,7 @@
 import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { trackEvent } from '@/lib/mixpanel';
@@ -33,7 +33,7 @@ export default function PlanReadyScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
         <ProgressBar progress={100} />
         <View style={styles.middle}>
           <Text style={styles.title}>Now let's Assess{'\n'}Your Level</Text>
@@ -57,7 +57,7 @@ export default function PlanReadyScreen() {
             <Text style={styles.btnText}>Start Assessment</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
@@ -65,7 +65,7 @@ export default function PlanReadyScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: RESPONSIVE.horizontalPadding,
     alignItems: 'center',
     justifyContent: 'flex-start',

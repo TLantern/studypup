@@ -3,11 +3,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { useContext, useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackEvent } from '@/lib/mixpanel';
 import { SuperwallAvailableContext } from '@/lib/superwall';
-import { scaleFont, scaleSize } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -39,7 +39,7 @@ export default function RatingScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Love Studypup?</Text>
         <Text style={styles.subtitle}>
           Your feedback helps us improve and helps other students discover a smarter way to study. If you're enjoying the app, a quick 5‑star review means the world to us!
@@ -53,38 +53,38 @@ export default function RatingScreen() {
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
-  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: 16 },
+  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.horizontalPadding, justifyContent: 'space-between' },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: scaleSize(16) },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 17,
+    fontSize: scaleFont(17),
     color: '#333',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 8,
+    lineHeight: scaleFont(24),
+    paddingHorizontal: scaleSize(8),
   },
-  starsRow: { alignItems: 'center', marginVertical: 24 },
-  stars: { fontSize: 44, color: '#FFD700', letterSpacing: 4 },
-  bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
-  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1, marginBottom: -34 },
+  starsRow: { alignItems: 'center', marginVertical: scaleSize(24) },
+  stars: { fontSize: scaleFont(44), color: '#FFD700', letterSpacing: scaleSize(4) },
+  bottomSection: { marginTop: 'auto', paddingTop: scaleSize(6), position: 'relative', alignItems: 'center' },
+  puppy: { position: 'absolute', bottom: scaleSize(51), width: scaleSize(140), height: scaleSize(120), zIndex: 1, marginBottom: scaleSize(-34) },
   continueBtn: {
-    marginBottom: -34,
+    marginBottom: scaleSize(-34),
     backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
+    borderRadius: RESPONSIVE.buttonRadius,
+    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
     width: '100%',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
 });

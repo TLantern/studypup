@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -10,7 +10,7 @@ import { useUserSafe } from '@/lib/superwall';
 import { getItem, setItem } from '@/lib/storage';
 import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
-import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -198,8 +198,9 @@ export default function CreateAccountScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+        <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Phone Sign In</Text>
         <Text style={styles.subtitle}>
           {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
@@ -289,15 +290,16 @@ export default function CreateAccountScreen() {
             ) : null}
           </>
         )}
-        </View>
+        </ScrollView>
       </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06 },
+  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.containerPadding },
   title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
   phoneRow: {
@@ -332,10 +334,10 @@ const styles = StyleSheet.create({
   },
   otpHint: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 13,
+    fontSize: scaleFont(13),
     color: '#666',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
   },
   resendBtn: {
     alignItems: 'center',
@@ -361,7 +363,7 @@ const styles = StyleSheet.create({
   },
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(20), color: '#fff' },
-  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: -16, marginBottom: 16, textAlign: 'center' },
+  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(-16), marginBottom: scaleSize(16), textAlign: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
   dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', marginHorizontal: 16 },

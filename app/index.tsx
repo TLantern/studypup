@@ -1,7 +1,7 @@
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useContext, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SuperwallAvailableContext } from '@/lib/superwall'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -174,11 +174,12 @@ export default function OnboardingScreen() {
   if (loading || uid) return null
 
   return (
-    <View
-      style={[
+    <ScrollView
+      contentContainerStyle={[
         styles.container,
         { paddingTop: insets.top + 80, paddingBottom: insets.bottom + 24 },
       ]}
+      showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>
       <Text style={styles.subtext}>Unlock Your Academic Potential.</Text>
@@ -272,13 +273,13 @@ export default function OnboardingScreen() {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: '#AADDDD',
     paddingHorizontal: RESPONSIVE.containerPadding,
   },

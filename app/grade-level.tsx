@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
@@ -31,11 +31,11 @@ export default function GradeLevelScreen() {
   const tracked = useRef(false);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={20} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>What's your learning level?</Text>
+        <Text style={[styles.title, { marginTop: scaleSize(24) }]}>What's your learning level?</Text>
         <Text style={styles.subtitle}>Choose the one that fits you best</Text>
 
         {GRADES.map((g) => (
@@ -71,7 +71,7 @@ export default function GradeLevelScreen() {
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: RESPONSIVE.titleMedium, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',

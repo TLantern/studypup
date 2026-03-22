@@ -2,7 +2,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { getOnboarding } from '@/lib/onboarding-storage';
@@ -94,7 +94,7 @@ export default function StudentsStatsScreen() {
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.progressWrap}><ProgressBar progress={40} /></View>
         <Text style={styles.title}>You're in the right place!</Text>
         <Animated.Text style={[styles.subtitle, subtitleStyle]}>{displayed}</Animated.Text>
@@ -112,14 +112,14 @@ export default function StudentsStatsScreen() {
             <Text style={styles.btnText}>Continue</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
   title: {
     fontFamily: 'Fredoka',
