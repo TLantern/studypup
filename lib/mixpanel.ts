@@ -1,6 +1,6 @@
 import { Mixpanel } from 'mixpanel-react-native';
 
-const TOKEN = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ?? '4d1e297e80cb017392985a92b6b5d62b';
+const TOKEN = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ?? '';
 
 const trackAutomaticEvents = false;
 const useNative = false; // Expo / JS mode
