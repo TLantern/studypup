@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
@@ -222,6 +223,7 @@ function getQuestions(subject: string, grade: string): Question[] {
 
 export default function MicroQuizScreen() {
   const insets = useSafeAreaInsets();
+  const quizStartTracked = useRef(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [subjectLabel, setSubjectLabel] = useState('');
   const [currentQ, setCurrentQ] = useState(0);
@@ -240,6 +242,10 @@ export default function MicroQuizScreen() {
   }, []);
 
   const advance = (isCorrect: boolean) => {
+    if (!quizStartTracked.current) {
+      trackEvent('micro-quiz');
+      quizStartTracked.current = true;
+    }
     const nextAnswers = [...answers, isCorrect];
     if (currentQ === 2) {
       const score = Math.round((nextAnswers.filter(Boolean).length / 3) * 100);

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 function letterGrade(score: number): string {
@@ -46,6 +47,13 @@ export default function QuizResultsScreen() {
 
   const leftAnim = useRef(new Animated.Value(0)).current;
   const rightAnim = useRef(new Animated.Value(0)).current;
+  const tracked = useRef(false);
+  useEffect(() => {
+    if (!tracked.current) {
+      trackEvent('quiz-results');
+      tracked.current = true;
+    }
+  }, []);
   useEffect(() => {
     Animated.parallel([
       Animated.timing(leftAnim, { toValue: 1, useNativeDriver: false, duration: 2000 }),

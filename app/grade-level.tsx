@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
@@ -27,6 +28,7 @@ const GRADES = [
 export default function GradeLevelScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
+  const tracked = useRef(false);
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
@@ -57,6 +59,10 @@ export default function GradeLevelScreen() {
             style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
             onPress={async () => {
               if (!selected) return;
+              if (!tracked.current) {
+                trackEvent('grade-level');
+                tracked.current = true;
+              }
               await updateOnboarding({ grade_level: selected });
               router.push('/subjects');
             }}

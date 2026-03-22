@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useContext, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const DURATION_MS = 6000;
@@ -10,7 +11,14 @@ const DURATION_MS = 6000;
 export default function CreatingPlanScreen() {
   const lottieRef = useRef<LottieView>(null);
   const superwallAvailable = useContext(SuperwallAvailableContext);
+  const tracked = useRef(false);
 
+  useEffect(() => {
+    if (!tracked.current) {
+      trackEvent('creating-plan');
+      tracked.current = true;
+    }
+  }, []);
   useEffect(() => {
     lottieRef.current?.play();
   }, []);

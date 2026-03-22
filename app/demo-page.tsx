@@ -1,15 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { ProgressBar } from '@/components/ProgressBar';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
-import { useCallback, useRef } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
 import { useSharedVideoPlayer } from '@/lib/videoPlayer'
+import { trackEvent } from '@/lib/mixpanel'
 
 
 const BUTTON_SHADOW = {
@@ -31,6 +31,13 @@ export default function DemoPageScreen() {
   
 const hasStarted = useRef(false)
 const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+const tracked = useRef(false)
+useEffect(() => {
+  if (!tracked.current) {
+    trackEvent('demo-page')
+    tracked.current = true
+  }
+}, [])
 
 useFocusEffect(
   useCallback(() => {
@@ -63,6 +70,7 @@ useFocusEffect(
         if (duration > 0) {
           const p = Math.min((current / duration) * 1.3, 1.3)
           fillProgress.value = withTiming(p, { duration: 150 })
+          if (p >= 1) setCanContinue(true)
         }
       } catch (_) {}
     }, 100)
@@ -70,7 +78,6 @@ useFocusEffect(
     const endSub = player.addListener('playToEnd', () => {
       fillProgress.value = withTiming(1.3, { duration: 150 })
       setCanContinue(true)
-
       if (intervalRef.current) {
         clearInterval(intervalRef.current)
         intervalRef.current = null

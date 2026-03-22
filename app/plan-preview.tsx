@@ -1,4 +1,5 @@
 import { ProgressBar } from '@/components/ProgressBar';
+import { trackEvent } from '@/lib/mixpanel';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -25,7 +26,14 @@ export default function PlanPreviewScreen() {
   const [displayed, setDisplayed] = useState('');
   const [ready, setReady] = useState(false);
   const indexRef = useRef(0);
+  const tracked = useRef(false);
 
+  useEffect(() => {
+    if (!tracked.current) {
+      trackEvent('plan-preview');
+      tracked.current = true;
+    }
+  }, []);
   useEffect(() => {
     const interval = setInterval(() => {
       indexRef.current += 1;

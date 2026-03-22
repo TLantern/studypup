@@ -1,10 +1,11 @@
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
+import { trackEvent } from '@/lib/mixpanel';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -29,6 +30,7 @@ export default function CurrentGpaScreen() {
   const insets = useSafeAreaInsets();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string | null>(null);
+  const tracked = useRef(false);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
@@ -57,6 +59,10 @@ export default function CurrentGpaScreen() {
             style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
             onPress={async () => {
               if (!selected) return;
+              if (!tracked.current) {
+                trackEvent('current-gpa');
+                tracked.current = true;
+              }
               await updateOnboarding({ current_gpa: selected });
               router.push('/target-gpa');
             }}

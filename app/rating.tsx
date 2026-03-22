@@ -1,35 +1,60 @@
-import * as StoreReview from 'expo-store-review';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import * as StoreReview from 'expo-store-review';
+import { useContext, useEffect, useRef } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { trackEvent } from '@/lib/mixpanel';
+import { scaleFont, scaleSize } from '@/lib/responsive';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 
-const STARS = ['⭐', '⭐', '⭐', '⭐', '⭐'];
+const BUTTON_SHADOW = {
+  shadowColor: '#333333',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.35,
+  shadowRadius: 6,
+  elevation: 6,
+};
 
 export default function RatingScreen() {
   const insets = useSafeAreaInsets();
+  const superwallAvailable = useContext(SuperwallAvailableContext);
+  const tracked = useRef(false);
 
   useEffect(() => {
-    (async () => {
-      if (await StoreReview.hasAction()) {
-        await StoreReview.requestReview();
-      }
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      router.push('/plan-ready' as never);
-    })();
+    if (!tracked.current) {
+      trackEvent('rating');
+      tracked.current = true;
+    }
+  }, []);
+
+  useEffect(() => {
+    const show = async () => {
+      if (await StoreReview.hasAction()) await StoreReview.requestReview();
+    };
+    const t = setTimeout(show, 500);
+    return () => clearTimeout(t);
   }, []);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.center}>
-          <Text style={styles.heading}>Enjoying StudyPup?</Text>
-          <Text style={styles.subtext}>Let us know how we're doing — it means the world to us 🐾</Text>
-          <View style={styles.starsRow}>
-            {STARS.map((s, i) => <Text key={i} style={styles.star}>{s}</Text>)}
-          </View>
+      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
+        <Text style={styles.title}>Love Studypup?</Text>
+        <Text style={styles.subtitle}>
+          Your feedback helps us improve and helps other students discover a smarter way to study. If you're enjoying the app, a quick 5‑star review means the world to us!
+        </Text>
+        <View style={styles.starsRow}>
+          <Text style={styles.stars}>★★★★★</Text>
+        </View>
+        <View style={styles.bottomSection}>
+          <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
+          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
+          <Pressable style={styles.continueBtn} onPress={() => router.push('/creating-plan')}>
+            <Text style={styles.continueBtnText}>Continue</Text>
+          </Pressable>
         </View>
       </View>
     </LinearGradient>
@@ -38,10 +63,32 @@ export default function RatingScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
-  center: { flex: 1, justifyContent: 'center' },
-  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: scaleSize(12) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
-  starsRow: { flexDirection: 'row', justifyContent: 'center', gap: scaleSize(8) },
-  star: { fontSize: scaleFont(40) },
+  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
+  title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(34), color: '#000', textAlign: 'center', marginBottom: 16 },
+  subtitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 17,
+    color: '#333',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 8,
+  },
+  starsRow: { alignItems: 'center', marginVertical: 24 },
+  stars: { fontSize: 44, color: '#FFD700', letterSpacing: 4 },
+  bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
+  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1, marginBottom: -34 },
+  continueBtn: {
+    marginBottom: -34,
+    backgroundColor: '#FD8A8A',
+    borderRadius: 35,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    width: '100%',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#CA6E6E',
+    ...BUTTON_SHADOW,
+  },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
 });

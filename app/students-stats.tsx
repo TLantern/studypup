@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { getOnboarding } from '@/lib/onboarding-storage';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BULLETS = [
@@ -51,6 +52,7 @@ const randomCount = () => STUDENT_COUNTS[Math.floor(Math.random() * STUDENT_COUN
 
 export default function StudentsStatsScreen() {
   const insets = useSafeAreaInsets();
+  const tracked = useRef(false);
   const [subject, setSubject] = useState('your subject');
   const [displayed, setDisplayed] = useState('');
   const fullText = useRef('');
@@ -61,6 +63,12 @@ export default function StudentsStatsScreen() {
   const subtitleOpacity = useSharedValue(0);
   const subtitleStyle = useAnimatedStyle(() => ({ opacity: subtitleOpacity.value }));
 
+  useEffect(() => {
+    if (!tracked.current) {
+      trackEvent('students-stats');
+      tracked.current = true;
+    }
+  }, []);
   useEffect(() => {
     getOnboarding().then(({ subjects }) => {
       const s = subjects?.[0] ?? 'your subject';

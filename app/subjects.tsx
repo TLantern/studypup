@@ -1,10 +1,11 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
@@ -29,6 +30,7 @@ const SUBJECTS = [
 export default function SubjectsScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const tracked = useRef(false);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -63,6 +65,10 @@ export default function SubjectsScreen() {
             style={[styles.continueBtn, selected.size === 0 && styles.continueBtnDisabled]}
             onPress={async () => {
               if (selected.size === 0) return;
+              if (!tracked.current) {
+                trackEvent('subjects');
+                tracked.current = true;
+              }
               await updateOnboarding({ subjects: Array.from(selected) });
               router.push('/students-stats');
             }}

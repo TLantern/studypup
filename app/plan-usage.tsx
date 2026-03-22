@@ -1,4 +1,5 @@
 import { ProgressBar } from '@/components/ProgressBar';
+import { trackEvent } from '@/lib/mixpanel';
 import { useAuth } from '@/lib/auth-store';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
@@ -9,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useContext, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,6 +38,7 @@ export default function PlanUsageScreen() {
   const { user } = useAuth();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
+  const tracked = useRef(false);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
@@ -66,6 +68,10 @@ export default function PlanUsageScreen() {
           style={[styles.continueBtn, selected.length === 0 && styles.continueBtnDisabled]}
           onPress={async () => {
             if (selected.length === 0) return;
+            if (!tracked.current) {
+              trackEvent('plan-usage');
+              tracked.current = true;
+            }
             await updateOnboarding({ plan_usage: selected });
             await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
             if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));

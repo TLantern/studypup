@@ -11,3 +11,7 @@ mixpanel.init();
 export function getMixpanel() {
   return mixpanel;
 }
+
+export function trackEvent(name: string, props?: Record<string, unknown>) {
+  mixpanel.track(name, props);
+}

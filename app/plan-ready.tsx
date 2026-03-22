@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 import { ProgressBar } from '@/components/ProgressBar';
 
@@ -18,7 +19,14 @@ const BUTTON_SHADOW = {
 export default function PlanReadyScreen() {
   const insets = useSafeAreaInsets();
   const lottieRef = useRef<LottieView>(null);
+  const tracked = useRef(false);
 
+  useEffect(() => {
+    if (!tracked.current) {
+      trackEvent('plan-ready');
+      tracked.current = true;
+    }
+  }, []);
   useEffect(() => {
     lottieRef.current?.play();
   }, []);

@@ -1,6 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
+import { trackEvent } from '@/lib/mixpanel';
 
 const PLACEMENT_ONBOARDING = 'onboarding_complete';
 
@@ -24,6 +25,7 @@ function PaywallWithSuperwall() {
     onDismiss: () => {
       if (phaseRef.current === 'value') {
         phaseRef.current = 'paywall';
+        trackEvent('paywall');
         setTimeout(() => registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain()), 600);
       } else {
         navigateToMain();
@@ -32,6 +34,7 @@ function PaywallWithSuperwall() {
     onSkip: () => {
       if (phaseRef.current === 'value') {
         phaseRef.current = 'paywall';
+        trackEvent('paywall');
         setTimeout(() => registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain()), 600);
       } else {
         navigateToMain();
@@ -47,8 +50,10 @@ function PaywallWithSuperwall() {
     if (didPresentRef.current) return;
     didPresentRef.current = true;
     phaseRef.current = 'value';
+    trackEvent('value-screen');
     registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: () => {
       phaseRef.current = 'paywall';
+      trackEvent('paywall');
       setTimeout(() => registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain()), 600);
     }}).catch(() => navigateToMain());
   }, [placement, navigateToMain, registerPlacement]);
