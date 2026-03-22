@@ -1,13 +1,16 @@
-import LottieView from 'lottie-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated from 'react-native-reanimated';
-import { useHoverFloatStyle } from '@/lib/useHoverFloat';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { ProgressBar } from '@/components/ProgressBar';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { useCallback, useRef } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
+import { useSharedVideoPlayer } from '@/lib/videoPlayer'
+
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -19,25 +22,103 @@ const BUTTON_SHADOW = {
 
 export default function DemoPageScreen() {
   const insets = useSafeAreaInsets();
-  const lottieRef = useRef<LottieView>(null);
-  const hoverStyle = useHoverFloatStyle();
+  const [canContinue, setCanContinue] = useState(false);
+  const fillProgress = useSharedValue(0);
+
+  const player = useSharedVideoPlayer()
+  
+  console.log('[INIT] status:', player.status);
+  
+const hasStarted = useRef(false)
+const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+useFocusEffect(
+  useCallback(() => {
+    setCanContinue(false)
+    fillProgress.value = 0
+    hasStarted.current = false
+
+    console.log('[FOCUS] screen entered')
+
+    const statusSub = player.addListener('statusChange', (e: {status: string}) => {
+      console.log('[STATUS]', e.status)
+
+      if (e.status === 'readyToPlay' && !hasStarted.current) {
+        hasStarted.current = true
+
+        console.log('[ACTION] instant play')
+
+        try {
+          player.currentTime = 0
+          player.play()
+        } catch (_) {}
+      }
+    })
+
+    intervalRef.current = setInterval(() => {
+      try {
+        const duration = player.duration
+        const current = player.currentTime
+
+        if (duration > 0) {
+          const p = Math.min((current / duration) * 1.3, 1.3)
+          fillProgress.value = withTiming(p, { duration: 150 })
+        }
+      } catch (_) {}
+    }, 100)
+
+    const endSub = player.addListener('playToEnd', () => {
+      fillProgress.value = withTiming(1.3, { duration: 150 })
+      setCanContinue(true)
+
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    })
+
+    return () => {
+      try { player.pause() } catch (_) {}
+
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+
+      statusSub.remove()
+      endSub.remove()
+    }
+  }, [player])
+)
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${fillProgress.value * 100}%`,
+  }));
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.progressWrap}><ProgressBar progress={10} /></View>
         <Text style={styles.heading}>Upload. Learn. Improve.</Text>
-        <Animated.View style={[styles.heroWrap, hoverStyle]}>
-          <LottieView
-            ref={lottieRef}
-            source={require('../Astronaut_Dog.json')}
-            style={styles.lottie}
-            autoPlay
-            loop
-          />
-        </Animated.View>
+        <View style={styles.heroWrap}>
+          <View style={styles.videoShadowWrap}>
+            <View style={styles.videoBorder} collapsable={false}>
+              <VideoView
+                player={player}
+                style={styles.video}
+                contentFit="contain"
+                nativeControls={false}
+              />
+            </View>
+          </View>
+        </View>
         <View style={styles.buttons}>
-          <Pressable style={styles.btn} onPress={() => router.push('/grade-level' as never)}>
+          <Pressable
+            style={[styles.btn, !canContinue && styles.btnDisabled]}
+            onPress={() => canContinue && router.push('/grade-level' as never)}
+            disabled={!canContinue}
+          >
+            <Animated.View style={[styles.btnFill, fillStyle]} />
             <Text style={[styles.btnText, styles.btnPrimaryText]}>Continue</Text>
           </Pressable>
         </View>
@@ -46,15 +127,34 @@ export default function DemoPageScreen() {
   );
 }
 
-const LOTTIE_SIZE = scaleSize(300);
-
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   progressWrap: { width: '100%', marginBottom: scaleSize(16) },
-  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  heroWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  lottie: { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
+  heading: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(10) },
+  heroWrap: { flex: 1, justifyContent: 'flex-start', alignItems: 'center', width: '100%', marginTop: scaleSize(4) },
+  videoShadowWrap: {
+    width: '70%',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  videoBorder: {
+    width: '100%',
+    aspectRatio: 9.2 / 18.8,
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 0,
+    aspectRatio: 9.2 / 18.8,
+    overflow: 'hidden',
+  },
   buttons: { marginTop: 'auto', paddingTop: scaleSize(6) },
   btn: {
     borderRadius: RESPONSIVE.buttonRadius,
@@ -62,10 +162,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
     alignItems: 'center',
     borderWidth: 2,
-    backgroundColor: '#FD8A8A',
+    backgroundColor: 'rgba(253,138,138,0.25)',
     borderColor: '#CA6E6E',
+    overflow: 'hidden',
     ...BUTTON_SHADOW,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button },
+  btnDisabled: { opacity: 0.7 },
+  btnFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#FD8A8A',
+  },
+  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, zIndex: 1 },
   btnPrimaryText: { color: '#fff' },
 });

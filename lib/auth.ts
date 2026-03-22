@@ -3,7 +3,6 @@ import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import {
   GoogleAuthProvider,
@@ -70,13 +69,22 @@ export async function linkApple(user: User) {
   return await linkWithCredential(user, providerCred);
 }
 
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  offlineAccess: false,
-});
+async function getGoogleSignin() {
+  try {
+    const { GoogleSignin } = await import('@react-native-google-signin/google-signin');
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      offlineAccess: false,
+    });
+    return GoogleSignin;
+  } catch (e) {
+    throw new Error('Google Sign-In requires a development build (expo run:ios/android). It does not work in Expo Go.');
+  }
+}
 
 export async function signInWithGoogle() {
   const { auth } = getFirebase();
+  const GoogleSignin = await getGoogleSignin();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   const { data } = await GoogleSignin.signIn();
   if (!data?.idToken) throw new Error('Google sign-in failed: missing id_token.');
@@ -85,6 +93,7 @@ export async function signInWithGoogle() {
 }
 
 export async function linkGoogle(user: User) {
+  const GoogleSignin = await getGoogleSignin();
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   const { data } = await GoogleSignin.signIn();
   if (!data?.idToken) throw new Error('Google sign-in failed: missing id_token.');

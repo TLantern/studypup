@@ -15,7 +15,7 @@ import Animated, {
   ReduceMotion,
   runOnJS,
 } from 'react-native-reanimated';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, useAudioPlayer, requestRecordingPermissionsAsync, setAudioModeAsync, RecordingPresets } from 'expo-audio';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
@@ -211,7 +211,6 @@ export default function HomeScreen() {
   const [showContentConfirmModal, setShowContentConfirmModal] = useState(false);
   const contentConfirmModalOffset = useSharedValue(0);
 
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recordingMetering, setRecordingMetering] = useState<number | null>(null);
@@ -220,10 +219,15 @@ export default function HomeScreen() {
 
   const [playbackUri, setPlaybackUri] = useState<string | null>(null);
   const [playbackDurationSec, setPlaybackDurationSec] = useState(0);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [playPosition, setPlayPosition] = useState(0);
   const [playDuration, setPlayDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const audioRecorder = useAudioRecorder(
+    { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true },
+    (status) => { if (status.metering != null) setRecordingMetering(status.metering); }
+  );
+  const audioPlayer = useAudioPlayer(null as any);
 
   const overlayWidth = screenWidth;
   const overlayHeight = screenHeight;
@@ -360,26 +364,16 @@ export default function HomeScreen() {
 
   const startRecording = async () => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== 'granted') return;
+      const permission = await requestRecordingPermissionsAsync();
+      if (!permission.granted) return;
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      setRecording(newRecording);
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
       setRecordingDuration(0);
       setIsPaused(false);
       setRecordingMetering(null);
       activateKeepAwakeAsync();
-      newRecording.setOnRecordingStatusUpdate((status) => {
-        if (status.metering != null) setRecordingMetering(status.metering);
-      });
-      newRecording.setProgressUpdateInterval(100);
 
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
@@ -390,8 +384,8 @@ export default function HomeScreen() {
   };
 
   const pauseRecording = async () => {
-    if (recording && !isPaused) {
-      await recording.pauseAsync();
+    if (!isPaused) {
+      audioRecorder.pause();
       setIsPaused(true);
       setRecordingMetering(null);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -400,8 +394,8 @@ export default function HomeScreen() {
   };
 
   const resumeRecording = async () => {
-    if (recording && isPaused) {
-      await recording.startAsync();
+    if (isPaused) {
+      audioRecorder.record();
       setIsPaused(false);
       activateKeepAwakeAsync();
       timerRef.current = setInterval(() => {
@@ -420,14 +414,13 @@ export default function HomeScreen() {
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
+    if (!audioRecorder.isRecording && !isPaused) return;
 
     if (timerRef.current) clearInterval(timerRef.current);
     deactivateKeepAwake();
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
+    await audioRecorder.stop();
+    const uri = audioRecorder.uri;
     const durationSec = recordingDuration;
-    setRecording(null);
     setIsPaused(false);
     setRecordingDuration(0);
     setRecordingMetering(null);
@@ -453,9 +446,8 @@ export default function HomeScreen() {
   }, []);
 
   const closeRecordModal = () => {
-    if (recording) {
-      recording.stopAndUnloadAsync();
-      setRecording(null);
+    if (audioRecorder.isRecording || isPaused) {
+      audioRecorder.stop();
       setIsPaused(false);
       setRecordingDuration(0);
       setRecordingMetering(null);
@@ -474,45 +466,37 @@ export default function HomeScreen() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status?.isLoaded) {
-      setPlayPosition(status.positionMillis / 1000);
-      if (status.durationMillis) setPlayDuration(status.durationMillis / 1000);
+  useEffect(() => {
+    const sub = audioPlayer.addListener('playbackStatusUpdate', (status) => {
+      setPlayPosition(status.currentTime);
+      if (status.duration) setPlayDuration(status.duration);
       if (status.didJustFinish) {
         setIsPlaying(false);
         setPlayPosition(0);
       }
-    }
-  };
+    });
+    return () => sub.remove();
+  }, [audioPlayer]);
 
   const playPlayback = async () => {
-    if (sound) {
-      await sound.playAsync();
+    if (audioPlayer.isLoaded) {
+      audioPlayer.play();
       setIsPlaying(true);
     } else if (playbackUri) {
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: playbackUri },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-      setSound(newSound);
+      audioPlayer.replace({ uri: playbackUri });
+      audioPlayer.play();
       setPlayDuration(playbackDurationSec);
       setIsPlaying(true);
     }
   };
 
   const pausePlayback = async () => {
-    if (sound) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
-    }
+    audioPlayer.pause();
+    setIsPlaying(false);
   };
 
   const closePlaybackModal = () => {
-    if (sound) {
-      sound.unloadAsync();
-      setSound(null);
-    }
+    audioPlayer.pause();
     setPlaybackUri(null);
     setPlaybackDurationSec(0);
     setPlayPosition(0);
@@ -557,8 +541,7 @@ export default function HomeScreen() {
 
   const confirmPlayback = () => {
     if (!playbackUri) return;
-    if (sound) sound.unloadAsync();
-    setSound(null);
+    audioPlayer.pause();
     setShowPlaybackModal(false);
     setPlaybackUri(null);
     openContentConfirmModal([

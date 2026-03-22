@@ -2,7 +2,8 @@ import { callOpenAIChat, isOpenAIConfigured } from '@/lib/openai-service';
 import { transcribeAudio } from '@/lib/transcription';
 import { speakWithElevenLabs, stopElevenLabsAudio, isElevenLabsConfigured } from '@/lib/elevenlabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, requestRecordingPermissionsAsync, setAudioModeAsync, RecordingPresets } from 'expo-audio';
+import type { RecordingStatus } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -41,7 +42,6 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
   const lottieRef = useRef<LottieView>(null);
 
   // Single recording — mode determines VAD vs barge-in behavior
-  const recordingRef = useRef<Audio.Recording | null>(null);
   const recModeRef = useRef<RecMode | null>(null);
   const recBusyRef = useRef(false);
 
@@ -53,6 +53,11 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
   const fillerActiveRef = useRef(false);
 
   // Stable function refs to avoid stale closures in callbacks
+  const vadCallbackRef = useRef<(status: RecordingStatus) => void>(() => {});
+  const audioRecorder = useAudioRecorder(
+    { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true },
+    (status) => vadCallbackRef.current(status)
+  );
   const speakFillerRef = useRef<() => void>(() => {});
   const startVADRef = useRef<() => Promise<void>>(async () => {});
   const handleBargeInRef = useRef<() => Promise<void>>(async () => {});
@@ -78,11 +83,8 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
   // Stop and release the current recording
   const stopCurrentRecording = async () => {
     if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-    const rec = recordingRef.current;
-    if (!rec) return;
-    recordingRef.current = null;
     recModeRef.current = null;
-    try { await rec.stopAndUnloadAsync(); } catch {}
+    try { await audioRecorder.stop(); } catch {}
   };
 
   // Start a single recording in the given mode
@@ -93,63 +95,53 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
       await stopCurrentRecording();
       if (!listeningRef.current) return;
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        defaultToSpeaker: true,
-      });
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await audioRecorder.prepareToRecordAsync();
       recModeRef.current = mode;
 
       if (mode === 'vad') {
         speechStartedRef.current = false;
         speechStartTimeRef.current = 0;
         setPhase('listening');
-
-        recording.setOnRecordingStatusUpdate((status) => {
-          if (!status.isRecording || !listeningRef.current || recModeRef.current !== 'vad') return;
-          const db = status.metering ?? -160;
-
-          if (db > SPEECH_THRESHOLD) {
-            if (!speechStartedRef.current) {
-              speechStartedRef.current = true;
-              speechStartTimeRef.current = Date.now();
-            }
-            if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
-          } else if (speechStartedRef.current && !silenceTimerRef.current) {
-            silenceTimerRef.current = setTimeout(async () => {
-              silenceTimerRef.current = null;
-              const spokenMs = Date.now() - speechStartTimeRef.current;
-              const rec = recordingRef.current;
-              recordingRef.current = null;
-              recModeRef.current = null;
-              if (!rec) return;
-              try {
-                await rec.stopAndUnloadAsync();
-                if (spokenMs >= MIN_SPEECH_MS) {
-                  const uri = rec.getURI();
-                  if (uri) await processAudio(uri);
-                  else if (listeningRef.current) startVADRef.current();
-                } else {
-                  if (listeningRef.current) startVADRef.current();
-                }
-              } catch {
-                if (listeningRef.current) startVADRef.current();
-              }
-            }, SILENCE_DURATION);
-          }
-        });
-      } else {
-        // barge-in mode: mic is open but interrupt is button-only, no speech detection
       }
-      recording.setProgressUpdateInterval(100);
+
+      audioRecorder.record();
     } catch (e) {
       console.error('[Recording start]', e);
     } finally {
       recBusyRef.current = false;
+    }
+  };
+
+  // Keep VAD status callback up-to-date (runs for every recording status update)
+  vadCallbackRef.current = (status) => {
+    if (!status.isRecording || !listeningRef.current || recModeRef.current !== 'vad') return;
+    const db = status.metering ?? -160;
+
+    if (db > SPEECH_THRESHOLD) {
+      if (!speechStartedRef.current) {
+        speechStartedRef.current = true;
+        speechStartTimeRef.current = Date.now();
+      }
+      if (silenceTimerRef.current) { clearTimeout(silenceTimerRef.current); silenceTimerRef.current = null; }
+    } else if (speechStartedRef.current && !silenceTimerRef.current) {
+      silenceTimerRef.current = setTimeout(async () => {
+        silenceTimerRef.current = null;
+        const spokenMs = Date.now() - speechStartTimeRef.current;
+        recModeRef.current = null;
+        try {
+          await audioRecorder.stop();
+          const uri = audioRecorder.uri;
+          if (spokenMs >= MIN_SPEECH_MS) {
+            if (uri) await processAudio(uri);
+            else if (listeningRef.current) startVADRef.current();
+          } else {
+            if (listeningRef.current) startVADRef.current();
+          }
+        } catch {
+          if (listeningRef.current) startVADRef.current();
+        }
+      }, SILENCE_DURATION);
     }
   };
 
@@ -276,8 +268,8 @@ export function VoiceChatModal({ visible, onClose, context }: Props) {
   };
 
   const handleStart = async () => {
-    const ok = await Audio.requestPermissionsAsync();
-    if (ok.status !== 'granted') return;
+    const ok = await requestRecordingPermissionsAsync();
+    if (!ok.granted) return;
     listeningRef.current = true;
     speak(INTRO, () => {
       const intro: Message[] = [{ role: 'assistant', content: INTRO }];

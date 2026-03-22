@@ -4,6 +4,7 @@ import { deleteUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirebase } from '@/lib/firebase';
 import { ensureUserDoc } from '@/lib/user-profile';
 import { getItem, setItem } from '@/lib/storage';
+import { mixpanel } from '@/lib/mixpanel';
 
 const STORED_USER_KEY = 'auth:user';
 const STORED_PHONE_KEY = 'auth:phone';
@@ -56,7 +57,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
       setLoading(false);
       saveUserData(u);
-      if (u) ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
+      if (u) {
+        ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
+        mixpanel.identify(u.uid);
+        mixpanel.getPeople().set({
+          $email: u.email ?? undefined,
+          $name: u.displayName ?? undefined,
+        });
+        const createdAt = u.metadata?.creationTime ? new Date(u.metadata.creationTime).getTime() : 0;
+        const lastSignIn = u.metadata?.lastSignInTime ? new Date(u.metadata.lastSignInTime).getTime() : 0;
+        const isNewUser = createdAt && lastSignIn && lastSignIn - createdAt < 60000;
+        mixpanel.track(isNewUser ? 'Sign Up' : 'Sign In', {
+          user_id: u.uid,
+          email: u.email ?? undefined,
+          signup_method: u.providerData?.[0]?.providerId ?? 'unknown',
+          login_method: u.providerData?.[0]?.providerId ?? 'unknown',
+          success: true,
+        });
+      } else {
+        mixpanel.reset();
+      }
     });
 
     return () => {
@@ -74,6 +94,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authProvider,
       signOut: async () => {
         try {
+          mixpanel.track('Sign Out');
+          mixpanel.reset();
           await signOut(auth);
           await setItem(STORED_USER_KEY, '');
           await setItem(STORED_PHONE_KEY, '');

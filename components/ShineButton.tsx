@@ -1,6 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, type LayoutChangeEvent, type ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, type LayoutChangeEvent, type ViewStyle , StyleProp} from 'react-native';
+
 
 type Props = {
   label: string;
@@ -9,7 +10,7 @@ type Props = {
   textColor?: string;
   borderColor?: string;
   borderWidth?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>
   disabled?: boolean;
   children?: React.ReactNode;
 };

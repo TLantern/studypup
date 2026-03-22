@@ -1,6 +1,6 @@
 import { useFonts, Fredoka_400Regular, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
@@ -17,7 +17,9 @@ Notifications.setNotificationHandler({
 import { LogBox, View } from 'react-native';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
-import { AuthProvider } from '@/lib/auth-store';
+import { AuthProvider, useAuth } from '@/lib/auth-store';
+import { mixpanel } from '@/lib/mixpanel';
+import { VideoPlayerProvider } from '@/lib/videoPlayer';
 import React from 'react';
 import {
   PaywallTriggerProvider as PaywallTriggerProviderRaw,
@@ -28,6 +30,17 @@ import {
 const PaywallTriggerProvider = PaywallTriggerProviderRaw as React.ComponentType<{ children: React.ReactNode }>;
 
 SplashScreen.preventAutoHideAsync();
+
+function PageViewTracker() {
+  const pathname = usePathname();
+  const { uid } = useAuth();
+  useEffect(() => {
+    if (pathname) {
+      mixpanel.track('Page View', { page_url: pathname, page_title: pathname, user_id: uid ?? undefined });
+    }
+  }, [pathname, uid]);
+  return null;
+}
 
 const SUPERWALL_IOS_KEY = process.env.EXPO_PUBLIC_SUPERWALL_IOS_KEY ?? '';
 const SUPERWALL_ANDROID_KEY = process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? '';
@@ -43,13 +56,16 @@ export default function RootLayout() {
 
   const content = (
     <AuthProvider>
-      <View style={{ flex: 1 }}>
-        <PaywallTriggerProvider>
+      <PageViewTracker />
+      <VideoPlayerProvider>
+        <View style={{ flex: 1 }}>
+          <PaywallTriggerProvider>
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
           </Stack>
         </PaywallTriggerProvider>
-      </View>
+        </View>
+      </VideoPlayerProvider>
     </AuthProvider>
   );
 
