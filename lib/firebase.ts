@@ -19,6 +19,7 @@ export function getFirebase(): FirebaseServices {
     storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    databaseURL: 'https://studypup-b3973-default-rtdb.firebaseio.com',
   };
 
   const missing = Object.entries(firebaseConfig)

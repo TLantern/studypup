@@ -29,7 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<key>DATABASE_URL</key>
-	<string>https://studypup-b3973-default-rtdb.firebaseio.com</string>
+	<string>1:114632107142:ios:78ec88827a524c757b9d07</string>
 </dict>
 </plist>
