@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -22,6 +22,7 @@ const BUTTON_SHADOW = {
 
 export default function DemoPageScreen() {
   const insets = useSafeAreaInsets();
+  const isIpad = Platform.OS === 'ios' && Platform.isPad;
   const [canContinue, setCanContinue] = useState(false);
   const fillProgress = useSharedValue(0);
 
@@ -104,11 +105,11 @@ useFocusEffect(
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.progressWrap}><ProgressBar progress={10} /></View>
         <Text style={styles.heading}>Upload. Learn. Improve.</Text>
         <View style={styles.heroWrap}>
-          <View style={styles.videoShadowWrap}>
+          <View style={[styles.videoShadowWrap, isIpad && styles.videoShadowWrapIpad]}>
             <View style={styles.videoBorder} collapsable={false}>
               <VideoView
                 player={player}
@@ -148,6 +149,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
+  },
+  videoShadowWrapIpad: {
+    width: '42%',
+    marginTop: scaleSize(48),
   },
   videoBorder: {
     width: '100%',

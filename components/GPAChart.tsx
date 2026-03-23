@@ -1,5 +1,5 @@
 import WebView from 'react-native-webview';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { scaleSize } from '@/lib/responsive';
 
 const HTML = `<!DOCTYPE html>
@@ -115,11 +115,18 @@ setTimeout(() => {
 </body>
 </html>`;
 
+const IPAD_HTML = HTML
+  .replace('max-width:420px', 'max-width:560px')
+  .replace('height="200"', 'height="260"')
+  .replace('viewBox="0 0 380 200"', 'viewBox="0 0 520 260"')
+  .replace('const W = 380, H = 200', 'const W = 520, H = 260');
+
 export default function GPAChart() {
+  const isIpad = Platform.OS === 'ios' && Platform.isPad;
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, isIpad && styles.wrapIpad]}>
       <WebView
-        source={{ html: HTML }}
+        source={{ html: isIpad ? IPAD_HTML : HTML }}
         style={styles.webview}
         scrollEnabled={false}
         showsVerticalScrollIndicator={false}
@@ -132,5 +139,6 @@ export default function GPAChart() {
 
 const styles = StyleSheet.create({
   wrap: { width: '100%', height: scaleSize(300), borderRadius: scaleSize(24), overflow: 'hidden' },
+  wrapIpad: { height: scaleSize(380) },
   webview: { flex: 1, backgroundColor: 'transparent' },
 });
