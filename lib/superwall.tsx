@@ -23,6 +23,8 @@ export const SuperwallAvailableContext = createContext(!!SuperwallProvider);
 export { SuperwallProvider, usePlacementHook, useUserHook, useUserSafe };
 
 export const PLACEMENT_VALUE_SCREEN = 'value_screen';
+/** Onboarding paywall placement (matches paywall screen default). */
+export const PLACEMENT_ONBOARDING_COMPLETE = 'onboarding_complete';
 /** Superwall placement for paywall on app open (when user is unsubscribed). Create this placement in Superwall dashboard and attach your paywall. */
 export const PLACEMENT_APP_OPEN = 'app_open';
 /** Superwall placement for "Get Unlimited Notes" button. Create in Superwall if not already. */

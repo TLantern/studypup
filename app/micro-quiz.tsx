@@ -1,11 +1,21 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useSuperwall } from 'expo-superwall';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { trackEvent } from '@/lib/mixpanel';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN, SuperwallAvailableContext } from '@/lib/superwall';
+
+function MicroQuizPreloadPaywalls() {
+  const preloadPaywalls = useSuperwall((s) => s.preloadPaywalls);
+  useEffect(() => {
+    preloadPaywalls([PLACEMENT_VALUE_SCREEN, PLACEMENT_ONBOARDING_COMPLETE]).catch(() => {});
+  }, [preloadPaywalls]);
+  return null;
+}
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -223,6 +233,7 @@ function getQuestions(subject: string, grade: string): Question[] {
 
 export default function MicroQuizScreen() {
   const insets = useSafeAreaInsets();
+  const superwallAvailable = useContext(SuperwallAvailableContext);
   const quizStartTracked = useRef(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [subjectLabel, setSubjectLabel] = useState('');
@@ -266,12 +277,14 @@ export default function MicroQuizScreen() {
 
   const handleSkip = () => advance(false);
 
-  if (loading || questions.length === 0) return null;
-
-  const q = questions[currentQ];
+  const showQuiz = !loading && questions.length > 0;
+  const q = showQuiz ? questions[currentQ] : null;
   const isLast = currentQ === 2;
 
   return (
+    <>
+      {superwallAvailable ? <MicroQuizPreloadPaywalls /> : null}
+      {showQuiz && q ? (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.screen, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}>
         <ScrollView
@@ -324,6 +337,8 @@ export default function MicroQuizScreen() {
         </View>
       </View>
     </LinearGradient>
+      ) : null}
+    </>
   );
 }
 

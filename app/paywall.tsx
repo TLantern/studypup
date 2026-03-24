@@ -1,13 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
-import { SuperwallAvailableContext, usePlacementHook, useUserHook, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
+import { SuperwallAvailableContext, usePlacementHook, useUserHook, PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
 import { trackEvent } from '@/lib/mixpanel';
-
-const PLACEMENT_ONBOARDING = 'onboarding_complete';
 
 function PaywallWithSuperwall() {
   const params = useLocalSearchParams<{ placement?: string; return?: string }>();
-  const placement = params.placement ?? PLACEMENT_ONBOARDING;
+  const placement = params.placement ?? PLACEMENT_ONBOARDING_COMPLETE;
   const shouldReturn = params.return === '1';
   const usePlacement = usePlacementHook!;
   const useUser = useUserHook!;
