@@ -20,6 +20,8 @@ const BUTTON_SHADOW = {
   elevation: 6,
 };
 
+const CONTINUE_AT_PROGRESS = 0.4;
+
 export default function DemoPageScreen() {
   const insets = useSafeAreaInsets();
   const isIpad = Platform.OS === 'ios' && Platform.isPad;
@@ -69,9 +71,10 @@ useFocusEffect(
         const current = player.currentTime
 
         if (duration > 0) {
-          const p = Math.min((current / duration) * 1.3, 1.3)
+          const ratio = current / duration
+          const p = Math.min(ratio * 1.3, 1.3)
           fillProgress.value = withTiming(p, { duration: 150 })
-          if (p >= 1) setCanContinue(true)
+          if (ratio >= CONTINUE_AT_PROGRESS) setCanContinue(true)
         }
       } catch (_) {}
     }, 100)
