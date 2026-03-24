@@ -65,7 +65,7 @@ export default function QuizResultsScreen() {
   const rightHeight = rightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, (projected_score / 100) * MAX_BAR_HEIGHT] });
 
   const handleUnlock = () => {
-    router.replace('/rating');
+    router.replace(superwallAvailable ? '/paywall' : '/signup');
   };
 
   return (

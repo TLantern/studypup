@@ -49,7 +49,7 @@ export default function RatingScreen() {
         </View>
         <View style={styles.bottomSection}>
           <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
-          <Pressable style={styles.continueBtn} onPress={() => router.replace(superwallAvailable ? '/paywall' : '/signup')}>
+          <Pressable style={styles.continueBtn} onPress={() => router.replace('/plan-ready')}>
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>

@@ -25,7 +25,7 @@ export default function CreatingPlanScreen() {
 
   useEffect(() => {
     const t = setTimeout(
-      () => router.replace('/plan-ready'),
+      () => router.replace('/rating'),
       DURATION_MS
     );
     return () => clearTimeout(t);
