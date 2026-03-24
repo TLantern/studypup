@@ -2,7 +2,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SuperwallAvailableContext } from '@/lib/superwall'
+import { SuperwallAvailableContext, useUserSafe } from '@/lib/superwall'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   scaleFont,
@@ -98,6 +98,8 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const logoStyle = useLogoAnimation()
   const superwallAvailable = useContext(SuperwallAvailableContext)
+  const { subscriptionStatus } = useUserSafe()
+  const isPro = subscriptionStatus?.status === 'ACTIVE'
   const { uid, loading } = useAuth()
   const [sheetVisible, setSheetVisible] = useState(false)
   const [authLoading, setAuthLoading] = useState<'apple' | 'google' | null>(null)
@@ -158,9 +160,9 @@ export default function OnboardingScreen() {
   // auth redirect
   useEffect(() => {
     if (!loading && uid) {
-      router.replace('/(tabs)')
+      router.replace(superwallAvailable && !isPro ? '/paywall' : '/(tabs)')
     }
-  }, [uid, loading])
+  }, [uid, loading, superwallAvailable, isPro])
 
   const welcomeTracked = useRef(false)
   useEffect(() => {
