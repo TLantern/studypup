@@ -1,4 +1,5 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
+import { trackPageViewed } from '@/lib/analytics';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -96,6 +97,7 @@ function PaywallTriggerInner({
   }, [state]);
   useEffect(() => {
     if (!placementToShow) return;
+    trackPageViewed('superwall_placement', { placement: placementToShow });
     console.log('[Superwall] registerPlacement called with:', placementToShow);
     registerPlacement({ placement: placementToShow, feature: () => {} })
       .then(() => {
@@ -144,7 +146,7 @@ export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = (
       {usePlacementHook != null ? (
         <PaywallTriggerInner placementToShow={placementToShow} onClear={() => setPlacementToShow(null)} />
       ) : (
-        placementToShow && console.warn('[Superwall] usePlacementHook is null, cannot show paywall for:', placementToShow)
+        (placementToShow ? (console.warn('[Superwall] usePlacementHook is null, cannot show paywall for:', placementToShow), null) : null)
       )}
     </PaywallTriggerContext.Provider>
   );

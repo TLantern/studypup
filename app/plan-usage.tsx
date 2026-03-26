@@ -3,13 +3,14 @@ import { useAuth } from '@/lib/auth-store';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 import { setItem as storageSetItem } from '@/lib/storage';
 import { ensureUserDoc } from '@/lib/user-profile';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,6 +38,10 @@ export default function PlanUsageScreen() {
   const { user } = useAuth();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    trackPageViewed('onboarding_plan_usage');
+  }, []);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>

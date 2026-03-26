@@ -3,6 +3,7 @@ import { getItem, setItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
 import { updateMaterials } from '@/lib/study-materials-storage';
 import { PaywallTriggerContext, PLACEMENT_GENERATE, SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 
 // Import useUser for entitlement checking
 let useUser: typeof import('expo-superwall').useUser | null = null;
@@ -98,6 +99,7 @@ export default function ChooseMethodsScreen() {
           try {
             console.log('[Studypup] PLACEMENT_GENERATE:', PLACEMENT_GENERATE);
             console.log('[Studypup] showPaywall function:', typeof showPaywall);
+            trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GENERATE });
             await showPaywall(PLACEMENT_GENERATE);
             console.log('[Studypup] showPaywall completed');
           } catch (error) {

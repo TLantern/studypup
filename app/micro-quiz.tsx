@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -230,6 +231,7 @@ export default function MicroQuizScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    trackPageViewed('onboarding_micro_quiz');
     getOnboarding().then((data) => {
       const subject = data.subjects?.[0] ?? FALLBACK_SUBJECT;
       const grade = data.grade_level ?? FALLBACK_GRADE;

@@ -54,6 +54,7 @@
     "firebase": "^12.8.0",
     "jszip": "^3.10.1",
     "lottie-react-native": "~7.3.1",
+    "mixpanel-react-native": "^3.3.0",
     "openai": "^6.17.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",

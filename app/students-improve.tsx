@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -20,6 +21,7 @@ export default function StudentsImproveScreen() {
   const fadeAnim = useSharedValue(0);
 
   useEffect(() => {
+    trackPageViewed('onboarding_students_improve');
     lottieRef.current?.play();
   }, []);
 

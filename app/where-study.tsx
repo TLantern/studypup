@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -127,6 +128,10 @@ export default function WhereStudyScreen() {
   const [region, setRegion] = useState('Texas');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
+
+  useEffect(() => {
+    trackPageViewed('onboarding_where_study');
+  }, []);
 
   const showRegion = country === 'United States' || country === 'Canada';
   const regionLabel = country === 'Canada' ? 'Province' : 'State';

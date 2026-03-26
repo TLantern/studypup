@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useContext, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 
 const DURATION_MS = 6000;
 
@@ -11,6 +12,7 @@ export default function CreatingPlanScreen() {
   const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
+    trackPageViewed('onboarding_creating_plan');
     lottieRef.current?.play();
   }, []);
 

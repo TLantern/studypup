@@ -10,6 +10,7 @@ import { getItem, setItem } from '@/lib/storage';
 import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
 import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -48,6 +49,10 @@ export default function CreateAccountScreen() {
     }),
     []
   );
+
+  useEffect(() => {
+    trackPageViewed('create_account');
+  }, []);
 
   // Load stored phone number on mount
   useEffect(() => {

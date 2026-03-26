@@ -1,11 +1,12 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -29,6 +30,10 @@ const SUBJECTS = [
 export default function SubjectsScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    trackPageViewed('onboarding_subjects');
+  }, []);
 
   const toggle = (id: string) => {
     setSelected((prev) => {

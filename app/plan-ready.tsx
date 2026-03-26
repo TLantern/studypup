@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -19,6 +20,7 @@ export default function PlanReadyScreen() {
   const lottieRef = useRef<LottieView>(null);
 
   useEffect(() => {
+    trackPageViewed('onboarding_plan_ready');
     lottieRef.current?.play();
   }, []);
 

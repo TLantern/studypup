@@ -4,10 +4,10 @@ import { router } from 'expo-router';
 import { useContext, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scaleFont, scaleSize, SCREEN_WIDTH, SCREEN_HEIGHT, RESPONSIVE } from '@/lib/responsive';
 import { useAuth } from '@/lib/auth-store';
-import { getItem, setItem } from '@/lib/storage';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -77,6 +77,10 @@ export default function OnboardingScreen() {
   const { uid, loading } = useAuth();
 
   useEffect(() => {
+    trackPageViewed('onboarding_welcome');
+  }, []);
+
+  useEffect(() => {
     if (!loading && uid) {
       router.replace('/(tabs)');
     }
@@ -87,8 +91,6 @@ export default function OnboardingScreen() {
     let mounted = true;
     (async () => {
       try {
-        const played = await getItem('welcome_audio_played');
-        if (played) return;
         await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, staysActiveInBackground: false, shouldDuckAndroid: true, playThroughEarpieceAndroid: false });
         const { sound } = await Audio.Sound.createAsync(WELCOME_MP3);
         if (!mounted) {
@@ -97,7 +99,6 @@ export default function OnboardingScreen() {
         }
         welcomeSound.current = sound;
         await sound.playAsync();
-        await setItem('welcome_audio_played', 'true');
       } catch (_) {}
     })();
     return () => {

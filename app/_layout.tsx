@@ -18,6 +18,7 @@ import { LogBox, View } from 'react-native';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
+import { initAnalytics } from '@/lib/analytics';
 import React from 'react';
 import {
   PaywallTriggerProvider as PaywallTriggerProviderRaw,
@@ -38,6 +39,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    initAnalytics();
+  }, []);
 
   if (!fontsLoaded) return null;
 

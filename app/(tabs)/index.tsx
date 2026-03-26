@@ -30,6 +30,7 @@ import { getStreak, recordMasteryAchieved } from '@/lib/streak';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
 import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PaymentWarningModal } from '@/components/PaymentWarningModal';
 import { schedulePaymentWarningNotifications } from '@/lib/notifications';
@@ -167,7 +168,10 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (superwallAvailable) showPaywall(PLACEMENT_APP_OPEN);
+      if (superwallAvailable) {
+        trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
+        showPaywall(PLACEMENT_APP_OPEN);
+      }
     }, [showPaywall, superwallAvailable])
   );
 
@@ -1293,7 +1297,10 @@ export default function HomeScreen() {
               onPressOut={() => { unlimitedScale.value = withSpring(1); }}
               onPress={() => {
                 setShowSettingsModal(false);
-                if (superwallAvailable) showPaywall(PLACEMENT_GET_UNLIMITED);
+                if (superwallAvailable) {
+                  trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GET_UNLIMITED });
+                  showPaywall(PLACEMENT_GET_UNLIMITED);
+                }
                 else router.push('/create-account');
               }}
             >

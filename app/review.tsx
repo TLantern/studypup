@@ -2,10 +2,12 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
+import { useSuperwall } from 'expo-superwall';
 import { useContext, useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SuperwallAvailableContext } from '@/lib/superwall';
+import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN, SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -18,6 +20,11 @@ const BUTTON_SHADOW = {
 export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
   const superwallAvailable = useContext(SuperwallAvailableContext);
+  const preloadPaywalls = useSuperwall((s) => s.preloadPaywalls);
+
+  useEffect(() => {
+    trackPageViewed('onboarding_review');
+  }, []);
 
   useEffect(() => {
     const show = async () => {
@@ -26,6 +33,10 @@ export default function ReviewScreen() {
     const t = setTimeout(show, 500);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    preloadPaywalls([PLACEMENT_VALUE_SCREEN, PLACEMENT_ONBOARDING_COMPLETE]).catch(() => {});
+  }, [preloadPaywalls]);
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>

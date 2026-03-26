@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
 
 function letterGrade(score: number): string {
   if (score >= 90) return 'A';
@@ -25,6 +26,10 @@ export default function QuizResultsScreen() {
   const insets = useSafeAreaInsets();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const { score: scoreParam, weak } = useLocalSearchParams<{ score: string; weak: string }>();
+
+  useEffect(() => {
+    trackPageViewed('onboarding_quiz_results');
+  }, []);
 
   const mastery = parseInt(scoreParam ?? '0', 10);
   const { projected_increase, projected_score, rightDuration } = useMemo(() => {

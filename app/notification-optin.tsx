@@ -1,11 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ProgressBar } from '@/components/ProgressBar';
 import { scaleSize, scaleFont, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { applyNotifPrefs, getNotifPrefs, requestPermissions } from '@/lib/notifications';
+import { trackPageViewed } from '@/lib/analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -19,6 +21,10 @@ const BELL_SIZE = SCREEN_WIDTH * 0.28;
 
 export default function NotificationOptinScreen() {
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    trackPageViewed('onboarding_notification_optin');
+  }, []);
 
   async function allow() {
     const granted = await requestPermissions();
