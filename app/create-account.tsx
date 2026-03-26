@@ -1,16 +1,17 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
 import { useUserSafe } from '@/lib/superwall';
 import { getItem, setItem } from '@/lib/storage';
-import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
+import { confirmPhoneOtp, sendMagicLink, signInWithApple, signInWithGoogle, startPhoneSignIn } from '@/lib/auth';
 import * as Linking from 'expo-linking';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import ShineButton from '@/components/ShineButton';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -33,6 +34,7 @@ export default function CreateAccountScreen() {
   const [code, setCode] = useState('');
   const [stage, setStage] = useState<'phone' | 'otp'>('phone');
   const [busy, setBusy] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<'apple' | 'google' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const [resendCount, setResendCount] = useState(0);
@@ -193,6 +195,33 @@ export default function CreateAccountScreen() {
     }
   };
 
+  const handleApple = async () => {
+    if (busy || oauthLoading) return;
+    setOauthLoading('apple');
+    setError(null);
+    try {
+      await signInWithApple();
+    } catch (e: any) {
+      const code = e?.code ?? e?.nativeEvent?.code;
+      if (code !== 'ERR_REQUEST_CANCELED' && code !== 1000) setError(e?.message ?? 'Apple sign-in failed.');
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
+  const handleGoogle = async () => {
+    if (busy || oauthLoading) return;
+    setOauthLoading('google');
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      if (e?.message !== 'Google sign-in cancelled.') setError(e?.message ?? 'Google sign-in failed.');
+    } finally {
+      setOauthLoading(null);
+    }
+  };
+
   // Google OAuth commented out
   // const handleGoogle = async () => { ... };
 
@@ -201,7 +230,7 @@ export default function CreateAccountScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>Phone Sign In</Text>
+        <Text style={styles.title}>Create an Account</Text>
         <Text style={styles.subtitle}>
           {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
         </Text>
@@ -259,6 +288,43 @@ export default function CreateAccountScreen() {
           </Text>
         </Pressable>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+        </View>
+
+        <View style={styles.oauthButtons}>
+          {Platform.OS === 'ios' && (
+            <ShineButton
+              label=""
+              onPress={handleApple}
+              backgroundColor="#000"
+              textColor="#fff"
+              style={[styles.oauthBtnBase, BUTTON_SHADOW]}
+              disabled={busy || !!oauthLoading}
+            >
+              <Image source={require('../assets/icons/apple.png')} style={styles.oauthIcon} contentFit="contain" tintColor="#fff" />
+              <Text style={styles.appleBtnText}>Continue with Apple</Text>
+              {oauthLoading === 'apple' && <ActivityIndicator color="#fff" />}
+            </ShineButton>
+          )}
+          <ShineButton
+            label=""
+            onPress={handleGoogle}
+            backgroundColor="#fff"
+            textColor="#222"
+            borderColor="#ddd"
+            borderWidth={1}
+            style={[styles.oauthBtnBase, BUTTON_SHADOW]}
+            disabled={busy || !!oauthLoading}
+          >
+            <Image source={require('../assets/icons/google.png')} style={styles.oauthIcon} contentFit="contain" />
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+            {oauthLoading === 'google' && <ActivityIndicator color="#333" />}
+          </ShineButton>
+        </View>
+
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         {false && (
@@ -302,6 +368,11 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.containerPadding },
   title: { fontFamily: 'Fredoka', fontWeight: '600', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
+  oauthButtons: { width: '100%', gap: scaleSize(16), marginBottom: scaleSize(18) },
+  oauthBtnBase: { paddingVertical: scaleSize(18), borderRadius: scaleSize(16), minHeight: scaleSize(60) },
+  appleBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#fff' },
+  googleBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#222' },
+  oauthIcon: { width: scaleSize(24), height: scaleSize(24) },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -366,7 +437,7 @@ const styles = StyleSheet.create({
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(-16), marginBottom: scaleSize(16), textAlign: 'center' },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
-  dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', marginHorizontal: 16 },
+  dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', textAlign: 'center', position: 'absolute', left: 0, right: 0 },
   optionsContainer: {
     backgroundColor: '#FD8A8A',
     borderRadius: 16,

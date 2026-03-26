@@ -6,6 +6,14 @@ import { ensureUserDoc } from '@/lib/user-profile';
 import { getItem, setItem } from '@/lib/storage';
 import { mixpanel } from '@/lib/mixpanel';
 
+let SuperwallExpoModule: typeof import('expo-superwall').SuperwallExpoModule | null = null;
+try {
+  const sw = require('expo-superwall');
+  SuperwallExpoModule = sw.SuperwallExpoModule;
+} catch (err) {
+  console.warn('[Auth] Superwall module not available:', err);
+}
+
 const STORED_USER_KEY = 'auth:user';
 const STORED_PHONE_KEY = 'auth:phone';
 
@@ -58,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       saveUserData(u);
       if (u) {
+        SuperwallExpoModule?.identify(u.uid, { restorePaywallAssignments: true }).catch((e: any) =>
+          console.warn('[Auth] Superwall identify failed:', e)
+        );
         ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
         mixpanel.identify(u.uid);
         mixpanel.getPeople().set({
@@ -97,6 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           mixpanel.track('Sign Out');
           mixpanel.reset();
           await signOut(auth);
+          await SuperwallExpoModule?.reset();
           await setItem(STORED_USER_KEY, '');
           await setItem(STORED_PHONE_KEY, '');
         } catch (error) {
