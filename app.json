@@ -103,7 +103,6 @@
           "jsEngine": "hermes"
         }
       ],
-      "@react-native-google-signin/google-signin",
       "expo-audio",
       "expo-video"
     ],
