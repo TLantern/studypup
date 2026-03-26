@@ -82,12 +82,6 @@
           "imageWidth": 200
         }
       ],
-      [
-        "@react-native-google-signin/google-signin",
-        {
-          "iosUrlScheme": "com.googleusercontent.apps.114632107142-hoch555rj7hlnmhdu7bie4m10rjknmo7"
-        }
-      ],
       "expo-notifications",
       "expo-font",
       [
