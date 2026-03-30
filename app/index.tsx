@@ -68,7 +68,7 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-      <Text style={styles.title}>Better Grades.{'\n'}Less Studying</Text>
+      <Text style={styles.title}>Better Grades{'\n'}Less Studying</Text>
       <Text style={styles.subtext}>Turn notes into exactly what’s on your exam</Text>
       <View style={styles.videoShadowWrap}>
         <View style={styles.videoInner}>
