@@ -5,6 +5,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { trackPageViewed } from '@/lib/analytics';
+import { SCREEN_WIDTH } from '@/lib/responsive';
+
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'FredokaOne_400Regular',
-    fontSize: 28,
+    fontSize: IS_IPAD ? 34 : 28,
     color: '#000',
     textAlign: 'center',
     marginBottom: 14,

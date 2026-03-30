@@ -5,8 +5,10 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -83,10 +85,10 @@ export default function SubjectsScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  container: { flex: 1, paddingHorizontal: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: scaleSize(16) },
   subjectBtn: {
@@ -94,10 +96,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: scaleSize(12),
-    paddingVertical: scaleSize(14),
-    paddingHorizontal: scaleSize(16),
-    marginBottom: scaleSize(10),
+    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
+    paddingVertical: scaleSize(IS_IPAD ? 12 : 14),
+    paddingHorizontal: scaleSize(IS_IPAD ? 14 : 16),
+    marginBottom: scaleSize(IS_IPAD ? 8 : 10),
     borderWidth: 1,
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
@@ -105,16 +107,16 @@ const styles = StyleSheet.create({
   subjectBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
   subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
   subjectEmoji: { fontSize: RESPONSIVE.titleSmall },
-  buttons: { marginTop: 'auto', paddingTop: scaleSize(6), marginBottom: scaleSize(-34) },
+  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    borderRadius: 35,
+    paddingVertical: IS_IPAD ? 14 : 18,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
 });

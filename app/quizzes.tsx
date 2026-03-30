@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { trackPageViewed } from '@/lib/analytics';
+import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -26,7 +27,7 @@ export default function QuizzesScreen() {
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill4.png')} style={styles.progress} contentFit="contain" />
-        <Text style={styles.heading}>Test your knowledge with{'\n'}Custom Quizzes</Text>
+        <Text style={styles.heading}>Test your knowledge{'\n'}with Custom Quizzes</Text>
         <Text style={styles.subtext}>AI builds tailored quizzes from your notes.</Text>
         <Animated.View style={[styles.heroWrap, hoverStyle]}>
           <Image source={require('../assets/images/quizzes.png')} style={styles.hero} contentFit="contain" />
@@ -45,8 +46,8 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: 32, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: -160 },
+  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: -140 },
   heroWrap: { width: '100%', height: 720, alignSelf: 'center', marginBottom: -70 },
   hero: { width: '100%', height: '100%' },
   buttons: { marginTop: 'auto', paddingTop: 6 },

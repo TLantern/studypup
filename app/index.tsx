@@ -19,10 +19,12 @@ const BUTTON_SHADOW = {
 const WELCOME_MP3 = require('../audio/welcomeaudio.mp3');
 const DEMO_VIDEO = require('../assets/demovidd.mp4');
 
-const DEMO_VIDEO_WIDTH = Math.min(SCREEN_WIDTH * 0.54, scaleSize(230));
+const IS_TABLET_SCREEN = SCREEN_WIDTH >= 768;
+const TABLET_SCALE = IS_TABLET_SCREEN ? 0.75 : 1;
+const DEMO_VIDEO_WIDTH = Math.min(SCREEN_WIDTH * 0.58, scaleSize(260)) * (IS_TABLET_SCREEN ? 0.7 : 1);
 
 const WELCOME_RESPONSIVE = {
-  titleFontSize: scaleFont(36),
+  titleFontSize: scaleFont(36 * TABLET_SCALE),
 };
 
 export default function OnboardingScreen() {
@@ -109,15 +111,15 @@ const styles = StyleSheet.create({
   },
   subtext: { 
     fontFamily: 'Fredoka_400Regular', 
-    fontSize: scaleFont(16), 
+    fontSize: scaleFont(16 * TABLET_SCALE), 
     color: '#333', 
     textAlign: 'center', 
     marginTop: scaleSize(8) 
   },
   videoShadowWrap: {
     alignSelf: 'center',
-    marginTop: scaleSize(16),
-    marginBottom: scaleSize(4),
+    marginTop: scaleSize(16 * TABLET_SCALE),
+    marginBottom: scaleSize(4 * TABLET_SCALE),
     borderRadius: scaleSize(14),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -137,25 +139,25 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   buttons: { 
-    gap: scaleSize(16), 
-    paddingTop: SCREEN_HEIGHT * 0.04,
+    gap: scaleSize(16 * TABLET_SCALE), 
+    paddingTop: SCREEN_HEIGHT * 0.04 * TABLET_SCALE,
     paddingHorizontal: scaleSize(8),
   },
   btn: {
     borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: scaleSize(16),
-    paddingHorizontal: scaleSize(40),
+    paddingVertical: scaleSize(10 * TABLET_SCALE),
+    paddingHorizontal: scaleSize(28 * TABLET_SCALE),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    minHeight: RESPONSIVE.buttonMinHeight,
+    minHeight: RESPONSIVE.buttonMinHeight * TABLET_SCALE,
     ...BUTTON_SHADOW,
   },
   btnPrimary: { backgroundColor: '#FD8A8A', borderColor: '#CA6E6E' },
   btnLogin: { backgroundColor: '#E8E8E8', borderColor: '#B9B9B9' },
   btnText: { 
     fontFamily: 'Fredoka_400Regular', 
-    fontSize: scaleFont(22),
+    fontSize: scaleFont(18 * TABLET_SCALE),
     textAlign: 'center',
   },
   btnPrimaryText: { color: '#fff' },

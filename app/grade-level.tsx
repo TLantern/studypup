@@ -6,8 +6,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -78,14 +80,14 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleMedium, color: '#000', textAlign: 'center', marginBottom: scaleSize(4) },
+  container: { flex: 1, paddingHorizontal: 24 },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: RESPONSIVE.subtitle,
+    fontSize: IS_IPAD ? 22 : 18,
     color: '#333',
     textAlign: 'center',
-    marginBottom: scaleSize(24),
+    marginBottom: 24,
     textDecorationColor: '#3b82f6',
   },
   gradeBtn: {
@@ -93,10 +95,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: scaleSize(12),
-    paddingVertical: scaleSize(14),
-    paddingHorizontal: scaleSize(16),
-    marginBottom: scaleSize(10),
+    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
+    paddingVertical: scaleSize(IS_IPAD ? 12 : 14),
+    paddingHorizontal: scaleSize(IS_IPAD ? 14 : 16),
+    marginBottom: scaleSize(IS_IPAD ? 8 : 10),
     borderWidth: 1,
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
@@ -106,30 +108,30 @@ const styles = StyleSheet.create({
   gradeEmoji: { fontSize: RESPONSIVE.titleSmall },
   bottomSection: {
     marginTop: 'auto',
-    paddingTop: scaleSize(6),
+    paddingTop: 6,
     position: 'relative',
     alignItems: 'center',
+    gap: 12,
   },
   puppy: {
     position: 'absolute',
-    bottom: scaleSize(51),
-    width: scaleSize(140),
-    height: scaleSize(120),
+    bottom: IS_IPAD ? 42 : 52,
+    width: 128,
+    height: 110,
     zIndex: 1,
-    marginBottom: scaleSize(-34),
   },
   continueBtn: {
-    marginBottom: scaleSize(-34),
+    marginTop: IS_IPAD ? 52 : 68,
     backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
-    paddingHorizontal: RESPONSIVE.buttonPaddingHorizontal,
+    borderRadius: 35,
+    paddingVertical: IS_IPAD ? 14 : 18,
+    paddingHorizontal: 32,
     width: '100%',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
   continueBtnDisabled: { opacity: 0.6 },
 });

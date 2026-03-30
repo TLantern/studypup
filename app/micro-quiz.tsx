@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -325,33 +327,33 @@ export default function MicroQuizScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  screen: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  screen: { flex: 1, paddingHorizontal: 24 },
   container: { flexGrow: 1 },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: scaleSize(10), marginBottom: scaleSize(20) },
   dot: { width: scaleSize(10), height: scaleSize(10), borderRadius: scaleSize(5), backgroundColor: 'rgba(255,255,255,0.5)' },
   dotActive: { backgroundColor: '#7c3aed' },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#555', textAlign: 'center', marginBottom: scaleSize(4) },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
   card: {
     backgroundColor: '#fff',
-    borderRadius: scaleSize(16),
-    padding: scaleSize(20),
-    marginBottom: scaleSize(16),
+    borderRadius: scaleSize(IS_IPAD ? 14 : 16),
+    padding: scaleSize(IS_IPAD ? 16 : 20),
+    marginBottom: scaleSize(IS_IPAD ? 12 : 16),
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
   },
-  questionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(13), color: '#7c3aed', marginBottom: scaleSize(8) },
-  questionText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#111', lineHeight: scaleFont(26) },
-  optionsWrap: { gap: scaleSize(10), marginBottom: scaleSize(24) },
+  questionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 12 : 13), color: '#7c3aed', marginBottom: scaleSize(IS_IPAD ? 6 : 8) },
+  questionText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(IS_IPAD ? 16 : 18), color: '#111', lineHeight: scaleFont(IS_IPAD ? 24 : 26) },
+  optionsWrap: { gap: scaleSize(IS_IPAD ? 8 : 10), marginBottom: scaleSize(IS_IPAD ? 16 : 24) },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: scaleSize(12),
-    padding: scaleSize(14),
+    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
+    padding: scaleSize(IS_IPAD ? 12 : 14),
     borderWidth: 1,
     borderColor: '#ddd',
     shadowColor: '#333',
@@ -362,20 +364,20 @@ const styles = StyleSheet.create({
   },
   optionSelected: { borderColor: '#7c3aed', borderWidth: 2, backgroundColor: '#f5f0ff' },
   optionBullet: {
-    width: scaleSize(28),
-    height: scaleSize(28),
-    borderRadius: scaleSize(14),
+    width: scaleSize(IS_IPAD ? 24 : 28),
+    height: scaleSize(IS_IPAD ? 24 : 28),
+    borderRadius: scaleSize(IS_IPAD ? 12 : 14),
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scaleSize(12),
+    marginRight: scaleSize(IS_IPAD ? 10 : 12),
   },
   optionBulletSelected: { backgroundColor: '#7c3aed' },
-  optionBulletText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#666' },
+  optionBulletText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 13 : 14), color: '#666' },
   optionBulletTextSelected: { color: '#fff' },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#222', flex: 1 },
+  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 14 : 15), color: '#222', flex: 1 },
   optionTextSelected: { color: '#4a1d96' },
-  ctaWrap: { marginBottom: scaleSize(-34), gap: scaleSize(8) },
+  ctaWrap: { gap: scaleSize(8), marginBottom: -34 },
   skipBtn: { alignItems: 'center', paddingVertical: scaleSize(10) },
   skipText: {
     fontFamily: 'Fredoka_400Regular',
@@ -385,8 +387,8 @@ const styles = StyleSheet.create({
   },
   btn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    borderRadius: 35,
+    paddingVertical: IS_IPAD ? 14 : 18,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
@@ -397,5 +399,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   btnDisabled: { opacity: 0.5 },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : RESPONSIVE.button, color: '#fff' },
 });

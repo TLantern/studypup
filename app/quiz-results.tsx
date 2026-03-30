@@ -4,8 +4,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SuperwallAvailableContext } from '@/lib/superwall';
-import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 function letterGrade(score: number): string {
   if (score >= 90) return 'A';
@@ -20,7 +22,7 @@ function higherGrade(letter: string): string {
   return map[letter] ?? 'A';
 }
 
-const MAX_BAR_HEIGHT = 180;
+const MAX_BAR_HEIGHT = IS_IPAD ? 150 : 180;
 
 export default function QuizResultsScreen() {
   const insets = useSafeAreaInsets();
@@ -145,18 +147,18 @@ export default function QuizResultsScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flexGrow: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
+  container: { flexGrow: 1, paddingHorizontal: 24 },
   headline: {
     fontFamily: 'FredokaOne_400Regular',
-    fontSize: scaleFont(26),
+    fontSize: IS_IPAD ? 34 : scaleFont(26),
     color: '#000',
     textAlign: 'center',
     marginBottom: scaleSize(28),
   },
   chartCard: {
     backgroundColor: '#fff',
-    borderRadius: scaleSize(20),
-    padding: scaleSize(20),
+    borderRadius: scaleSize(IS_IPAD ? 16 : 20),
+    padding: scaleSize(IS_IPAD ? 16 : 20),
     marginBottom: scaleSize(16),
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 3 },
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
   },
   barGroup: { alignItems: 'center', gap: scaleSize(10) },
   barTrack: {
-    width: scaleSize(80),
+    width: scaleSize(IS_IPAD ? 64 : 80),
     backgroundColor: 'rgba(0,0,0,0.08)',
     borderRadius: scaleSize(10),
     justifyContent: 'flex-end',
@@ -185,22 +187,22 @@ const styles = StyleSheet.create({
   barDivider: { width: 1, height: MAX_BAR_HEIGHT, backgroundColor: 'transparent' },
   barLabel: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(IS_IPAD ? 12 : 13),
     color: '#444',
     textAlign: 'center',
-    lineHeight: scaleFont(18),
+    lineHeight: scaleFont(IS_IPAD ? 16 : 18),
   },
   improvementBadge: {
     backgroundColor: '#F5A623',
     borderRadius: scaleSize(20),
-    paddingHorizontal: scaleSize(12),
+    paddingHorizontal: scaleSize(IS_IPAD ? 10 : 12),
     paddingVertical: scaleSize(5),
     marginBottom: scaleSize(6),
     alignSelf: 'center',
   },
   improvementBadgeText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(12),
+    fontSize: scaleFont(IS_IPAD ? 11 : 12),
     color: '#fff',
   },
   scoreRow: {
@@ -211,14 +213,14 @@ const styles = StyleSheet.create({
   },
   scoreNum: {
     fontFamily: 'FredokaOne_400Regular',
-    fontSize: scaleFont(20),
+    fontSize: scaleFont(IS_IPAD ? 18 : 20),
     color: '#333',
   },
   insightCard: {
     backgroundColor: '#fff',
-    borderRadius: scaleSize(16),
-    padding: scaleSize(20),
-    marginBottom: scaleSize(28),
+    borderRadius: scaleSize(IS_IPAD ? 14 : 16),
+    padding: scaleSize(IS_IPAD ? 16 : 20),
+    marginBottom: scaleSize(IS_IPAD ? 20 : 28),
     gap: scaleSize(10),
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 3 },
@@ -228,16 +230,16 @@ const styles = StyleSheet.create({
   },
   insightText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(IS_IPAD ? 14 : 16),
     color: '#333',
-    lineHeight: scaleFont(22),
+    lineHeight: scaleFont(IS_IPAD ? 20 : 22),
   },
   bold: { fontFamily: 'FredokaOne_400Regular', color: '#111' },
-  ctaWrap: { marginBottom: scaleSize(-34) },
+  ctaWrap: { marginBottom: -34 },
   btn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    borderRadius: 35,
+    paddingVertical: IS_IPAD ? 14 : RESPONSIVE.buttonPaddingVertical,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
@@ -247,5 +249,5 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 10,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : RESPONSIVE.button, color: '#fff' },
 });

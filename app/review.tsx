@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
@@ -8,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN, SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
+import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -49,7 +49,6 @@ export default function ReviewScreen() {
           <Text style={styles.stars}>★★★★★</Text>
         </View>
         <View style={styles.bottomSection}>
-          <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
           <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
             <Text style={styles.skipText}>Skip</Text>
           </Pressable>
@@ -64,32 +63,30 @@ export default function ReviewScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'space-between' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#000', textAlign: 'center', marginBottom: 16 },
+  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding, justifyContent: 'space-between' },
+  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(16) },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: 17,
+    fontSize: RESPONSIVE.body,
     color: '#333',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 8,
+    lineHeight: scaleSize(24),
+    paddingHorizontal: scaleSize(8),
   },
-  starsRow: { alignItems: 'center', marginVertical: 24 },
-  stars: { fontSize: 44, color: '#FFD700', letterSpacing: 4 },
-  bottomSection: { marginTop: 'auto', paddingTop: 6, position: 'relative', alignItems: 'center' },
-  puppy: { position: 'absolute', bottom: 51, width: 140, height: 120, zIndex: 1, marginBottom: -34 },
+  starsRow: { alignItems: 'center', marginVertical: scaleSize(24) },
+  stars: { fontSize: scaleSize(44), color: '#FFD700', letterSpacing: scaleSize(4) },
+  bottomSection: { marginTop: 'auto', paddingTop: scaleSize(6), alignItems: 'center', gap: scaleSize(12) },
   continueBtn: {
-    marginBottom: -34,
     backgroundColor: '#FD8A8A',
     borderRadius: 35,
-    paddingVertical: 18,
-    paddingHorizontal: 32,
+    paddingVertical: scaleSize(18),
+    paddingHorizontal: scaleSize(32),
     width: '100%',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: '#fff' },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
+  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleSize(16), color: '#555', textAlign: 'center', textDecorationLine: 'underline' },
 });

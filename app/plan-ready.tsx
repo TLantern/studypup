@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: scaleSize(48),
   },
-  ctaWrap: { width: '100%', marginTop: 'auto', marginBottom: scaleSize(-34) },
+  ctaWrap: { width: '100%', marginTop: 'auto' },
   btn: {
     backgroundColor: '#FD8A8A',
     borderRadius: RESPONSIVE.buttonRadius,

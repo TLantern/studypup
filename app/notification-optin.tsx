@@ -18,6 +18,7 @@ const BUTTON_SHADOW = {
 };
 
 const BELL_SIZE = SCREEN_WIDTH * 0.28;
+const IS_IPAD = SCREEN_WIDTH >= 768;
 
 export default function NotificationOptinScreen() {
   const insets = useSafeAreaInsets();
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: {
     flex: 1,
-    paddingHorizontal: RESPONSIVE.horizontalPadding,
+    paddingHorizontal: 24,
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
   progressWrap: { flex: 1 },
@@ -105,14 +106,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'FredokaOne_400Regular',
-    fontSize: RESPONSIVE.titleSmall,
+    fontSize: IS_IPAD ? 34 : RESPONSIVE.titleSmall,
     color: '#000',
     textAlign: 'center',
     marginBottom: scaleSize(12),
   },
   subtitle: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: RESPONSIVE.body,
+    fontSize: IS_IPAD ? 22 : RESPONSIVE.body,
     color: 'rgba(0,0,0,0.65)',
     textAlign: 'center',
     lineHeight: scaleFont(24),
@@ -138,12 +139,12 @@ const styles = StyleSheet.create({
   },
   buttons: {
     gap: scaleSize(12),
-    marginBottom: scaleSize(-34),
+    marginBottom: -34,
   },
   allowBtn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
+    borderRadius: 35,
+    paddingVertical: IS_IPAD ? 14 : 18,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   },
   allowBtnText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: RESPONSIVE.button,
+    fontSize: IS_IPAD ? 22 : 24,
     color: '#fff',
   },
   skipBtn: {
