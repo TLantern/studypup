@@ -1,7 +1,8 @@
+import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { Image } from 'expo-image';
 import { Audio } from 'expo-av';
 import { router } from 'expo-router';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
@@ -14,14 +15,16 @@ import Animated, {
   withTiming,
   withRepeat,
   Easing,
+  SlideInRight,
+  SlideOutLeft,
 } from 'react-native-reanimated';
 
 const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
+  shadowColor: '#1a1a1a',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.55,
+  shadowRadius: 10,
+  elevation: 10,
 };
 
 const ENTRANCE_OFFSET = 280;
@@ -61,6 +64,33 @@ function useLogoAnimation() {
 
 const WELCOME_MP3 = require('../audio/welcomeaudio.mp3');
 
+const CAROUSEL_ITEMS = [
+  '📸 Snap your notes and get instant flashcards',
+  '🧠 AI quizzes tailored to you',
+  '⚡ Study smarter, not longer',
+];
+const CAROUSEL_INTERVAL = 3600;
+
+function useCarousel() {
+  const [index, setIndex] = useState(0);
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = 0;
+    progress.value = withTiming(1, { duration: CAROUSEL_INTERVAL, easing: Easing.linear });
+    const id = setInterval(() => {
+      setIndex(i => (i + 1) % CAROUSEL_ITEMS.length);
+      progress.value = 0;
+      progress.value = withTiming(1, { duration: CAROUSEL_INTERVAL, easing: Easing.linear });
+    }, CAROUSEL_INTERVAL);
+    return () => clearInterval(id);
+  }, []);
+
+  const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` as any }));
+
+  return { index, progressStyle };
+}
+
 // Screen-specific responsive dimensions
 const WELCOME_RESPONSIVE = {
   titleFontSize: scaleFont(36),
@@ -74,6 +104,7 @@ export default function OnboardingScreen() {
   const welcomeSound = useRef<Audio.Sound | null>(null);
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const { uid, loading } = useAuth();
+  const { index: carouselIndex, progressStyle } = useCarousel();
 
   useEffect(() => {
     trackPageViewed('onboarding_welcome');
@@ -112,22 +143,36 @@ export default function OnboardingScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 80, paddingBottom: insets.bottom + 24 }]}>
+      <MeshGradientBackground />
       <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>
-      <Text style={styles.subtext}>Unlock Your Academic Potential.</Text>
+      <Text style={styles.subtext}> AI Study Tool built for students</Text>
       <Animated.View style={[styles.logoWrap, logoStyle]}>
         <Image source={require('../assets/images/puppylogoo.png')} style={styles.logo} contentFit="contain" />
       </Animated.View>
       <View style={styles.socialProof}>
-        <Text style={styles.socialProofText}>
-          Join 3,500+ students studying smarter{'\n'}with StudyPup
-        </Text>
-        <Image
-          source={require('../assets/5stars-removebg-preview.png')}
-          style={[styles.starsImage, { width: WELCOME_RESPONSIVE.starsRowWidth }]}
-          contentFit="contain"
-        />
+        <Text style={styles.socialProofText}>Join 3,500+ students studying smarter</Text>
+        <View style={styles.starsRow}>
+          <Text style={styles.starsEmoji}>★★★★★</Text>
+          <Text style={styles.starsRating}>4.9</Text>
+          <Text style={styles.reviewsText}>· 100+ reviews</Text>
+        </View>
       </View>
       <View style={styles.buttonsSpacer} />
+      <View style={styles.carouselCard}>
+        <View style={styles.carousel}>
+          <Animated.Text
+            key={carouselIndex}
+            entering={SlideInRight.duration(380)}
+            exiting={SlideOutLeft.duration(300)}
+            style={[styles.carouselText, { position: 'absolute' }]}
+          >
+            {CAROUSEL_ITEMS[carouselIndex]}
+          </Animated.Text>
+        </View>
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressBar, progressStyle]} />
+        </View>
+      </View>
       <View style={styles.buttons}>
         <Pressable style={[styles.btn, styles.btnPrimary]} onPress={() => router.push('/record')}>
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
@@ -146,10 +191,9 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#AADDDD', 
-    paddingHorizontal: RESPONSIVE.containerPadding 
+  container: {
+    flex: 1,
+    paddingHorizontal: RESPONSIVE.containerPadding,
   },
   title: { 
     fontFamily: 'FredokaOne_400Regular', 
@@ -183,19 +227,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     marginBottom: scaleSize(8),
+    gap: scaleSize(6),
   },
   socialProofText: {
     fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(12),
-    color: '#5A5A5A',
+    fontSize: scaleFont(15),
+    color: '#444',
     textAlign: 'center',
-    lineHeight: scaleFont(15),
-    marginBottom: scaleSize(4),
   },
-  starsImage: {
-    height: scaleSize(28),
+  starsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(4),
   },
-  buttonsSpacer: { flex: 1, minHeight: scaleSize(32) },
+  starsEmoji: {
+    fontSize: scaleFont(15),
+    color: '#FFA500',
+  },
+  starsRating: {
+    fontFamily: 'FredokaOne_400Regular',
+    fontSize: scaleFont(15),
+    color: '#333',
+  },
+  reviewsText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(14),
+    color: '#5A5A5A',
+  },
+  buttonsSpacer: { flex: 1, minHeight: scaleSize(16) },
+  carouselCard: {
+    backgroundColor: 'rgba(255,255,255,0.72)',
+    borderRadius: scaleSize(16),
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.07)',
+    paddingHorizontal: scaleSize(20),
+    paddingVertical: scaleSize(14),
+    marginBottom: scaleSize(28),
+    marginHorizontal: scaleSize(8),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  carousel: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: scaleSize(56),
+    overflow: 'hidden',
+    width: '100%',
+    marginBottom: scaleSize(10),
+  },
+  carouselText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(17),
+    color: '#222',
+    textAlign: 'center',
+  },
+  progressTrack: {
+    height: scaleSize(4),
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius: scaleSize(4),
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#FD8A8A',
+    borderRadius: scaleSize(4),
+  },
   buttons: { 
     gap: scaleSize(16), 
     paddingBottom: scaleSize(16),
@@ -211,7 +310,7 @@ const styles = StyleSheet.create({
     minHeight: RESPONSIVE.buttonMinHeight,
     ...BUTTON_SHADOW,
   },
-  btnPrimary: { backgroundColor: '#FD8A8A', borderColor: '#CA6E6E' },
+  btnPrimary: { backgroundColor: '#E86E6E', borderColor: '#B85555' },
   btnText: { 
     fontFamily: 'Fredoka_400Regular', 
     fontSize: scaleFont(22),
