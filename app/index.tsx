@@ -182,16 +182,7 @@ const styles = StyleSheet.create({
   socialProof: {
     alignItems: 'center',
     alignSelf: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: scaleSize(14),
-    paddingVertical: scaleSize(12),
-    paddingHorizontal: scaleSize(18),
     marginBottom: scaleSize(8),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
   },
   socialProofText: {
     fontFamily: 'Fredoka_400Regular',
