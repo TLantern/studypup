@@ -91,6 +91,23 @@ function useCarousel() {
   return { index, progressStyle };
 }
 
+function Stars({ rating }: { rating: number }) {
+  const full = Math.floor(rating);
+  const frac = rating - full;
+  const sz = scaleFont(15);
+  return (
+    <View style={{ flexDirection: 'row' }}>
+      {[...Array(full)].map((_, i) => <Text key={i} style={{ fontSize: sz, color: '#FFA500' }}>★</Text>)}
+      <View style={{ position: 'relative', width: sz }}>
+        <Text style={{ fontSize: sz, color: '#DDD' }}>★</Text>
+        <View style={{ position: 'absolute', top: 0, left: 0, width: sz * frac, overflow: 'hidden' }}>
+          <Text style={{ fontSize: sz, color: '#FFA500' }}>★</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // Screen-specific responsive dimensions
 const WELCOME_RESPONSIVE = {
   titleFontSize: scaleFont(36),
@@ -152,9 +169,8 @@ export default function OnboardingScreen() {
       <View style={styles.socialProof}>
         <Text style={styles.socialProofText}>Join 3,500+ students studying smarter</Text>
         <View style={styles.starsRow}>
-          <Text style={styles.starsEmoji}>★★★★★</Text>
-          <Text style={styles.starsRating}>4.9</Text>
-          <Text style={styles.reviewsText}>· 100+ reviews</Text>
+          <Stars rating={4.7} />
+          <Text style={styles.starsRating}>4.7</Text>
         </View>
       </View>
       <View style={styles.buttonsSpacer} />
