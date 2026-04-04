@@ -75,7 +75,7 @@ export default function PlanUsageScreen() {
             await updateOnboarding({ plan_usage: selected });
             await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
             if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
-            router.push('/review');
+            router.push('/creating-plan');
           }}
           disabled={selected.length === 0}
         >

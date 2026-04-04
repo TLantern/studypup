@@ -29,13 +29,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { getStreak, recordMasteryAchieved } from '@/lib/streak';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
-import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext } from '@/lib/superwall';
+import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext, useSubscriptionStatus } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PaymentWarningModal } from '@/components/PaymentWarningModal';
 import { schedulePaymentWarningNotifications } from '@/lib/notifications';
 import { useBillingRetryCheck } from '@/lib/useBillingRetryCheck';
 import * as StoreReview from 'expo-store-review';
+import { getItem, setItem } from '@/lib/storage';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 import LottieView from 'lottie-react-native';
 
@@ -125,6 +126,7 @@ export default function HomeScreen() {
   const { signOut, deleteUser, user } = useAuth();
   const { showPaywall } = useContext(PaywallTriggerContext);
   const superwallAvailable = useContext(SuperwallAvailableContext);
+  const subscriptionStatus = useSubscriptionStatus();
 
   useBillingRetryCheck(() => setShowPaymentWarning(true));
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
@@ -168,12 +170,21 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (superwallAvailable) {
+      if (superwallAvailable && subscriptionStatus !== 'active') {
         trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
         showPaywall(PLACEMENT_APP_OPEN);
       }
-    }, [showPaywall, superwallAvailable])
+    }, [showPaywall, superwallAvailable, subscriptionStatus])
   );
+
+  useEffect(() => {
+    getItem('review:shown').then(async (shown) => {
+      if (!shown) {
+        await setItem('review:shown', 'true');
+        if (await StoreReview.hasAction()) StoreReview.requestReview();
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (materials.length === 0) emptyArrowLottieRef.current?.play();

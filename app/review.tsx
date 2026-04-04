@@ -2,12 +2,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as StoreReview from 'expo-store-review';
 import { useSuperwall } from 'expo-superwall';
-import { useContext, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN, SuperwallAvailableContext } from '@/lib/superwall';
+import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
+import { setItem } from '@/lib/storage';
+
+const markReviewShown = () => setItem('review:shown', 'true');
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -19,7 +22,6 @@ const BUTTON_SHADOW = {
 
 export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
-  const superwallAvailable = useContext(SuperwallAvailableContext);
   const preloadPaywalls = useSuperwall((s) => s.preloadPaywalls);
 
   useEffect(() => {
@@ -41,18 +43,18 @@ export default function ReviewScreen() {
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Love Studypup?</Text>
+        <Text style={styles.title}>Enjoying Studypup?</Text>
         <Text style={styles.subtitle}>
-          Your feedback helps us improve and helps other students discover a smarter way to study. If you’re enjoying the app, a quick 5‑star review means the world to us!
+          Your feedback helps us improve and helps other students discover a smarter way to study. If you have a moment, leaving a review means a lot to us!
         </Text>
         <View style={styles.starsRow}>
           <Text style={styles.stars}>★★★★★</Text>
         </View>
         <View style={styles.bottomSection}>
-          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
+          <Pressable onPress={() => { markReviewShown(); router.replace('/(tabs)'); }}>
             <Text style={styles.skipText}>Skip</Text>
           </Pressable>
-          <Pressable style={styles.continueBtn} onPress={() => router.push('/creating-plan')}>
+          <Pressable style={styles.continueBtn} onPress={() => { markReviewShown(); router.replace('/(tabs)'); }}>
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
