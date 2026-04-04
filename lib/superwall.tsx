@@ -5,6 +5,12 @@ let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
 let _useUser: typeof import('expo-superwall').useUser | null = null;
 let useSuperwallEventsHook: typeof import('expo-superwall').useSuperwallEvents | null = null;
+let _superwallModule: { dismiss: () => Promise<void> } | null = null;
+
+/** Set to true before programmatically dismissing a paywall for transac_abandon. paywall.tsx checks this to skip navigation. */
+export const transacAbandonPendingRef = { current: false };
+/** Set by paywall.tsx so TransactionAbandonWatcher can re-show the main paywall after transac_abandon closes. */
+export const retriggerMainPaywallRef: { current: (() => void) | null } = { current: null };
 
 try {
   const sw = require('expo-superwall');
@@ -12,6 +18,7 @@ try {
   usePlacementHook = sw.usePlacement;
   _useUser = sw.useUser ?? null;
   useSuperwallEventsHook = sw.useSuperwallEvents ?? null;
+  _superwallModule = sw.SuperwallExpoModule ?? null;
   console.log('[Superwall] Native module loaded successfully');
   console.log('[Superwall] SuperwallProvider available:', !!SuperwallProvider);
   console.log('[Superwall] usePlacementHook available:', !!usePlacementHook);
@@ -129,14 +136,45 @@ function PaywallTriggerInner({
   return null;
 }
 
+const hasSeenTransacAbandon = { current: false };
+
 function TransactionAbandonWatcher() {
   const usePlacement = usePlacementHook!;
   const useSuperwallEvents = useSuperwallEventsHook!;
-  const { registerPlacement } = usePlacement({});
+  const activeRef = useRef<'abandon' | null>(null);
+
+  const { registerPlacement } = usePlacement({
+    onDismiss: () => {
+      if (activeRef.current === 'abandon') {
+        activeRef.current = null;
+        hasSeenTransacAbandon.current = true;
+        setTimeout(() => retriggerMainPaywallRef.current?.(), 600);
+      }
+    },
+    onSkip: () => {
+      if (activeRef.current === 'abandon') {
+        activeRef.current = null;
+        hasSeenTransacAbandon.current = true;
+        setTimeout(() => retriggerMainPaywallRef.current?.(), 600);
+      }
+    },
+  });
+
   useSuperwallEvents({
     onSuperwallEvent: (eventInfo) => {
-      if (eventInfo.event.event === 'transactionAbandon') {
-        registerPlacement({ placement: 'transac_abandon', feature: () => {} }).catch(() => {});
+      if (eventInfo.event.event === 'transactionAbandon' && !hasSeenTransacAbandon.current) {
+        transacAbandonPendingRef.current = true;
+        _superwallModule?.dismiss()
+          .then(() => {
+            setTimeout(() => {
+              activeRef.current = 'abandon';
+              registerPlacement({ placement: 'transac_abandon', feature: () => {} }).catch(() => {
+                transacAbandonPendingRef.current = false;
+                activeRef.current = null;
+              });
+            }, 400);
+          })
+          .catch(() => { transacAbandonPendingRef.current = false; });
       }
     },
   });
