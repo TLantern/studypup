@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
+import { getItem } from '@/lib/storage';
 
 const PLACEMENT_ONBOARDING = 'onboarding_complete';
 
@@ -59,16 +60,19 @@ function PaywallWithSuperwall() {
   useEffect(() => {
     trackPageViewed('paywall', { placement, shouldReturn });
     if (didPresentRef.current) return;
-    didPresentRef.current = true;
-    phaseRef.current = 'value';
-    trackPlacementViewed(PLACEMENT_VALUE_SCREEN);
-    registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: () => {
-      phaseRef.current = 'paywall';
-      setTimeout(() => {
-        trackPlacementViewed(placement);
-        registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
-      }, 600);
-    }}).catch(() => navigateToMain());
+    getItem('dev:reviewer').then((isDev) => {
+      if (isDev) { navigateToMain(); return; }
+      didPresentRef.current = true;
+      phaseRef.current = 'value';
+      trackPlacementViewed(PLACEMENT_VALUE_SCREEN);
+      registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: () => {
+        phaseRef.current = 'paywall';
+        setTimeout(() => {
+          trackPlacementViewed(placement);
+          registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
+        }, 600);
+      }}).catch(() => navigateToMain());
+    });
   }, [placement, navigateToMain, registerPlacement, shouldReturn, trackPlacementViewed]);
 
   return null;

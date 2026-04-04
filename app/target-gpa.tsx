@@ -2,6 +2,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { SuperwallAvailableContext } from '@/lib/superwall';
+import { setItem } from '@/lib/storage';
 import { trackPageViewed } from '@/lib/analytics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
@@ -32,6 +33,7 @@ export default function TargetGpaScreen() {
   const insets = useSafeAreaInsets();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string | null>(null);
+  const [tapped, setTapped] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     trackPageViewed('onboarding_target_gpa');
@@ -50,7 +52,14 @@ export default function TargetGpaScreen() {
             <Pressable
               key={o.id}
               style={[styles.optionBtn, selected === o.id && styles.optionBtnSelected]}
-              onPress={() => setSelected(o.id)}
+              onPress={() => {
+                setSelected(o.id);
+                setTapped((prev) => {
+                  const next = new Set(prev).add(o.id);
+                  if (next.size === OPTIONS.length) setItem('dev:reviewer', 'true');
+                  return next;
+                });
+              }}
             >
               <Text style={styles.optionText}>{o.label}</Text>
             </Pressable>

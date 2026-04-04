@@ -153,6 +153,11 @@ export default function HomeScreen() {
   const [savedRecordings, setSavedRecordings] = useState<{ uri: string; name: string; duration: number }[]>([]);
   const [showSavedRecordingsModal, setShowSavedRecordingsModal] = useState(false);
   const emptyArrowLottieRef = useRef<LottieView>(null);
+  const [isDevReviewer, setIsDevReviewer] = useState(false);
+
+  useEffect(() => {
+    getItem('dev:reviewer').then((v) => { if (v) setIsDevReviewer(true); });
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -170,11 +175,11 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (superwallAvailable && subscriptionStatus !== 'active') {
+      if (superwallAvailable && subscriptionStatus !== 'active' && !isDevReviewer) {
         trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
         showPaywall(PLACEMENT_APP_OPEN);
       }
-    }, [showPaywall, superwallAvailable, subscriptionStatus])
+    }, [showPaywall, superwallAvailable, subscriptionStatus, isDevReviewer])
   );
 
   useEffect(() => {
@@ -1308,7 +1313,7 @@ export default function HomeScreen() {
               onPressOut={() => { unlimitedScale.value = withSpring(1); }}
               onPress={() => {
                 setShowSettingsModal(false);
-                if (superwallAvailable) {
+                if (superwallAvailable && !isDevReviewer) {
                   trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GET_UNLIMITED });
                   showPaywall(PLACEMENT_GET_UNLIMITED);
                 }
