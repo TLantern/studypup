@@ -12,6 +12,10 @@ function PaywallWithSuperwall() {
   const shouldReturn = params.return === '1';
   const usePlacement = usePlacementHook!;
   const navigateToMain = useCallback(() => {
+    if (transacAbandonPendingRef.current) {
+      console.log('[Paywall] navigateToMain suppressed — transac_abandon pending');
+      return;
+    }
     if (shouldReturn) {
       router.back();
     } else {
@@ -21,6 +25,7 @@ function PaywallWithSuperwall() {
   const didPresentRef = useRef(false);
 
   const phaseRef = useRef<'value' | 'paywall'>('value');
+  const mainPaywallRegisteredRef = useRef(false);
   const trackPlacementViewed = useCallback((placementName: string) => {
     trackPageViewed(placementName === PLACEMENT_VALUE_SCREEN ? 'value_screen' : 'onboarding_complete_placement', {
       placement: placementName,
@@ -29,27 +34,39 @@ function PaywallWithSuperwall() {
   }, [shouldReturn]);
 
   const { registerPlacement } = usePlacement({
+    onPresent: (info) => {
+      console.log('[Paywall] onPresent — paywall presented:', info?.name, '| phase:', phaseRef.current);
+    },
     onDismiss: () => {
-      if (transacAbandonPendingRef.current) { transacAbandonPendingRef.current = false; return; }
+      console.log('[Paywall] onDismiss — phase:', phaseRef.current, '| transacPending:', transacAbandonPendingRef.current);
+      if (transacAbandonPendingRef.current) { console.log('[Paywall] onDismiss suppressed for transac_abandon'); return; }
       if (phaseRef.current === 'value') {
         phaseRef.current = 'paywall';
+        if (mainPaywallRegisteredRef.current) { console.log('[Paywall] onDismiss: main paywall already registered, skipping'); return; }
+        mainPaywallRegisteredRef.current = true;
+        console.log('[Paywall] value dismissed → registering', placement, 'in 600ms');
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
+          console.log('[Paywall] registering', placement, 'now');
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] feature granted for', placement, '— Superwall skipped paywall → navigateToMain'); navigateToMain(); } }).catch(() => navigateToMain());
         }, 600);
       } else {
+        console.log('[Paywall] paywall dismissed → navigateToMain');
         navigateToMain();
       }
     },
-    onSkip: () => {
-      if (transacAbandonPendingRef.current) { transacAbandonPendingRef.current = false; return; }
+    onSkip: (reason) => {
+      console.log('[Paywall] onSkip — phase:', phaseRef.current, '| transacPending:', transacAbandonPendingRef.current, '| reason:', JSON.stringify(reason));
+      if (transacAbandonPendingRef.current) { console.log('[Paywall] onSkip suppressed for transac_abandon'); return; }
       if (phaseRef.current === 'value') {
         phaseRef.current = 'paywall';
+        console.log('[Paywall] value skipped → registering', placement, 'in 600ms');
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] feature granted for', placement, '(via onSkip path) → navigateToMain'); navigateToMain(); } }).catch(() => navigateToMain());
         }, 600);
       } else {
+        console.log('[Paywall] paywall skipped → navigateToMain');
         navigateToMain();
       }
     },
@@ -61,11 +78,22 @@ function PaywallWithSuperwall() {
 
   useEffect(() => {
     retriggerMainPaywallRef.current = () => {
+      console.log('[Paywall] retriggerMainPaywallRef called → registering', placement);
       phaseRef.current = 'paywall';
       registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
     };
     return () => { retriggerMainPaywallRef.current = null; };
   }, [placement, navigateToMain, registerPlacement]);
+
+  useEffect(() => {
+    // Log Superwall subscription status on mount
+    try {
+      const sw = require('expo-superwall');
+      sw.SuperwallExpoModule?.getSubscriptionStatus?.().then((s: any) => {
+        console.log('[Paywall] Superwall subscriptionStatus on mount:', JSON.stringify(s));
+      }).catch((e: any) => console.warn('[Paywall] getSubscriptionStatus error:', e));
+    } catch {}
+  }, []);
 
   useEffect(() => {
     trackPageViewed('paywall', { placement, shouldReturn });
@@ -76,10 +104,14 @@ function PaywallWithSuperwall() {
       phaseRef.current = 'value';
       trackPlacementViewed(PLACEMENT_VALUE_SCREEN);
       registerPlacement({ placement: PLACEMENT_VALUE_SCREEN, feature: () => {
+        console.log('[Paywall] feature granted for value_screen → registering', placement, 'in 600ms');
         phaseRef.current = 'paywall';
+        if (mainPaywallRegisteredRef.current) { console.log('[Paywall] value_screen feature: main paywall already registered, skipping'); return; }
+        mainPaywallRegisteredRef.current = true;
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: navigateToMain }).catch(() => navigateToMain());
+          console.log('[Paywall] registering', placement, 'now (via value_screen feature)');
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] feature granted for', placement, '(via value_screen feature path) → navigateToMain'); navigateToMain(); } }).catch(() => navigateToMain());
         }, 600);
       }}).catch(() => navigateToMain());
     });

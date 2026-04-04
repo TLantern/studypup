@@ -44,6 +44,17 @@ export default function RootLayout() {
     initAnalytics();
   }, []);
 
+  useEffect(() => {
+    if (__DEV__) {
+      try {
+        const sw = require('expo-superwall');
+        sw.SuperwallExpoModule?.reset?.().then(() => {
+          console.log('[DEV] Superwall reset() called — experiment assignments cleared');
+        }).catch((e: any) => console.warn('[DEV] Superwall reset() failed:', e));
+      } catch {}
+    }
+  }, []);
+
   if (!fontsLoaded) return null;
 
   const content = (

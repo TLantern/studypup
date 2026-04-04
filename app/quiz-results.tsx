@@ -34,17 +34,14 @@ export default function QuizResultsScreen() {
   }, []);
 
   const mastery = parseInt(scoreParam ?? '0', 10);
-  const { projected_increase, projected_score, rightDuration } = useMemo(() => {
-    // Grade-based improvement range: lower grades get bigger projected jumps
+  const { projected_increase, projected_score } = useMemo(() => {
     const ranges: Record<string, [number, number]> = {
       F: [30, 38], D: [24, 30], C: [16, 22], B: [10, 15], A: [5, 8],
     };
     const letter = letterGrade(mastery);
     const [min, max] = ranges[letter];
     const inc = Math.floor(Math.random() * (max - min + 1)) + min;
-    // Lower mastery = longer right bar animation (more dramatic reveal)
-    const dur = mastery <= 33 ? 2800 : mastery <= 66 ? 2300 : 1800;
-    return { projected_increase: inc, projected_score: Math.min(100, Math.max(80, mastery + inc)), rightDuration: dur };
+    return { projected_increase: inc, projected_score: Math.min(100, Math.max(80, mastery + inc)) };
   }, [mastery]);
 
   const weakConcept = decodeURIComponent(weak ?? 'Core concepts');
@@ -54,15 +51,19 @@ export default function QuizResultsScreen() {
   const leftAnim = useRef(new Animated.Value(0)).current;
   const rightAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const easing = Easing.out(Easing.cubic);
+    const cfg = { toValue: 1, useNativeDriver: true, duration: 1200, easing: Easing.out(Easing.ease) };
     Animated.parallel([
-      Animated.timing(leftAnim, { toValue: 1, useNativeDriver: false, duration: 1400, easing }),
-      Animated.timing(rightAnim, { toValue: 1, useNativeDriver: false, duration: rightDuration, delay: 250, easing }),
+      Animated.timing(leftAnim, cfg),
+      Animated.timing(rightAnim, cfg),
     ]).start();
   }, []);
 
-  const leftHeight = leftAnim.interpolate({ inputRange: [0, 1], outputRange: [0, (mastery / 100) * MAX_BAR_HEIGHT] });
-  const rightHeight = rightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, (projected_score / 100) * MAX_BAR_HEIGHT] });
+  const leftH = (mastery / 100) * MAX_BAR_HEIGHT;
+  const rightH = (projected_score / 100) * MAX_BAR_HEIGHT;
+  const leftScale = leftAnim;
+  const rightScale = rightAnim;
+  const leftTranslateY = leftAnim.interpolate({ inputRange: [0, 1], outputRange: [leftH / 2, 0] });
+  const rightTranslateY = rightAnim.interpolate({ inputRange: [0, 1], outputRange: [rightH / 2, 0] });
 
   const handleUnlock = () => {
     router.replace(superwallAvailable ? '/paywall' : '/create-account');
@@ -82,7 +83,7 @@ export default function QuizResultsScreen() {
             {/* Left bar */}
             <View style={styles.barGroup}>
               <View style={[styles.barTrack, { height: MAX_BAR_HEIGHT }]}>
-                <Animated.View style={[styles.barFill, styles.barLeft, { height: leftHeight }]} />
+                <Animated.View style={[styles.barFill, styles.barLeft, { height: leftH, transform: [{ scaleY: leftScale }, { translateY: leftTranslateY }] }]} />
               </View>
               <Text style={styles.barLabel}>Your Current{'\n'}Level</Text>
             </View>
@@ -96,7 +97,7 @@ export default function QuizResultsScreen() {
                   <Text style={styles.improvementBadgeText}>+{projected_score - mastery}% Potential</Text>
                 </View>
                 <View style={[styles.barTrack, { height: MAX_BAR_HEIGHT }]}>
-                  <Animated.View style={[styles.barFill, styles.barRight, { height: rightHeight }]} />
+                  <Animated.View style={[styles.barFill, styles.barRight, { height: rightH, transform: [{ scaleY: rightScale }, { translateY: rightTranslateY }] }]} />
                 </View>
               </View>
               <Text style={styles.barLabel}>With AI-Structured{'\n'}Review</Text>

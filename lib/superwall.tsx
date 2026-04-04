@@ -144,37 +144,72 @@ function TransactionAbandonWatcher() {
   const activeRef = useRef<'abandon' | null>(null);
 
   const { registerPlacement } = usePlacement({
+    onPresent: (info) => {
+      console.log('[TransacAbandon] onPresent — paywall presented:', info?.name);
+    },
+    onError: (error) => {
+      console.error('[TransacAbandon] onError:', error);
+      transacAbandonPendingRef.current = false;
+      activeRef.current = null;
+    },
     onDismiss: () => {
+      console.log('[TransacAbandon] onDismiss — activeRef:', activeRef.current);
       if (activeRef.current === 'abandon') {
         activeRef.current = null;
         hasSeenTransacAbandon.current = true;
-        setTimeout(() => retriggerMainPaywallRef.current?.(), 600);
+        transacAbandonPendingRef.current = false;
+        console.log('[TransacAbandon] transac_abandon dismissed → retrigger onboarding_complete in 600ms');
+        setTimeout(() => {
+          console.log('[TransacAbandon] calling retriggerMainPaywallRef');
+          retriggerMainPaywallRef.current?.();
+        }, 600);
       }
     },
-    onSkip: () => {
+    onSkip: (reason) => {
+      console.log('[TransacAbandon] onSkip — activeRef:', activeRef.current, '| reason:', JSON.stringify(reason));
       if (activeRef.current === 'abandon') {
         activeRef.current = null;
         hasSeenTransacAbandon.current = true;
-        setTimeout(() => retriggerMainPaywallRef.current?.(), 600);
+        transacAbandonPendingRef.current = false;
+        console.log('[TransacAbandon] transac_abandon skipped → retrigger onboarding_complete in 600ms');
+        setTimeout(() => {
+          console.log('[TransacAbandon] calling retriggerMainPaywallRef');
+          retriggerMainPaywallRef.current?.();
+        }, 600);
       }
     },
   });
 
   useSuperwallEvents({
     onSuperwallEvent: (eventInfo) => {
-      if (eventInfo.event.event === 'transactionAbandon' && !hasSeenTransacAbandon.current) {
+      const ev = eventInfo.event;
+      if (ev.event !== 'transactionAbandon') return;
+      const triggeredBy = (ev as any).paywallInfo?.presentedByEventWithName;
+      console.log('[TransacAbandon] transactionAbandon fired — triggeredBy:', triggeredBy,
+        '| hasSeenOffer:', hasSeenTransacAbandon.current);
+      if (!hasSeenTransacAbandon.current && triggeredBy !== PLACEMENT_VALUE_SCREEN) {
+        console.log('[TransacAbandon] proceeding → dismiss + show transac_abandon');
         transacAbandonPendingRef.current = true;
         _superwallModule?.dismiss()
           .then(() => {
+            console.log('[TransacAbandon] dismiss() resolved → registering transac_abandon in 400ms');
             setTimeout(() => {
+              // Pre-check: see what Superwall would decide before registering
+              _superwallModule && (_superwallModule as any).getPresentationResult?.('transac_abandon', null)
+                .then((r: any) => console.log('[TransacAbandon] getPresentationResult:', JSON.stringify(r)))
+                .catch(() => {});
               activeRef.current = 'abandon';
-              registerPlacement({ placement: 'transac_abandon', feature: () => {} }).catch(() => {
+              registerPlacement({ placement: 'transac_abandon', feature: () => {} }).catch((err) => {
+                console.error('[TransacAbandon] registerPlacement transac_abandon failed:', err);
                 transacAbandonPendingRef.current = false;
                 activeRef.current = null;
               });
             }, 400);
           })
-          .catch(() => { transacAbandonPendingRef.current = false; });
+          .catch((err) => {
+            console.error('[TransacAbandon] dismiss() failed:', err);
+            transacAbandonPendingRef.current = false;
+          });
       }
     },
   });
