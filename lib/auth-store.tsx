@@ -77,6 +77,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await signOut(auth);
           await setItem(STORED_USER_KEY, '');
           await setItem(STORED_PHONE_KEY, '');
+          try {
+            const { default: SuperwallExpoModule } = await import('expo-superwall').then(m => ({ default: m.SuperwallExpoModule }));
+            await SuperwallExpoModule.reset();
+          } catch (_) {}
         } catch (error) {
           console.error('Failed to sign out:', error);
           throw error;

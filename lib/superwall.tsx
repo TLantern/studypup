@@ -3,11 +3,15 @@ import { trackPageViewed } from '@/lib/analytics';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
+let _useUser: typeof import('expo-superwall').useUser | null = null;
+let useSuperwallEventsHook: typeof import('expo-superwall').useSuperwallEvents | null = null;
 
 try {
   const sw = require('expo-superwall');
   SuperwallProvider = sw.SuperwallProvider;
   usePlacementHook = sw.usePlacement;
+  _useUser = sw.useUser ?? null;
+  useSuperwallEventsHook = sw.useSuperwallEvents ?? null;
   console.log('[Superwall] Native module loaded successfully');
   console.log('[Superwall] SuperwallProvider available:', !!SuperwallProvider);
   console.log('[Superwall] usePlacementHook available:', !!usePlacementHook);
@@ -17,6 +21,17 @@ try {
 
 export const SuperwallAvailableContext = createContext(!!SuperwallProvider);
 export { SuperwallProvider, usePlacementHook };
+
+/** Returns 'active' | 'inactive' | 'billingRetry' | 'unknown' | null (null = Superwall unavailable). */
+export function useSubscriptionStatus(): string | null {
+  if (!_useUser) return null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return (_useUser as any)()?.subscriptionStatus?.status ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export const PLACEMENT_VALUE_SCREEN = 'value_screen';
 /** Onboarding finish flow (matches paywall / Superwall dashboard). */
@@ -114,6 +129,20 @@ function PaywallTriggerInner({
   return null;
 }
 
+function TransactionAbandonWatcher() {
+  const usePlacement = usePlacementHook!;
+  const useSuperwallEvents = useSuperwallEventsHook!;
+  const { registerPlacement } = usePlacement({});
+  useSuperwallEvents({
+    onSuperwallEvent: (eventInfo) => {
+      if (eventInfo.event.event === 'transactionAbandon') {
+        registerPlacement({ placement: 'transac_abandon', feature: () => {} }).catch(() => {});
+      }
+    },
+  });
+  return null;
+}
+
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pendingPlacement, setPendingPlacement] = useState<string | null>(null);
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
@@ -134,6 +163,9 @@ export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = (
   return (
     <PaywallTriggerContext.Provider value={value}>
       {children}
+      {usePlacementHook != null && useSuperwallEventsHook != null && (
+        <TransactionAbandonWatcher />
+      )}
       {usePlacementHook != null && (
         <ValueScreenInner
           active={!!pendingPlacement}

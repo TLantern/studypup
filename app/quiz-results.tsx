@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useMemo } from 'react';
-import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,9 +54,10 @@ export default function QuizResultsScreen() {
   const leftAnim = useRef(new Animated.Value(0)).current;
   const rightAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    const easing = Easing.out(Easing.cubic);
     Animated.parallel([
-      Animated.timing(leftAnim, { toValue: 1, useNativeDriver: false, duration: 2000 }),
-      Animated.timing(rightAnim, { toValue: 1, useNativeDriver: false, duration: rightDuration, delay: 300 }),
+      Animated.timing(leftAnim, { toValue: 1, useNativeDriver: false, duration: 1400, easing }),
+      Animated.timing(rightAnim, { toValue: 1, useNativeDriver: false, duration: rightDuration, delay: 250, easing }),
     ]).start();
   }, []);
 

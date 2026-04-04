@@ -4,6 +4,7 @@ import LottieView from 'lottie-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMaterials } from '@/lib/study-materials-storage';
 import { callOpenAI } from '@/lib/openai-service';
@@ -79,6 +80,12 @@ export default function ReportScreen() {
   const [concepts, setConcepts] = useState<string[]>([]);
   const [quipIndex, setQuipIndex] = useState(0);
   const lottieRef = useRef<LottieView>(null);
+  const [displayMastery, setDisplayMastery] = useState(0);
+  const entered = useSharedValue(0);
+  const cardAnim = useAnimatedStyle(() => ({
+    opacity: entered.value,
+    transform: [{ translateY: (1 - entered.value) * 36 }],
+  }));
 
   // Typewriter
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -137,6 +144,19 @@ export default function ReportScreen() {
     })();
   }, [materialId]);
 
+  useEffect(() => {
+    if (loading) return;
+    entered.value = withTiming(1, { duration: 480 });
+    let count = 0;
+    const step = Math.max(1, Math.ceil(mastery / 40));
+    const id = setInterval(() => {
+      count = Math.min(count + step, mastery);
+      setDisplayMastery(count);
+      if (count >= mastery) clearInterval(id);
+    }, 18);
+    return () => clearInterval(id);
+  }, [loading]);
+
   const tier = getQuipTier(mastery);
   const quips = QUIPS[tier];
 
@@ -177,7 +197,7 @@ export default function ReportScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
       >
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, cardAnim]}>
           {/* Method breakdown */}
           <Text style={styles.cardHeading}>Based on your Review</Text>
           {methods.map((stat) => {
@@ -194,7 +214,7 @@ export default function ReportScreen() {
           {/* Big score circle */}
           <View style={styles.circleWrap}>
             <View style={styles.circle}>
-              <Text style={[styles.circleText, { color: scoreColor }]}>{mastery}%</Text>
+              <Text style={[styles.circleText, { color: scoreColor }]}>{displayMastery}%</Text>
             </View>
             <Text style={[styles.quipText, { color: scoreColor }]}>{quips[quipIndex]}</Text>
           </View>
@@ -222,7 +242,7 @@ export default function ReportScreen() {
           >
             <Text style={styles.practiceBtnText}>Fix my Mistakes</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </ScrollView>
     </LinearGradient>
   );
