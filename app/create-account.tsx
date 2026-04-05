@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -22,12 +22,41 @@ const BUTTON_SHADOW = {
 
 const PENDING_EMAIL_KEY = 'auth:pendingEmail';
 
+const COUNTRIES = [
+  { label: '🇺🇸 United States', dial: '+1' },
+  { label: '🇬🇧 United Kingdom', dial: '+44' },
+  { label: '🇨🇦 Canada', dial: '+1' },
+  { label: '🇦🇺 Australia', dial: '+61' },
+  { label: '🇮🇳 India', dial: '+91' },
+  { label: '🇵🇭 Philippines', dial: '+63' },
+  { label: '🇳🇬 Nigeria', dial: '+234' },
+  { label: '🇿🇦 South Africa', dial: '+27' },
+  { label: '🇲🇽 Mexico', dial: '+52' },
+  { label: '🇧🇷 Brazil', dial: '+55' },
+  { label: '🇩🇪 Germany', dial: '+49' },
+  { label: '🇫🇷 France', dial: '+33' },
+  { label: '🇮🇹 Italy', dial: '+39' },
+  { label: '🇪🇸 Spain', dial: '+34' },
+  { label: '🇯🇵 Japan', dial: '+81' },
+  { label: '🇰🇷 South Korea', dial: '+82' },
+  { label: '🇸🇬 Singapore', dial: '+65' },
+  { label: '🇦🇪 UAE', dial: '+971' },
+  { label: '🇰🇪 Kenya', dial: '+254' },
+  { label: '🇬🇭 Ghana', dial: '+233' },
+  { label: '🇳🇿 New Zealand', dial: '+64' },
+  { label: '🇵🇰 Pakistan', dial: '+92' },
+  { label: '🇧🇩 Bangladesh', dial: '+880' },
+  { label: '🇮🇩 Indonesia', dial: '+62' },
+];
+
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ then?: string }>();
   const { uid } = useAuth();
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+1');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [code, setCode] = useState('');
   const [stage, setStage] = useState<'phone' | 'otp'>('phone');
   const [busy, setBusy] = useState(false);
@@ -61,9 +90,13 @@ export default function CreateAccountScreen() {
       try {
         const storedPhone = await getStoredPhoneNumber();
         if (mounted && storedPhone && !phone) {
-          // Remove +1 prefix for display
-          const displayPhone = storedPhone.startsWith('+1') ? storedPhone.slice(2) : storedPhone.replace('+', '');
-          setPhone(displayPhone);
+          const match = COUNTRIES.find(c => storedPhone.startsWith(c.dial));
+          if (match) {
+            setCountryCode(match.dial);
+            setPhone(storedPhone.slice(match.dial.length));
+          } else {
+            setPhone(storedPhone.replace(/^\+/, ''));
+          }
           setPhoneLoadedFromStorage(true);
         }
       } catch (error) {
@@ -117,14 +150,9 @@ export default function CreateAccountScreen() {
     return () => sub.remove();
   }, [pendingEmail, busy]);
 
-  const normalizePhoneE164 = (raw: string) => {
-    const digits = raw.replace(/[^\d+]/g, '');
-    if (digits.startsWith('+')) return digits;
-    if (digits.length === 10) return `+1${digits}`;
-    return digits.startsWith('1') && digits.length === 11 ? `+${digits}` : `+${digits}`;
-  };
+  const normalizePhoneE164 = (raw: string) => `${countryCode}${raw.replace(/\D/g, '')}`;
 
-  const canSend = phone.trim().length >= 10 && !busy && cooldown === 0;
+  const canSend = phone.replace(/\D/g, '').length >= 6 && !busy && cooldown === 0;
   const canVerify = code.trim().length >= 6 && !busy;
 
   const handleSend = async () => {
@@ -209,10 +237,31 @@ export default function CreateAccountScreen() {
 
         <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
 
+        <Modal visible={showCountryPicker} animationType="slide" transparent onRequestClose={() => setShowCountryPicker(false)}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowCountryPicker(false)}>
+            <View style={styles.modalSheet}>
+              <Text style={styles.modalTitle}>Select Country Code</Text>
+              <FlatList
+                data={COUNTRIES}
+                keyExtractor={(item, i) => `${item.dial}-${i}`}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={[styles.countryItem, item.dial === countryCode && styles.countryItemActive]}
+                    onPress={() => { setCountryCode(item.dial); setShowCountryPicker(false); }}
+                  >
+                    <Text style={styles.countryItemText}>{item.label}</Text>
+                    <Text style={styles.countryItemDial}>{item.dial}</Text>
+                  </Pressable>
+                )}
+              />
+            </View>
+          </Pressable>
+        </Modal>
+
         <View style={styles.phoneRow}>
-          <View style={styles.countryCode}>
-            <Text style={styles.countryCodeText}>+1</Text>
-          </View>
+          <Pressable style={styles.countryCode} onPress={() => setShowCountryPicker(true)}>
+            <Text style={styles.countryCodeText}>{countryCode} ▾</Text>
+          </Pressable>
           <TextInput
             style={styles.phoneInput}
             placeholder="Phone number"
@@ -314,12 +363,42 @@ const styles = StyleSheet.create({
   },
   countryCode: {
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: scaleSize(16),
+    paddingHorizontal: scaleSize(14),
     paddingVertical: scaleSize(16),
     borderRightWidth: 1,
     borderRightColor: '#ddd',
+    minWidth: scaleSize(68),
+    alignItems: 'center',
   },
-  countryCodeText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#000' },
+  countryCodeText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#000' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 32,
+  },
+  modalTitle: {
+    fontFamily: 'FredokaOne_400Regular',
+    fontSize: scaleFont(20),
+    textAlign: 'center',
+    paddingVertical: scaleSize(16),
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(20),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  countryItemActive: { backgroundColor: '#f0f8ff' },
+  countryItemText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#000' },
+  countryItemDial: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#555' },
   phoneInput: { flex: 1, paddingHorizontal: scaleSize(16), paddingVertical: scaleSize(16), fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16) },
   otpRow: { marginBottom: scaleSize(16) },
   otpInput: {

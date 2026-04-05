@@ -157,9 +157,9 @@ function TransactionAbandonWatcher() {
       if (activeRef.current === 'abandon') {
         activeRef.current = null;
         hasSeenTransacAbandon.current = true;
-        transacAbandonPendingRef.current = false;
         console.log('[TransacAbandon] transac_abandon dismissed → retrigger onboarding_complete in 600ms');
         setTimeout(() => {
+          transacAbandonPendingRef.current = false;
           console.log('[TransacAbandon] calling retriggerMainPaywallRef');
           retriggerMainPaywallRef.current?.();
         }, 600);
@@ -170,9 +170,9 @@ function TransactionAbandonWatcher() {
       if (activeRef.current === 'abandon') {
         activeRef.current = null;
         hasSeenTransacAbandon.current = true;
-        transacAbandonPendingRef.current = false;
         console.log('[TransacAbandon] transac_abandon skipped → retrigger onboarding_complete in 600ms');
         setTimeout(() => {
+          transacAbandonPendingRef.current = false;
           console.log('[TransacAbandon] calling retriggerMainPaywallRef');
           retriggerMainPaywallRef.current?.();
         }, 600);

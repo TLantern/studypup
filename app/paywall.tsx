@@ -1,6 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN, transacAbandonPendingRef, retriggerMainPaywallRef } from '@/lib/superwall';
+import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { trackPageViewed } from '@/lib/analytics';
 import { getItem } from '@/lib/storage';
 
@@ -117,7 +119,7 @@ function PaywallWithSuperwall() {
     });
   }, [placement, navigateToMain, registerPlacement, shouldReturn, trackPlacementViewed]);
 
-  return null;
+  return <View style={StyleSheet.absoluteFill}><MeshGradientBackground /></View>;
 }
 
 const didRedirectRef = { current: false };
@@ -129,7 +131,7 @@ function PaywallWithoutSuperwall() {
     didRedirectRef.current = true;
     router.replace('/create-account');
   }, []);
-  return null;
+  return <View style={StyleSheet.absoluteFill}><MeshGradientBackground /></View>;
 }
 
 export default function PaywallScreen() {
