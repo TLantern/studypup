@@ -45,15 +45,14 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (__DEV__) {
-      try {
-        const sw = require('expo-superwall');
-        sw.SuperwallExpoModule?.reset?.().then(() => {
-          console.log('[DEV] Superwall reset() called — experiment assignments cleared');
-        }).catch((e: any) => console.warn('[DEV] Superwall reset() failed:', e));
-      } catch {}
-    }
-  }, []);
+    if (!fontsLoaded || !__DEV__) return;
+    try {
+      const sw = require('expo-superwall');
+      sw.SuperwallExpoModule?.reset?.().then(() => {
+        console.log('[DEV] Superwall reset() called — experiment assignments cleared');
+      }).catch((e: any) => console.warn('[DEV] Superwall reset() failed:', e));
+    } catch {}
+  }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
 

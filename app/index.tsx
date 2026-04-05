@@ -194,7 +194,7 @@ export default function OnboardingScreen() {
           <Text style={[styles.btnText, styles.btnPrimaryText]}>Get Started</Text>
         </Pressable>
         <Pressable
-          onPress={() => router.push(superwallAvailable ? { pathname: '/create-account', params: { then: 'paywall' } } : '/create-account')}
+          onPress={() => router.push({ pathname: '/create-account', params: superwallAvailable ? { then: 'paywall', mode: 'login' } : { mode: 'login' } })}
           style={styles.loginPromptWrap}
         >
           <Text style={styles.loginPrompt}>

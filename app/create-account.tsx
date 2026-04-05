@@ -51,7 +51,7 @@ const COUNTRIES = [
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ then?: string }>();
+  const params = useLocalSearchParams<{ then?: string; mode?: string }>();
   const { uid } = useAuth();
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
@@ -192,7 +192,17 @@ export default function CreateAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      await confirmPhoneOtp(code.trim());
+      const result = await confirmPhoneOtp(code.trim());
+      if (params.mode === 'login' && result) {
+        const { getAdditionalUserInfo } = await import('firebase/auth');
+        const info = getAdditionalUserInfo(result);
+        if (info?.isNewUser && !__DEV__) {
+          await result.user.delete();
+          setError('No account found with this phone number. Sign up via "Get Started".');
+          setTimeout(() => router.replace('/'), 2500);
+          return;
+        }
+      }
     } catch (e: any) {
       const c = e?.code as string | undefined;
       setError(
@@ -232,7 +242,7 @@ export default function CreateAccountScreen() {
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Text style={styles.title}>Create an Account</Text>
         <Text style={styles.subtitle}>
-          {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
+          {params.mode === 'login' ? 'Log in with your phone number' : phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Sign up with your phone number'}
         </Text>
 
         <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
