@@ -203,6 +203,7 @@ function TransactionAbandonWatcher() {
                 console.error('[TransacAbandon] registerPlacement transac_abandon failed:', err);
                 transacAbandonPendingRef.current = false;
                 activeRef.current = null;
+                retriggerMainPaywallRef.current?.();
               });
             }, 400);
           })

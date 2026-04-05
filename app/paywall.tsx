@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN, transacAbandonPendingRef, retriggerMainPaywallRef } from '@/lib/superwall';
+import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN, transacAbandonPendingRef, retriggerMainPaywallRef, useSubscriptionStatus } from '@/lib/superwall';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { trackPageViewed } from '@/lib/analytics';
 import { getItem } from '@/lib/storage';
@@ -13,6 +13,9 @@ function PaywallWithSuperwall() {
   const placement = params.placement ?? PLACEMENT_ONBOARDING;
   const shouldReturn = params.return === '1';
   const usePlacement = usePlacementHook!;
+  const subscriptionStatus = useSubscriptionStatus();
+  const subscriptionStatusRef = useRef(subscriptionStatus);
+  subscriptionStatusRef.current = subscriptionStatus;
   const navigateToMain = useCallback(() => {
     if (transacAbandonPendingRef.current) {
       console.log('[Paywall] navigateToMain suppressed — transac_abandon pending');
@@ -74,9 +77,19 @@ function PaywallWithSuperwall() {
           registerPlacement({ placement, feature: () => { console.log('[Paywall] feature granted for', placement, '(via onSkip path) → navigateToMain'); navigateToMain(); } }).catch(() => navigateToMain());
         }, 600);
       } else {
-        // Superwall skipped (user already subscribed or campaign excluded) → proceed
-        console.log('[Paywall] paywall skipped by Superwall → navigateToMain');
-        navigateToMain();
+        // Only exit if user is confirmed subscribed; otherwise re-show paywall
+        if (subscriptionStatusRef.current === 'active') {
+          console.log('[Paywall] paywall skipped — user subscribed → navigateToMain');
+          navigateToMain();
+        } else {
+          console.log('[Paywall] paywall skipped by Superwall → re-showing in 600ms');
+          mainPaywallRegisteredRef.current = false;
+          setTimeout(() => {
+            mainPaywallRegisteredRef.current = true;
+            trackPlacementViewed(placement);
+            registerPlacement({ placement, feature: () => { navigateToMain(); } }).catch(() => navigateToMain());
+          }, 600);
+        }
       }
     },
     onError: (err: unknown) => {
