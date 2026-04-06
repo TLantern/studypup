@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { trackPageViewed } from '@/lib/analytics';
-import { RESPONSIVE, scaleSize } from '@/lib/responsive';
+import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -47,10 +47,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, paddingHorizontal: 24 },
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
   heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: -140 },
-  heroWrap: { width: '100%', height: 720, alignSelf: 'center', marginBottom: -70 },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: 24 },
+  heroWrap: { flex: 1, width: '100%', maxHeight: SCREEN_HEIGHT * 0.54, alignSelf: 'center', marginBottom: 24 },
   hero: { width: '100%', height: '100%' },
-  buttons: { marginTop: 'auto', paddingTop: 6 },
+  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
   btn: {
     borderRadius: 35,
     paddingVertical: 18,
