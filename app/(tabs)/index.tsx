@@ -943,44 +943,58 @@ export default function HomeScreen() {
               <Text style={styles.searchNoResults}>No notes match your search.</Text>
             )}
             {displayNotes.map((note) => (
-              <Pressable key={note.id} style={[styles.noteCard, {
-                marginHorizontal: isTablet ? 'auto' : 0,
-                maxWidth: isTablet ? 500 : undefined
-              }]} onPress={() => router.push(`/study-set/${note.id}`)}>
+              <Pressable
+                key={note.id}
+                style={[
+                  styles.noteCard,
+                  isTablet && {
+                    alignSelf: 'center',
+                    width: '100%',
+                    maxWidth: Math.min(screenWidth - contentPadding * 2, 920),
+                    borderRadius: 28,
+                  },
+                ]}
+                onPress={() => router.push(`/study-set/${note.id}`)}
+              >
                 {/* Paw texture */}
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {[...Array(60)].map((_, i) => (
+                  {[...Array(isTablet ? 216 : 60)].map((_, i) => {
+                    const pawCols = isTablet ? 18 : 12;
+                    const stepX = isTablet ? 42 : 34;
+                    const stepY = isTablet ? 26 : 34;
+                    return (
                     <Text key={i} style={{
                       position: 'absolute',
-                      fontSize: 18,
+                      fontSize: isTablet ? 22 : 18,
                       opacity: 0.065,
-                      left: (i % 12) * 34 - 8,
-                      top: Math.floor(i / 12) * 34 - 4,
+                      left: (i % pawCols) * stepX - 8,
+                      top: Math.floor(i / pawCols) * stepY - 4,
                       transform: [{ rotate: `${(i * 43) % 50 - 25}deg` }],
                     }}>🐾</Text>
-                  ))}
+                    );
+                  })}
                 </View>
-                <View style={styles.noteCardInner}>
-                  <View style={styles.noteEmojiContainer}>
-                    <Text style={styles.noteEmoji}>{note.emoji}</Text>
+                <View style={[styles.noteCardInner, isTablet && { padding: 28 }]}>
+                  <View style={[styles.noteEmojiContainer, isTablet && { width: 100, height: 100, borderRadius: 24, marginRight: 24 }]}>
+                    <Text style={[styles.noteEmoji, isTablet && { fontSize: 52 }]}>{note.emoji}</Text>
                   </View>
                   <View style={styles.noteDetails}>
-                    <Text style={styles.noteName}>{note.name}</Text>
+                    <Text style={[styles.noteName, isTablet && { fontSize: 26, marginBottom: 8 }]}>{note.name}</Text>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                       <View>
-                        <Text style={styles.noteDate}>{note.date}</Text>
-                        <Text style={styles.noteMastery}>Mastery: {note.mastery}%</Text>
+                        <Text style={[styles.noteDate, isTablet && { fontSize: 18 }]}>{note.date}</Text>
+                        <Text style={[styles.noteMastery, isTablet && { fontSize: 18 }]}>Mastery: {note.mastery}%</Text>
                       </View>
                       <Pressable
-                        style={styles.viewReportBtn}
+                        style={[styles.viewReportBtn, isTablet && { paddingVertical: 12, paddingHorizontal: 18, borderRadius: 24 }]}
                         onPress={(e) => { e.stopPropagation?.(); router.push(`/report?materialId=${note.id}`); }}
                         hitSlop={8}
                       >
-                        <Text style={styles.viewReportText}>View Report</Text>
-                        <RNImage source={require('../../assets/icons/arrow-right.png')} style={styles.viewReportArrow} />
+                        <Text style={[styles.viewReportText, isTablet && { fontSize: 17 }]}>View Report</Text>
+                        <RNImage source={require('../../assets/icons/arrow-right.png')} style={[styles.viewReportArrow, isTablet && { width: 18, height: 18 }]} />
                       </Pressable>
                     </View>
-                    <View style={styles.progressBarContainer}>
+                    <View style={[styles.progressBarContainer, isTablet && { height: 12, borderRadius: 6 }]}>
                       <View
                         style={[
                           styles.progressBar,

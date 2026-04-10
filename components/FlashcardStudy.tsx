@@ -47,6 +47,7 @@ function useButtonAnim() {
 
 export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap, explanations = {} }: Props) {
   const { width, height } = useWindowDimensions();
+  const isTablet = width >= 768;
   const borderW = Math.round(Math.min(width, height) * 0.018);
   const [index, setIndex] = useState(initialIndex);
   const [flipped, setFlipped] = useState(false);
@@ -243,19 +244,19 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderWidth: borderW, borderColor: flashColor, opacity: flashOpacity }]} />
       </Modal>
       {/* Streak fire */}
-      <Animated.View pointerEvents="none" style={[styles.streakWrap, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
-        <Animated.Text style={[styles.streakCount, { transform: [{ scale: numScale }] }]}>{streak}</Animated.Text>
+      <Animated.View pointerEvents="none" style={[styles.streakWrap, isTablet && { marginTop: 20, height: 120 }, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
+        <Animated.Text style={[styles.streakCount, isTablet && { fontSize: 52 }, { transform: [{ scale: numScale }] }]}>{streak}</Animated.Text>
         <LottieView
           ref={lottieRef}
           source={require('../assets/Flame animation.json')}
-          style={styles.fireLottie}
+          style={[styles.fireLottie, isTablet && { width: 120, height: 120 }]}
           loop
           autoPlay={false}
         />
       </Animated.View>
 
       <View style={styles.topSection}>
-        <View style={styles.cardWrap}>
+        <View style={[styles.cardWrap, isTablet && { height: 420, marginHorizontal: width * 0.1 }]}>
           {/* Deck cards behind */}
           <View style={[styles.card, styles.deckCard3]} />
           <View style={[styles.card, styles.deckCard2]} />
@@ -264,19 +265,21 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
             styles.card, styles.cardFace,
             currentAnswer === 'correct' && styles.cardCorrect,
             currentAnswer === 'incorrect' && styles.cardIncorrect,
+            isTablet && { minHeight: 400 },
             { transform: [{ rotateY: flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }], backfaceVisibility: 'hidden' },
           ]}>
-            <Text style={styles.cardText}>{card.question}</Text>
-            <Text style={styles.flipHint}>Tap to flip</Text>
+            <Text style={[styles.cardText, isTablet && { fontSize: 28 }]}>{card.question}</Text>
+            <Text style={[styles.flipHint, isTablet && { fontSize: 20 }]}>Tap to flip</Text>
           </Animated.View>
           <Animated.View style={[
             styles.card, styles.cardFace, styles.cardBack,
             currentAnswer === 'correct' && styles.cardCorrect,
             currentAnswer === 'incorrect' && styles.cardIncorrect,
+            isTablet && { minHeight: 400 },
             { transform: [{ rotateY: flipAnim.interpolate({ inputRange: [0, 1], outputRange: ['180deg', '360deg'] }) }], backfaceVisibility: 'hidden' },
           ]}>
-            <Text style={styles.cardText}>{card.answer}</Text>
-            <Text style={styles.flipHint}>Tap to flip</Text>
+            <Text style={[styles.cardText, isTablet && { fontSize: 28 }]}>{card.answer}</Text>
+            <Text style={[styles.flipHint, isTablet && { fontSize: 20 }]}>Tap to flip</Text>
           </Animated.View>
         </Pressable>
         </View>

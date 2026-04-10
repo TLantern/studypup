@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
@@ -31,6 +31,9 @@ const STEP2: Record<OptionId, { header: string; sub: string; icon: string; iconC
 };
 
 export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean; onContinue: () => void }) {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const s = getStyles(isTablet);
   const [step, setStep] = useState<'pick' | 'input'>('pick');
   const [selectedId, setSelectedId] = useState<OptionId | null>(null);
   const [urlInput, setUrlInput] = useState('');
@@ -111,52 +114,52 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
 
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
-      <View style={styles.backdrop}>
+      <View style={s.backdrop}>
         <ScrollView
-          style={{ width: '100%' }}
-          contentContainerStyle={styles.scroll}
+          style={{ width: '100%', flex: 1 }}
+          contentContainerStyle={s.scroll}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.card}>
+          <View style={s.card}>
 
             {/* ── STEP 1: pick ── */}
             {step === 'pick' && (
               <View>
-                <Text style={styles.title}>What are we studying today?</Text>
-                <Text style={styles.subtitle}>
+                <Text style={s.title}>What are we studying today?</Text>
+                <Text style={s.subtitle}>
                   Add your lecture, notes, or slides and we'll handle the rest.
                 </Text>
 
-                <View style={styles.grid}>
+                <View style={s.grid}>
                   {OPTIONS.slice(0, 4).map((opt) => (
-                    <Pressable key={opt.id} style={styles.tile} onPress={() => handleSelect(opt.id)}>
-                      <View style={[styles.iconWrap, { backgroundColor: opt.iconBg }]}>
-                        <Ionicons name={opt.icon as any} size={18} color={opt.iconColor} />
+                    <Pressable key={opt.id} style={s.tile} onPress={() => handleSelect(opt.id)}>
+                      <View style={[s.iconWrap, { backgroundColor: opt.iconBg }]}>
+                        <Ionicons name={opt.icon as any} size={isTablet ? 28 : 18} color={opt.iconColor} />
                       </View>
-                      <Text style={styles.tileLabel}>{opt.label}</Text>
-                      <Text style={styles.tileSub} numberOfLines={2}>{opt.sub}</Text>
+                      <Text style={s.tileLabel}>{opt.label}</Text>
+                      <Text style={s.tileSub} numberOfLines={2}>{opt.sub}</Text>
                     </Pressable>
                   ))}
                 </View>
 
-                <Pressable style={[styles.tile, styles.tileWide]} onPress={() => handleSelect('text')}>
-                  <View style={[styles.iconWrap, { marginBottom: 0, backgroundColor: OPTIONS[4].iconBg }]}>
-                    <Ionicons name={OPTIONS[4].icon as any} size={18} color={OPTIONS[4].iconColor} />
+                <Pressable style={[s.tile, s.tileWide]} onPress={() => handleSelect('text')}>
+                  <View style={[s.iconWrap, { marginBottom: 0, backgroundColor: OPTIONS[4].iconBg }]}>
+                    <Ionicons name={OPTIONS[4].icon as any} size={isTablet ? 28 : 18} color={OPTIONS[4].iconColor} />
                   </View>
                   <View>
-                    <Text style={styles.tileLabel}>{OPTIONS[4].label}</Text>
-                    <Text style={styles.tileSub}>{OPTIONS[4].sub}</Text>
+                    <Text style={s.tileLabel}>{OPTIONS[4].label}</Text>
+                    <Text style={s.tileSub}>{OPTIONS[4].sub}</Text>
                   </View>
                 </Pressable>
 
-                <View style={styles.dropZone}>
-                  <View style={styles.dropIconWrap}>
-                    <Ionicons name="mic" size={22} color="#7C5CBF" />
+                <View style={s.dropZone}>
+                  <View style={s.dropIconWrap}>
+                    <Ionicons name="mic" size={isTablet ? 36 : 22} color="#7C5CBF" />
                   </View>
-                  <Text style={styles.dropTitle}>Drop your audio file here</Text>
-                  <Text style={styles.dropBrowse}>or browse files</Text>
-                  <Text style={styles.dropHint}>MP3, WAV, M4A — up to 2 hours</Text>
+                  <Text style={s.dropTitle}>Drop your audio file here</Text>
+                  <Text style={s.dropBrowse}>or browse files</Text>
+                  <Text style={s.dropHint}>MP3, WAV, M4A — up to 2 hours</Text>
                 </View>
               </View>
             )}
@@ -164,23 +167,23 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
             {/* ── STEP 2: input ── */}
             {step === 'input' && s2info && (
               <View>
-                <View style={styles.step2Header}>
-                  <Pressable onPress={handleBack} hitSlop={12} style={styles.backBtn}>
-                    <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+                <View style={s.step2Header}>
+                  <Pressable onPress={handleBack} hitSlop={12} style={s.backBtn}>
+                    <Ionicons name="chevron-back" size={isTablet ? 32 : 22} color="#1A1A2E" />
                   </Pressable>
                 </View>
 
                 {(selectedId === 'youtube' || selectedId === 'text') && (
-                  <View style={[styles.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, alignSelf: 'center', marginTop: 12, width: 44, height: 44, borderRadius: 13 }]}>
-                    <Ionicons name={s2info.icon as any} size={22} color={s2info.iconColor} />
+                  <View style={[s.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, alignSelf: 'center', marginTop: 12, width: isTablet ? 72 : 44, height: isTablet ? 72 : 44, borderRadius: isTablet ? 20 : 13 }]}>
+                    <Ionicons name={s2info.icon as any} size={isTablet ? 36 : 22} color={s2info.iconColor} />
                   </View>
                 )}
-                <Text style={[styles.title, { marginTop: 10 }]}>{s2info.header}</Text>
-                <Text style={[styles.subtitle, { marginBottom: 16 }]}>{s2info.sub}</Text>
+                <Text style={[s.title, { marginTop: 10 }]}>{s2info.header}</Text>
+                <Text style={[s.subtitle, { marginBottom: 16 }]}>{s2info.sub}</Text>
 
                 {selectedId === 'youtube' && (
                   <TextInput
-                    style={styles.urlInput}
+                    style={s.urlInput}
                     placeholder="https://youtube.com/watch?v=..."
                     placeholderTextColor="#999"
                     keyboardType="url"
@@ -193,7 +196,7 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
 
                 {selectedId === 'text' && (
                   <TextInput
-                    style={styles.textArea}
+                    style={s.textArea}
                     placeholder="Paste or type your notes here..."
                     placeholderTextColor="#999"
                     multiline
@@ -207,34 +210,34 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
                 {(selectedId === 'audio' || selectedId === 'file') && (
                   <View>
                     {pickedFiles.length === 0 ? (
-                      <Pressable style={styles.dropZone} onPress={selectedId === 'audio' ? pickAudio : pickFile}>
-                        <View style={[styles.dropIconWrap, { backgroundColor: s2info.iconBg }]}>
-                          <Ionicons name={s2info.icon as any} size={22} color={s2info.iconColor} />
+                      <Pressable style={s.dropZone} onPress={selectedId === 'audio' ? pickAudio : pickFile}>
+                        <View style={[s.dropIconWrap, { backgroundColor: s2info.iconBg }]}>
+                          <Ionicons name={s2info.icon as any} size={isTablet ? 36 : 22} color={s2info.iconColor} />
                         </View>
-                        <Text style={styles.dropTitle}>
+                        <Text style={s.dropTitle}>
                           {selectedId === 'audio' ? 'Drop your audio file here' : 'Drop your file here'}
                         </Text>
-                        <Text style={styles.dropBrowse}>or browse files</Text>
-                        <Text style={styles.dropHint}>
+                        <Text style={s.dropBrowse}>or browse files</Text>
+                        <Text style={s.dropHint}>
                           {selectedId === 'audio' ? 'MP3, WAV, M4A — up to 2 hours' : 'PDF, PPTX, DOCX'}
                         </Text>
                       </Pressable>
                     ) : (
-                      <View style={styles.fileList}>
+                      <View style={s.fileList}>
                         {pickedFiles.map((f, i) => (
-                          <View key={`${f.uri}-${i}`} style={styles.fileRow}>
-                            <View style={[styles.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, flexShrink: 0 }]}>
-                              <Ionicons name={s2info.icon as any} size={16} color={s2info.iconColor} />
+                          <View key={`${f.uri}-${i}`} style={s.fileRow}>
+                            <View style={[s.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, flexShrink: 0 }]}>
+                              <Ionicons name={s2info.icon as any} size={isTablet ? 24 : 16} color={s2info.iconColor} />
                             </View>
-                            <Text style={styles.fileName} numberOfLines={1} ellipsizeMode="middle">{f.name}</Text>
+                            <Text style={s.fileName} numberOfLines={1} ellipsizeMode="middle">{f.name}</Text>
                             <Pressable onPress={() => removeFile(i)} hitSlop={8}>
-                              <Ionicons name="close-circle" size={18} color="#999" />
+                              <Ionicons name="close-circle" size={isTablet ? 28 : 18} color="#999" />
                             </Pressable>
                           </View>
                         ))}
-                        <Pressable style={styles.addAnotherBtn} onPress={selectedId === 'audio' ? pickAudio : pickFile}>
-                          <Ionicons name="add-circle-outline" size={16} color="#0D9488" />
-                          <Text style={styles.addAnotherText}>Add another</Text>
+                        <Pressable style={s.addAnotherBtn} onPress={selectedId === 'audio' ? pickAudio : pickFile}>
+                          <Ionicons name="add-circle-outline" size={isTablet ? 24 : 16} color="#0D9488" />
+                          <Text style={s.addAnotherText}>Add another</Text>
                         </Pressable>
                       </View>
                     )}
@@ -244,37 +247,37 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
                 {selectedId === 'photo' && (
                   <View>
                     {pickedFiles.length === 0 ? (
-                      <Pressable style={styles.photoPickerZone} onPress={pickPhoto}>
-                        <View style={[styles.dropIconWrap, { backgroundColor: s2info.iconBg }]}>
-                          <Ionicons name="camera" size={22} color={s2info.iconColor} />
+                      <Pressable style={s.photoPickerZone} onPress={pickPhoto}>
+                        <View style={[s.dropIconWrap, { backgroundColor: s2info.iconBg }]}>
+                          <Ionicons name="camera" size={isTablet ? 36 : 22} color={s2info.iconColor} />
                         </View>
-                        <Text style={styles.dropTitle}>Take a photo or upload</Text>
-                        <Text style={styles.dropBrowse}>from your camera roll</Text>
+                        <Text style={s.dropTitle}>Take a photo or upload</Text>
+                        <Text style={s.dropBrowse}>from your camera roll</Text>
                       </Pressable>
                     ) : (
-                      <View style={styles.fileList}>
+                      <View style={s.fileList}>
                         {pickedFiles.map((f, i) => (
-                          <View key={`${f.uri}-${i}`} style={styles.fileRow}>
-                            <View style={[styles.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, flexShrink: 0 }]}>
-                              <Ionicons name="camera" size={16} color={s2info.iconColor} />
+                          <View key={`${f.uri}-${i}`} style={s.fileRow}>
+                            <View style={[s.iconWrap, { backgroundColor: s2info.iconBg, marginBottom: 0, flexShrink: 0 }]}>
+                              <Ionicons name="camera" size={isTablet ? 24 : 16} color={s2info.iconColor} />
                             </View>
-                            <Text style={styles.fileName} numberOfLines={1} ellipsizeMode="middle">{f.name}</Text>
+                            <Text style={s.fileName} numberOfLines={1} ellipsizeMode="middle">{f.name}</Text>
                             <Pressable onPress={() => removeFile(i)} hitSlop={8}>
-                              <Ionicons name="close-circle" size={18} color="#999" />
+                              <Ionicons name="close-circle" size={isTablet ? 28 : 18} color="#999" />
                             </Pressable>
                           </View>
                         ))}
-                        <Pressable style={styles.addAnotherBtn} onPress={pickPhoto}>
-                          <Ionicons name="add-circle-outline" size={16} color="#0D9488" />
-                          <Text style={styles.addAnotherText}>Add another</Text>
+                        <Pressable style={s.addAnotherBtn} onPress={pickPhoto}>
+                          <Ionicons name="add-circle-outline" size={isTablet ? 24 : 16} color="#0D9488" />
+                          <Text style={s.addAnotherText}>Add another</Text>
                         </Pressable>
                       </View>
                     )}
                   </View>
                 )}
 
-                <Pressable style={[styles.continueBtn, { marginTop: 16 }]} onPress={handleContinue}>
-                  <Text style={styles.continueBtnText}>Continue</Text>
+                <Pressable style={[s.continueBtn, { marginTop: 16 }]} onPress={handleContinue}>
+                  <Text style={s.continueBtnText}>Continue</Text>
                 </Pressable>
               </View>
             )}
@@ -286,203 +289,36 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 48,
-    paddingBottom: 20,
-  },
-  card: {
-    backgroundColor: MINT,
-    borderRadius: 24,
-    padding: 16,
-    width: '100%',
-    maxWidth: 420,
-    alignSelf: 'center',
-  },
-  title: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: 20,
-    color: '#1A1A2E',
-    marginTop: 12,
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 13,
-    color: '#444',
-    textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
-  tile: {
-    backgroundColor: TILE_BG,
-    borderRadius: 14,
-    padding: 10,
-    width: '48%',
-  },
-  tileWide: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
-  },
-  iconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  tileLabel: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 14,
-    color: '#1A1A2E',
-    marginBottom: 1,
-  },
-  tileSub: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 11,
-    color: '#666',
-    lineHeight: 14,
-  },
-  dropZone: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.18)',
-    borderStyle: 'dashed',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: TILE_BG,
-  },
-  photoPickerZone: {
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.18)',
-    borderStyle: 'dashed',
-    borderRadius: 14,
-    paddingVertical: 20,
-    alignItems: 'center',
-    marginBottom: 12,
-    backgroundColor: TILE_BG,
-  },
-  dropIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    backgroundColor: '#EDE7F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dropTitle: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 14,
-    color: '#1A1A2E',
-    marginBottom: 3,
-  },
-  dropBrowse: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 13,
-    color: '#0D9488',
-    marginBottom: 3,
-  },
-  dropHint: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 11,
-    color: '#666',
-  },
-  step2Header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  urlInput: {
-    backgroundColor: TILE_BG,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 14,
-    color: '#1A1A2E',
-    marginBottom: 12,
-  },
-  textArea: {
-    backgroundColor: TILE_BG,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 14,
-    color: '#1A1A2E',
-    marginBottom: 12,
-    minHeight: 130,
-  },
-  fileList: {
-    backgroundColor: TILE_BG,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 4,
-    marginBottom: 12,
-  },
-  fileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  fileName: {
-    flex: 1,
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 13,
-    color: '#1A1A2E',
-  },
-  addAnotherBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  addAnotherText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 13,
-    color: '#0D9488',
-  },
-  continueBtn: {
-    backgroundColor: SALMON,
-    borderRadius: 32,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  continueBtnText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 17,
-    color: '#fff',
-  },
-});
+function getStyles(t: boolean) {
+  const sc = (n: number) => t ? n * 1.9 : n;
+  return StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+    scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: t ? 48 : 20, paddingTop: t ? 80 : 48, paddingBottom: t ? 40 : 20 },
+    card: { backgroundColor: MINT, borderRadius: sc(24), padding: sc(16), width: '100%', maxWidth: t ? 760 : 420, alignSelf: 'center', marginTop: t ? -40 : 0 },
+    title: { fontFamily: 'FredokaOne_400Regular', fontSize: sc(28), color: '#1A1A2E', marginTop: sc(12), marginBottom: sc(4), textAlign: 'center' },
+    subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#444', textAlign: 'center', marginBottom: sc(12), lineHeight: sc(18) },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: sc(8), marginBottom: sc(8) },
+    tile: { backgroundColor: TILE_BG, borderRadius: sc(14), padding: sc(10), width: '48%' },
+    tileWide: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: sc(10), marginBottom: sc(10) },
+    iconWrap: { width: sc(32), height: sc(32), borderRadius: sc(9), justifyContent: 'center', alignItems: 'center', marginBottom: sc(6) },
+    tileLabel: { fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: 1 },
+    tileSub: { fontFamily: 'Fredoka_400Regular', fontSize: sc(11), color: '#666', lineHeight: sc(14) },
+    dropZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.18)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(16), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
+    photoPickerZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.18)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(20), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
+    dropIconWrap: { width: sc(44), height: sc(44), borderRadius: sc(13), backgroundColor: '#EDE7F6', justifyContent: 'center', alignItems: 'center', marginBottom: sc(8) },
+    dropTitle: { fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: 3 },
+    dropBrowse: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#0D9488', marginBottom: 3 },
+    dropHint: { fontFamily: 'Fredoka_400Regular', fontSize: sc(11), color: '#666' },
+    step2Header: { flexDirection: 'row', alignItems: 'center' },
+    backBtn: { width: sc(32), height: sc(32), borderRadius: sc(9), backgroundColor: 'rgba(0,0,0,0.08)', justifyContent: 'center', alignItems: 'center' },
+    urlInput: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: sc(12) },
+    textArea: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: sc(12), minHeight: sc(130) },
+    fileList: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(12), paddingTop: sc(8), paddingBottom: sc(4), marginBottom: sc(12) },
+    fileRow: { flexDirection: 'row', alignItems: 'center', gap: sc(10), paddingVertical: sc(8), borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+    fileName: { flex: 1, fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#1A1A2E' },
+    addAnotherBtn: { flexDirection: 'row', alignItems: 'center', gap: sc(6), paddingVertical: sc(10) },
+    addAnotherText: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#0D9488' },
+    continueBtn: { backgroundColor: SALMON, borderRadius: sc(32), paddingVertical: sc(13), alignItems: 'center' },
+    continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: sc(17), color: '#fff' },
+  });
+}
