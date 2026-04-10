@@ -210,6 +210,31 @@ export default function HomeScreen() {
     return () => clearInterval(t);
   }, [reauthCooldown]);
 
+  const weekStats = useMemo(() => {
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const dow = today.getDay();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - dow);
+    const studiedDates = new Set(
+      materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean)
+    );
+    return ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, i) => {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const dStr = d.toISOString().slice(0, 10);
+      return { label, isToday: dStr === todayStr, isFuture: dStr > todayStr, studied: studiedDates.has(dStr) };
+    });
+  }, [materials]);
+
+  const daysStudied = useMemo(() =>
+    new Set(materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean)).size,
+  [materials]);
+
+  const cardsReviewed = useMemo(() =>
+    materials.reduce((sum, m) => sum + Object.keys(m.user_answers?.flashcards ?? {}).length, 0),
+  [materials]);
+
   const displayNotes = useMemo((): Note[] => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return materials.map(noteFromStudyMaterialSet);
@@ -793,15 +818,13 @@ export default function HomeScreen() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
-        <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
-        <View style={styles.streakBadge}>
-          <Image source={require('../../assets/firestreakicon.png')} style={styles.streakIcon} />
-          <Text style={styles.streakNum}>{streakCount}</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <Pressable onPress={() => setShowSearchBar((v) => !v)}>
+        <View style={styles.headerLeft}>
+          <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
+          <Pressable onPress={() => setShowSearchBar((v) => !v)} style={{ marginLeft: 10 }}>
             <Image source={require('../../assets/search.png')} style={styles.headerIcon} />
           </Pressable>
+        </View>
+        <View style={styles.headerRight}>
           <Pressable onPress={() => setShowSettingsModal(true)}>
             <Image source={require('../../assets/settings-new.png')} style={styles.headerIcon} />
           </Pressable>
@@ -868,6 +891,53 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.notesContainer}>
+            {/* Streak / weekly stats widget */}
+            <View style={styles.weekCard}>
+              <View style={styles.weekCardTop}>
+                <View style={styles.weekStreakRow}>
+                  <Text style={styles.weekFireEmoji}>🔥</Text>
+                  <Text style={styles.weekStreakNum}>{streakCount}</Text>
+                  <Text style={styles.weekStreakLabel}> day streak</Text>
+                </View>
+                <Text style={styles.weekThisWeek}>This week</Text>
+              </View>
+
+              <View style={styles.weekDaysRow}>
+                {weekStats.map(({ label, isToday, isFuture, studied }, i) => (
+                  <View key={i} style={styles.weekDayCol}>
+                    <Text style={styles.weekDayLabel}>{label}</Text>
+                    <View style={[
+                      styles.weekDayCircle,
+                      studied && styles.weekDayStudied,
+                      isToday && !studied && styles.weekDayToday,
+                    ]}>
+                      {studied && <Text style={styles.weekCheckmark}>✓</Text>}
+                      {isToday && !studied && <View style={styles.weekTodayDot} />}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.weekDivider} />
+
+              <View style={styles.weekStatsRow}>
+                <View style={styles.weekStat}>
+                  <Text style={styles.weekStatNum}>{daysStudied}</Text>
+                  <Text style={styles.weekStatLabel}>days studied</Text>
+                </View>
+                <View style={styles.weekStatDivider} />
+                <View style={styles.weekStat}>
+                  <Text style={styles.weekStatNum}>{materials.length}</Text>
+                  <Text style={styles.weekStatLabel}>sets completed</Text>
+                </View>
+                <View style={styles.weekStatDivider} />
+                <View style={styles.weekStat}>
+                  <Text style={[styles.weekStatNum, styles.weekStatNumBold]}>{cardsReviewed}</Text>
+                  <Text style={styles.weekStatLabel}>cards reviewed</Text>
+                </View>
+              </View>
+            </View>
+
             <Text style={[styles.myNotesTitle, { fontSize: isTablet ? 36 : 28 }]}>My Notes</Text>
             {materials.length > 0 && displayNotes.length === 0 && (
               <Text style={styles.searchNoResults}>No notes match your search.</Text>
@@ -877,6 +947,19 @@ export default function HomeScreen() {
                 marginHorizontal: isTablet ? 'auto' : 0,
                 maxWidth: isTablet ? 500 : undefined
               }]} onPress={() => router.push(`/study-set/${note.id}`)}>
+                {/* Paw texture */}
+                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {[...Array(60)].map((_, i) => (
+                    <Text key={i} style={{
+                      position: 'absolute',
+                      fontSize: 18,
+                      opacity: 0.065,
+                      left: (i % 12) * 34 - 8,
+                      top: Math.floor(i / 12) * 34 - 4,
+                      transform: [{ rotate: `${(i * 43) % 50 - 25}deg` }],
+                    }}>🐾</Text>
+                  ))}
+                </View>
                 <View style={styles.noteCardInner}>
                   <View style={styles.noteEmojiContainer}>
                     <Text style={styles.noteEmoji}>{note.emoji}</Text>
@@ -1662,6 +1745,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 8 },
   avatar: { width: 48, height: 48, borderRadius: 24 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center' },
   streakBadge: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
   streakIcon: { width: 24, height: 24 },
   streakNum: { fontFamily: 'Fredoka_400Regular', fontSize: 20, marginLeft: 4, marginTop: 4 },
@@ -1677,6 +1761,53 @@ const styles = StyleSheet.create({
   emptyArrowWrap: { alignItems: 'center', marginTop: 8 },
   emptyArrowLottie: { width: 80, height: 80 },
   notesContainer: { paddingTop: 12, paddingBottom: 140, flexDirection: 'column' },
+  weekCard: {
+    backgroundColor: '#1c1c1e',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  weekCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  weekStreakRow: { flexDirection: 'row', alignItems: 'center' },
+  weekFireEmoji: { fontSize: 20 },
+  weekStreakNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#fff', marginLeft: 6 },
+  weekStreakLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#aaa', marginTop: 2 },
+  weekThisWeek: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#aaa' },
+  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  weekDayCol: { alignItems: 'center', gap: 6 },
+  weekDayLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#888' },
+  weekDayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2c2c2e',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekDayStudied: { backgroundColor: '#E8917A' },
+  weekDayToday: { backgroundColor: '#E8917A', borderWidth: 2, borderColor: '#E8917A' },
+  weekCheckmark: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  weekMissedX: { color: '#e07070', fontSize: 14, fontWeight: '700' },
+  weekTodayDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' },
+  weekDivider: { height: 1, backgroundColor: '#2c2c2e', marginBottom: 14 },
+  weekStatsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+  weekStat: { alignItems: 'center', flex: 1 },
+  weekStatNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#fff' },
+  weekStatNumBold: { fontFamily: 'FredokaOne_400Regular' },
+  weekStatLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#888', marginTop: 2 },
+  weekStatDivider: { width: 1, height: 32, backgroundColor: '#2c2c2e' },
   myNotesTitle: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 28,
@@ -1687,6 +1818,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     marginBottom: 16,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
