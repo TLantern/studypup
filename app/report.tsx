@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated as RNAnimated, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMaterials } from '@/lib/study-materials-storage';
@@ -39,6 +40,10 @@ const QUIPS: Record<'red' | 'orange' | 'green', string[]> = {
 };
 const getQuipTier = (pct: number): 'red' | 'orange' | 'green' =>
   pct >= 79 ? 'green' : pct >= 60 ? 'orange' : 'red';
+
+const { width: SW, height: SH } = Dimensions.get('window');
+const CONFETTI_COLORS = ['#FD8A8A', '#7c3aed', '#F5A623', '#4ade80', '#60a5fa', '#f472b6', '#fb923c'];
+const N_PARTICLES = 60;
 
 type MethodStat = { label: string; correct: number; total: number; methodId: string };
 
@@ -82,6 +87,29 @@ export default function ReportScreen() {
   const lottieRef = useRef<LottieView>(null);
   const [displayMastery, setDisplayMastery] = useState(0);
   const entered = useSharedValue(0);
+
+  const confettiAnims = useRef(Array.from({ length: N_PARTICLES }, () => new RNAnimated.Value(0))).current;
+  const confettiData = useRef(Array.from({ length: N_PARTICLES }, (_, i) => ({
+    x: Math.random() * SW,
+    size: Math.random() * 7 + 5,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    duration: 2200 + Math.random() * 1400,
+    delay: Math.random() * 900,
+    rotDir: Math.random() > 0.5 ? 1 : -1,
+    isCircle: Math.random() > 0.5,
+  }))).current;
+
+  const fireConfetti = () => {
+    confettiAnims.forEach((anim, i) => {
+      anim.setValue(0);
+      RNAnimated.timing(anim, {
+        toValue: 1,
+        duration: confettiData[i].duration,
+        delay: confettiData[i].delay,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
   const cardAnim = useAnimatedStyle(() => ({
     opacity: entered.value,
     transform: [{ translateY: (1 - entered.value) * 36 }],
@@ -147,6 +175,10 @@ export default function ReportScreen() {
   useEffect(() => {
     if (loading) return;
     entered.value = withTiming(1, { duration: 480 });
+    if (mastery === 100) {
+      fireConfetti();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
     let count = 0;
     const step = Math.max(1, Math.ceil(mastery / 40));
     const id = setInterval(() => {
@@ -184,13 +216,41 @@ export default function ReportScreen() {
       locations={[0.35, 0.95]}
       style={styles.container}
     >
+      {/* Confetti overlay */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        {confettiAnims.map((anim, i) => {
+          const d = confettiData[i];
+          const ty = anim.interpolate({ inputRange: [0, 1], outputRange: [-30, SH + 60] });
+          const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${d.rotDir * 540}deg`] });
+          const opacity = anim.interpolate({ inputRange: [0, 0.05, 0.8, 1], outputRange: [0, 1, 1, 0] });
+          return (
+            <RNAnimated.View
+              key={i}
+              style={{
+                position: 'absolute',
+                left: d.x,
+                top: 0,
+                width: d.size,
+                height: d.isCircle ? d.size : d.size * 1.8,
+                borderRadius: d.isCircle ? d.size / 2 : 2,
+                backgroundColor: d.color,
+                transform: [{ translateY: ty }, { rotate }],
+                opacity,
+              }}
+            />
+          );
+        })}
+      </View>
+
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Ionicons name="chevron-back" size={28} color="#333" />
         </Pressable>
         <Text style={styles.headerTitle}>Analysis</Text>
-        <View style={{ width: 28 }} />
+        <Pressable onPress={() => router.replace('/(tabs)')} hitSlop={12}>
+          <Ionicons name="close" size={28} color="#333" />
+        </Pressable>
       </View>
 
       <ScrollView
@@ -229,19 +289,19 @@ export default function ReportScreen() {
             </>
           )}
 
-          {/* Practice button */}
-          <Pressable
+          {/* Practice button — only shown when there are still wrong answers */}
+          {methods.some((s) => s.correct < s.total) && <Pressable
             style={styles.practiceBtn}
             onPress={() => {
               const wrongMethods = methods
                 .filter((s) => s.correct < s.total)
                 .map((s) => s.methodId);
-              const methodIds = wrongMethods.length > 0 ? wrongMethods : methods.map((s) => s.methodId);
-              router.replace(`/generate-quiz?materialId=${materialId}&methods=${methodIds.join(',')}&wrongOnly=true`);
+              if (wrongMethods.length === 0) return;
+              router.replace(`/generate-quiz?materialId=${materialId}&methods=${wrongMethods.join(',')}&wrongOnly=true`);
             }}
           >
             <Text style={styles.practiceBtnText}>Fix my Mistakes</Text>
-          </Pressable>
+          </Pressable>}
         </Animated.View>
       </ScrollView>
     </LinearGradient>

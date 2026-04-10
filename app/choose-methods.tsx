@@ -47,6 +47,7 @@ export default function ChooseMethodsScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [materialTitle, setMaterialTitle] = useState<string | null>(null);
 
   // Check subscription status for pro entitlement
   let subscriptionStatus = null;
@@ -80,10 +81,11 @@ export default function ChooseMethodsScreen() {
       return;
     }
     // Check if user has pro entitlement (bypass free generation limit)
-    const hasProEntitlement = subscriptionStatus?.status === 'ACTIVE' && 
-      (subscriptionStatus as any)?.entitlements?.some((entitlement: any) => entitlement.id === 'pro');
-    
-    console.log('[Studypup] Subscription check:', { 
+    const hasProEntitlement = __DEV__ ||
+      (subscriptionStatus?.status === 'ACTIVE' && 
+      (subscriptionStatus as any)?.entitlements?.some((entitlement: any) => entitlement.id === 'pro'));
+
+    if (__DEV__) console.log('[Studypup] Subscription check:', { 
       status: subscriptionStatus?.status, 
       hasProEntitlement, 
       entitlements: (subscriptionStatus as any)?.entitlements?.map((e: any) => e.id) 
@@ -91,28 +93,20 @@ export default function ChooseMethodsScreen() {
 
     if (!hasProEntitlement) {
       const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
-      console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
+      if (__DEV__) console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
       if (freeUsed === 'true') {
-        console.log('[Studypup] Free limit hit, showing paywall or create-account');
         if (superwallAvailable) {
-          console.log('[Studypup] Showing Superwall paywall');
           try {
-            console.log('[Studypup] PLACEMENT_GENERATE:', PLACEMENT_GENERATE);
-            console.log('[Studypup] showPaywall function:', typeof showPaywall);
             trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GENERATE });
             await showPaywall(PLACEMENT_GENERATE);
-            console.log('[Studypup] showPaywall completed');
           } catch (error) {
             console.error('[Studypup] showPaywall error:', error);
           }
         } else {
-          console.log('[Studypup] Superwall not available, pushing to create-account');
           router.push('/create-account');
         }
         return;
       }
-    } else {
-      console.log('[Studypup] Pro user - bypassing free generation limit');
     }
     setIsGenerating(true);
     try {
@@ -127,6 +121,10 @@ export default function ChooseMethodsScreen() {
       if (__DEV__) console.log('[Studypup] processContentAndGenerateMaterials start');
       const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, selected);
       if (__DEV__) console.log('[Studypup] materials generated, notes length:', materials.notes?.length ?? 0);
+      if (materials.title) {
+        setMaterialTitle(materials.title);
+        await new Promise((r) => setTimeout(r, 2200));
+      }
       
       // Only set free generation used flag for non-pro users
       if (!hasProEntitlement) {
@@ -154,7 +152,11 @@ export default function ChooseMethodsScreen() {
   if (isGenerating) {
     return (
       <View style={[styles.generatingWrap, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <GeneratingContentScreen contentTypes={selected} />
+        <GeneratingContentScreen
+          contentTypes={selected}
+          contentName={contentItems[0]?.name}
+          materialTitle={materialTitle}
+        />
       </View>
     );
   }

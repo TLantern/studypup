@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { callOpenAI, callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
 const SALMON = '#FD8A8A';
@@ -51,6 +53,45 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   const chatScrollRef = useRef<ScrollView>(null);
   const explainPanelHeight = Dimensions.get('window').height * 0.5;
   const hydratedRef = useRef(false);
+  const [streak, setStreak] = useState(0);
+  const lottieRef = useRef<LottieView>(null);
+  const fireOpacity = useRef(new Animated.Value(0)).current;
+  const fireScale = useRef(new Animated.Value(0.6)).current;
+  const numScale = useRef(new Animated.Value(1)).current;
+  const [flashVisible, setFlashVisible] = useState(false);
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const [flashColor, setFlashColor] = useState('#4ade80');
+  const { width, height: winHeight } = Dimensions.get('window');
+  const borderW = Math.round(Math.min(width, winHeight) * 0.018);
+
+  const triggerFlash = (color: string) => {
+    setFlashColor(color); setFlashVisible(true); flashOpacity.setValue(1);
+    Animated.timing(flashOpacity, { toValue: 0, duration: 900, useNativeDriver: true }).start(() => setFlashVisible(false));
+  };
+  const popNumber = () => {
+    numScale.setValue(1.4);
+    Animated.timing(numScale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+  const triggerStreak = (correct: boolean) => {
+    if (correct) {
+      triggerFlash('#4ade80');
+      setStreak((s) => {
+        const next = s + 1;
+        if (next >= 2) {
+          const targetScale = Math.min(1 + (next - 2) * 0.08, 1.6);
+          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.6); lottieRef.current?.play(); }
+          Animated.spring(fireScale, { toValue: targetScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+          popNumber();
+          Haptics.impactAsync(next >= 5 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium);
+        }
+        return next;
+      });
+    } else {
+      triggerFlash('#ef4444');
+      setStreak(0);
+      Animated.timing(fireOpacity, { toValue: 0, duration: 600, useNativeDriver: true }).start(() => { fireScale.setValue(0.6); numScale.setValue(1); });
+    }
+  };
 
   const list = items.length ? items : SCAFFOLD_ITEMS;
   const item = list[index];
@@ -86,6 +127,7 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
     try {
       const result = await gradeAnswer(item.question, answer, item.expectedAnswer);
       setResults((prev) => ({ ...prev, [item.id]: { ...result, answer } }));
+      triggerStreak(result.correct);
     } catch (error) {
       console.error('Failed to grade answer:', error);
     } finally {
@@ -164,6 +206,13 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.wrap}>
+        <Modal visible={flashVisible} transparent animationType="none" statusBarTranslucent>
+          <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderWidth: borderW, borderColor: flashColor, opacity: flashOpacity }]} />
+        </Modal>
+        <Animated.View pointerEvents="none" style={[styles.streakWrap, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
+          <Animated.Text style={[styles.streakCount, { transform: [{ scale: numScale }] }]}>{streak}</Animated.Text>
+          <LottieView ref={lottieRef} source={require('../assets/Flame animation.json')} style={styles.fireLottie} loop autoPlay={false} />
+        </Animated.View>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.wrapContent} showsVerticalScrollIndicator={false}>
       <Text style={styles.question}>{item.question}</Text>
       <TextInput
@@ -348,6 +397,9 @@ Is this answer correct or close enough? Remember: this is a short-answer questio
 
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
+  streakWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, gap: 0 },
+  streakCount: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#1A1A1A', marginBottom: -8, marginRight: -14 },
+  fireLottie: { width: 68, height: 68 },
   scroll: { flex: 1 },
   wrapContent: { paddingVertical: 24, paddingBottom: 48 },
   question: {

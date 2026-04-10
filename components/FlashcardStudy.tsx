@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import LottieView from 'lottie-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 const SALMON = '#FD8A8A';
 const THUMB_DOWN_BG = '#E06C78';
@@ -21,6 +22,7 @@ type Props = {
   initialIndex?: number;
   displayTotal?: number;
   displayIndexMap?: Record<string, number>;
+  explanations?: Record<string, string>;
 };
 
 const SCAFFOLD_CARDS: Card[] = [
@@ -43,16 +45,55 @@ function useButtonAnim() {
   return { scale, glowOpacity, plusOpacity, plusY, plusScale, microOpacity, shakeX };
 }
 
-export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap }: Props) {
+export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap, explanations = {} }: Props) {
+  const { width, height } = useWindowDimensions();
+  const borderW = Math.round(Math.min(width, height) * 0.018);
   const [index, setIndex] = useState(initialIndex);
   const [flipped, setFlipped] = useState(false);
   const [answers, setAnswers] = useState<Record<string, 'correct' | 'incorrect'>>(() => savedAnswers);
   const [quipUp, setQuipUp] = useState('Locked in.');
   const [quipDown, setQuipDown] = useState('Review mode.');
   const flipAnim = useRef(new Animated.Value(0)).current;
+  const [flashVisible, setFlashVisible] = useState(false);
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const [flashColor, setFlashColor] = useState('#4ade80');
+  const [streak, setStreak] = useState(0);
+  const fireOpacity = useRef(new Animated.Value(0)).current;
+  const fireScale = useRef(new Animated.Value(0.6)).current;
+  const numScale = useRef(new Animated.Value(1)).current;
+  const lottieRef = useRef<LottieView>(null);
+  const [explainText, setExplainText] = useState('');
+  const [wrongAnswered, setWrongAnswered] = useState(false);
+  const explainOpacity = useRef(new Animated.Value(0)).current;
+  const explainTranslateY = useRef(new Animated.Value(16)).current;
+
+  // If wrong was pressed but explanation wasn't ready yet, animate it in when it arrives
+  useEffect(() => {
+    if (wrongAnswered && !explainText && card?.id && explanations[card.id]) {
+      setExplainText(explanations[card.id]);
+      Animated.parallel([
+        Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(explainTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [explanations, card?.id, wrongAnswered, explainText]);
+
+  const popNumber = () => {
+    numScale.setValue(1.4);
+    Animated.timing(numScale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
 
   const up = useButtonAnim();
   const down = useButtonAnim();
+
+  const triggerFlash = (color: string) => {
+    setFlashColor(color);
+    setFlashVisible(true);
+    flashOpacity.setValue(1);
+    Animated.timing(flashOpacity, { toValue: 0, duration: 900, useNativeDriver: true }).start(() => {
+      setFlashVisible(false);
+    });
+  };
 
   const list = cards.length ? cards : SCAFFOLD_CARDS;
   const card = list[index];
@@ -61,7 +102,23 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
 
   const runCorrect = () => {
     setQuipUp(CORRECT_QUIPS[Math.floor(Math.random() * CORRECT_QUIPS.length)]);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerFlash('#4ade80');
+    setStreak((s) => {
+      const next = s + 1;
+      if (next >= 2) {
+        const targetFireScale = Math.min(1 + (next - 2) * 0.08, 1.6);
+        if (next === 2) {
+          fireOpacity.setValue(1);
+          fireScale.setValue(0.6);
+          lottieRef.current?.play();
+        }
+        Animated.spring(fireScale, { toValue: targetFireScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+        popNumber();
+        Haptics.impactAsync(next >= 5 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium);
+      }
+      return next;
+    });
 
     // Button spring scale
     up.scale.setValue(0.9);
@@ -99,7 +156,13 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
 
   const runWrong = () => {
     setQuipDown(WRONG_QUIPS[Math.floor(Math.random() * WRONG_QUIPS.length)]);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    triggerFlash('#ef4444');
+    setStreak(0);
+    Animated.timing(fireOpacity, { toValue: 0, duration: 600, useNativeDriver: true }).start(() => {
+      fireScale.setValue(0.6);
+      numScale.setValue(1);
+    });
 
     // Button shake
     down.scale.setValue(0.92);
@@ -131,41 +194,72 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     ]).start();
   };
 
-  const handleThumbsUp = () => {
-    setAnswers((prev) => {
-      const next = { ...prev, [card.id]: 'correct' as const };
-      const correct = Object.values(next).filter((a) => a === 'correct').length;
-      onProgressUpdate?.(correct, total);
-      onAnswersUpdate?.(next);
-      return next;
-    });
-    runCorrect();
-  };
-
-  const handleThumbsDown = () => {
-    setAnswers((prev) => {
-      const next = { ...prev, [card.id]: 'incorrect' as const };
-      const correct = Object.values(next).filter((a) => a === 'correct').length;
-      onProgressUpdate?.(correct, total);
-      onAnswersUpdate?.(next);
-      return next;
-    });
-    runWrong();
-  };
-
   const flip = () => {
     const toValue = flipped ? 0 : 1;
     Animated.spring(flipAnim, { toValue, friction: 8, tension: 10, useNativeDriver: true }).start();
     setFlipped((f) => !f);
   };
-  const resetFlip = () => { flipAnim.setValue(0); setFlipped(false); };
-  const prev = () => { setIndex((i) => (i > 0 ? i - 1 : i)); resetFlip(); };
+  const resetFlip = () => {
+    flipAnim.setValue(0);
+    setFlipped(false);
+    setExplainText('');
+    setWrongAnswered(false);
+    explainOpacity.setValue(0);
+    explainTranslateY.setValue(16);
+  };
   const next = () => { setIndex((i) => (i < total - 1 ? i + 1 : i)); resetFlip(); };
+
+  const handleThumbsUp = () => {
+    if (currentAnswer) return;
+    const n = { ...answers, [card.id]: 'correct' as const };
+    setAnswers(n);
+    onProgressUpdate?.(Object.values(n).filter((a) => a === 'correct').length, total);
+    onAnswersUpdate?.(n);
+    runCorrect();
+    setTimeout(() => next(), 2000);
+  };
+
+  const handleThumbsDown = () => {
+    if (currentAnswer) return;
+    const n = { ...answers, [card.id]: 'incorrect' as const };
+    setAnswers(n);
+    onProgressUpdate?.(Object.values(n).filter((a) => a === 'correct').length, total);
+    onAnswersUpdate?.(n);
+    runWrong();
+    setWrongAnswered(true);
+    const preloaded = explanations[card.id];
+    if (preloaded) {
+      setExplainText(preloaded);
+      Animated.parallel([
+        Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(explainTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    }
+  };
 
   return (
     <View style={styles.wrap}>
+      <Modal visible={flashVisible} transparent animationType="none" statusBarTranslucent>
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderWidth: borderW, borderColor: flashColor, opacity: flashOpacity }]} />
+      </Modal>
+      {/* Streak fire */}
+      <Animated.View pointerEvents="none" style={[styles.streakWrap, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
+        <Animated.Text style={[styles.streakCount, { transform: [{ scale: numScale }] }]}>{streak}</Animated.Text>
+        <LottieView
+          ref={lottieRef}
+          source={require('../assets/Flame animation.json')}
+          style={styles.fireLottie}
+          loop
+          autoPlay={false}
+        />
+      </Animated.View>
+
       <View style={styles.topSection}>
-        <Pressable onPress={flip} style={styles.cardWrap}>
+        <View style={styles.cardWrap}>
+          {/* Deck cards behind */}
+          <View style={[styles.card, styles.deckCard3]} />
+          <View style={[styles.card, styles.deckCard2]} />
+        <Pressable onPress={flip} style={StyleSheet.absoluteFill}>
           <Animated.View style={[
             styles.card, styles.cardFace,
             currentAnswer === 'correct' && styles.cardCorrect,
@@ -185,50 +279,51 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
             <Text style={styles.flipHint}>Tap to flip</Text>
           </Animated.View>
         </Pressable>
-
-        <View style={styles.feedback}>
-          {/* Thumbs Down */}
-          <View style={styles.btnWrap}>
-            <Animated.View style={[styles.glow, styles.glowRed, { opacity: down.glowOpacity }]} />
-            <Animated.View style={{ transform: [{ scale: down.scale }, { translateX: down.shakeX }] }}>
-              <Pressable onPress={handleThumbsDown} style={[styles.feedbackBtn, styles.feedbackBtnDown]}>
-                <Ionicons name="thumbs-down" size={28} color="#fff" />
-              </Pressable>
-            </Animated.View>
-            <Animated.Text style={[styles.microText, { opacity: down.microOpacity }]}>{quipDown}</Animated.Text>
-          </View>
-
-          <Text style={styles.feedbackText}>Did you get this right?</Text>
-
-          {/* Thumbs Up */}
-          <View style={styles.btnWrap}>
-            <Animated.View style={[styles.glow, styles.glowGreen, { opacity: up.glowOpacity }]} />
-            {/* +1 float */}
-            <Animated.View style={[styles.plusOne, {
-              opacity: up.plusOpacity,
-              transform: [{ translateY: up.plusY }, { scale: up.plusScale }],
-            }]}>
-              <Text style={styles.plusOneText}>+1</Text>
-            </Animated.View>
-            <Animated.View style={{ transform: [{ scale: up.scale }] }}>
-              <Pressable onPress={handleThumbsUp} style={[styles.feedbackBtn, styles.feedbackBtnUp]}>
-                <Ionicons name="thumbs-up" size={28} color="#fff" />
-              </Pressable>
-            </Animated.View>
-            <Animated.Text style={[styles.microText, { opacity: up.microOpacity }]}>{quipUp}</Animated.Text>
-          </View>
         </View>
+
+        {wrongAnswered ? (
+          <View>
+            {explainText ? (
+              <Animated.View style={[styles.explainWrap, { opacity: explainOpacity, transform: [{ translateY: explainTranslateY }] }]}>
+                <Ionicons name="bulb-outline" size={16} color="#E06C78" style={{ marginRight: 6 }} />
+                <Text style={styles.explainText}>{explainText}</Text>
+              </Animated.View>
+            ) : null}
+            <Pressable style={styles.gotItBtn} onPress={next}>
+              <Text style={styles.gotItText}>Got It</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.divider} />
       <View style={styles.nav}>
-        <Pressable onPress={prev} style={styles.navBtn} disabled={index === 0}>
-          <Ionicons name="chevron-back" size={24} color={index === 0 ? '#999' : '#fff'} />
-        </Pressable>
+        {/* Thumbs Down */}
+        <View style={styles.btnWrap}>
+          <Animated.View style={[styles.glow, styles.glowRed, { opacity: down.glowOpacity }]} />
+          <Animated.View style={{ transform: [{ scale: down.scale }, { translateX: down.shakeX }] }}>
+            <Pressable onPress={handleThumbsDown} style={[styles.feedbackBtn, styles.feedbackBtnDown]} disabled={!!currentAnswer}>
+              <Ionicons name="thumbs-down" size={28} color="#fff" />
+            </Pressable>
+          </Animated.View>
+          <Animated.Text style={[styles.microText, { opacity: down.microOpacity }]}>{quipDown}</Animated.Text>
+        </View>
+
         <Text style={styles.counter}>{displayIndexMap?.[card.id] ?? (index + 1)}/{displayTotal ?? total}</Text>
-        <Pressable onPress={next} style={styles.navBtn} disabled={index === total - 1}>
-          <Ionicons name="chevron-forward" size={24} color={index === total - 1 ? '#999' : '#fff'} />
-        </Pressable>
+
+        {/* Thumbs Up */}
+        <View style={styles.btnWrap}>
+          <Animated.View style={[styles.glow, styles.glowGreen, { opacity: up.glowOpacity }]} />
+          <Animated.View style={[styles.plusOne, { opacity: up.plusOpacity, transform: [{ translateY: up.plusY }, { scale: up.plusScale }] }]}>
+            <Text style={styles.plusOneText}>+1</Text>
+          </Animated.View>
+          <Animated.View style={{ transform: [{ scale: up.scale }] }}>
+            <Pressable onPress={handleThumbsUp} style={[styles.feedbackBtn, styles.feedbackBtnUp]} disabled={!!currentAnswer}>
+              <Ionicons name="thumbs-up" size={28} color="#fff" />
+            </Pressable>
+          </Animated.View>
+          <Animated.Text style={[styles.microText, { opacity: up.microOpacity }]}>{quipUp}</Animated.Text>
+        </View>
       </View>
     </View>
   );
@@ -236,6 +331,25 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, paddingVertical: 24 },
+  streakWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    marginBottom: 0,
+    gap: 0,
+  },
+  fireLottie: {
+    width: 68,
+    height: 68,
+  },
+  streakCount: {
+    fontFamily: 'FredokaOne_400Regular',
+    fontSize: 28,
+    color: '#1A1A1A',
+    marginBottom: -8,
+    marginRight: -14,
+  },
   topSection: { flex: 1, justifyContent: 'center' },
   cardWrap: { height: 180, marginBottom: 24 },
   card: {
@@ -250,6 +364,18 @@ const styles = StyleSheet.create({
     minHeight: 160,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deckCard2: {
+    position: 'absolute', top: 6, left: 6, right: -6,
+    transform: [{ rotate: '2deg' }],
+    backgroundColor: '#f0f0f0',
+    zIndex: -1,
+  },
+  deckCard3: {
+    position: 'absolute', top: 11, left: 10, right: -10,
+    transform: [{ rotate: '4deg' }],
+    backgroundColor: '#e4e4e4',
+    zIndex: -2,
   },
   cardFace: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   cardBack: { backgroundColor: '#f0f4ff' },
@@ -336,4 +462,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counter: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333' },
+  explainWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fff0f0',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#fdd',
+  },
+  explainText: {
+    flex: 1,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
+  gotItBtn: {
+    backgroundColor: SALMON,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  gotItText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 16,
+    color: '#fff',
+  },
 });

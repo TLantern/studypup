@@ -6,7 +6,6 @@ import type { ContentItem } from './content-store';
 import { transcribeAudio } from './transcription';
 import { extractTextFromImage } from './ocr';
 import { extractDocumentText } from './document-extractor';
-
 export type ConversionProgress = {
   current: number;
   total: number;
@@ -33,12 +32,8 @@ export async function contentToText(
 
       switch (item.type) {
         case 'notes':
-          // Pasted text or URL - use text field if present, else empty
           text = item.text || '';
-          if (item.uri && item.uri.startsWith('http') && !item.text) {
-            // URL without fetched content - could add fetch here
-            text = `[Link: ${item.uri}]`;
-          }
+          if (!text && item.uri && item.uri.startsWith('http')) text = `[Link: ${item.uri}]`;
           break;
 
         case 'audio':

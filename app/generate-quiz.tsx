@@ -20,6 +20,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
@@ -77,7 +78,8 @@ const shuffleQuizOptions = (question: { question: string; options: string[]; cor
 
 export default function GenerateQuizScreen() {
   const insets = useSafeAreaInsets();
-  const { methods, materialId, wrongOnly } = useLocalSearchParams<{ methods?: string; materialId?: string; wrongOnly?: string }>();
+  const { methods, materialId, wrongOnly, resume } = useLocalSearchParams<{ methods?: string; materialId?: string; wrongOnly?: string; resume?: string }>();
+  const isResume = resume === '1';
   const isWrongOnly = wrongOnly === 'true';
   const methodsStr = methodsKey(methods);
   const selectedIds = useMemo(() => methodsStr.split(',').filter(Boolean), [methodsStr]);
@@ -120,7 +122,25 @@ export default function GenerateQuizScreen() {
   const [editNoteInstruction, setEditNoteInstruction] = useState('');
   const [notesRegenerating, setNotesRegenerating] = useState(false);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
+  const [flashcardExplanations, setFlashcardExplanations] = useState<Record<string, string>>({});
+  const [quizExplanations, setQuizExplanations] = useState<Record<string, string>>({});
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [quizStreak, setQuizStreak] = useState(0);
+  const [quizInlineExplain, setQuizInlineExplain] = useState('');
+  const quizExplainOpacity = useRef(new Animated.Value(0)).current;
+  const quizExplainY = useRef(new Animated.Value(16)).current;
+  const [flashVisible, setFlashVisible] = useState(false);
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const [flashColor, setFlashColor] = useState('#4ade80');
+  const [quipText, setQuipText] = useState('');
+  const quipOpacity = useRef(new Animated.Value(0)).current;
+  const lottieRef = useRef<LottieView>(null);
+  const fireOpacity = useRef(new Animated.Value(0)).current;
+  const fireScale = useRef(new Animated.Value(0.6)).current;
+  const numScale = useRef(new Animated.Value(1)).current;
   const streakFiredRef = useRef(false);
+  const reportShownRef = useRef(false);
+  const sessionAnsweredIds = useRef<Set<string>>(new Set());
   const creditedRef = useRef<Set<string>>(new Set());
   const [explainOpen, setExplainOpen] = useState(false);
   const [explainLoading, setExplainLoading] = useState(false);
@@ -130,6 +150,66 @@ export default function GenerateQuizScreen() {
   const [explainChatSending, setExplainChatSending] = useState(false);
   const explainSlideAnim = useMemo(() => new Animated.Value(0), []);
   const explainChatScrollRef = useRef<ScrollView>(null);
+  const tabsScrollRef = useRef<ScrollView>(null);
+  const tabOffsetsRef = useRef<Record<string, number>>({});
+
+  const CORRECT_QUIPS = ['Locked in.', 'Banked.', 'Nailed it!', 'Memory strengthened.', 'Nice one.'];
+  const WRONG_QUIPS = ['Keep going.', 'Next time.', 'Review mode.'];
+  const { width, height } = Dimensions.get('window');
+  const borderW = Math.round(Math.min(width, height) * 0.018);
+
+  const triggerFlash = (color: string) => {
+    setFlashColor(color);
+    setFlashVisible(true);
+    flashOpacity.setValue(1);
+    Animated.timing(flashOpacity, { toValue: 0, duration: 900, useNativeDriver: true }).start(() => setFlashVisible(false));
+  };
+
+  const popNumber = () => {
+    numScale.setValue(1.4);
+    Animated.timing(numScale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+
+  const triggerQuip = (correct: boolean) => {
+    const pool = correct ? CORRECT_QUIPS : WRONG_QUIPS;
+    setQuipText(pool[Math.floor(Math.random() * pool.length)]);
+    quipOpacity.setValue(1);
+    Animated.sequence([
+      Animated.delay(700),
+      Animated.timing(quipOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+    if (!correct) {
+      Animated.timing(fireOpacity, { toValue: 0, duration: 600, useNativeDriver: true }).start(() => {
+        fireScale.setValue(0.6);
+        numScale.setValue(1);
+      });
+    }
+  };
+
+  const generateFlashcardExplanations = (flashcards: { id: string; front: string; back: string }[]) => {
+    flashcards.forEach((f) => {
+      callOpenAIText(
+        'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+        `Question: ${f.front}\nCorrect answer: ${f.back}`,
+        { maxTokens: 80 }
+      ).then((text) => {
+        setFlashcardExplanations((prev) => ({ ...prev, [f.id]: text }));
+      }).catch(() => {});
+    });
+  };
+
+  const generateQuizExplanations = (questions: { id: string; question: string; options: string[]; correct_answer_index: number }[]) => {
+    questions.forEach((q) => {
+      const correct = q.options[q.correct_answer_index] ?? '';
+      callOpenAIText(
+        'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+        `Question: ${q.question}\nCorrect answer: ${correct}`,
+        { maxTokens: 80 }
+      ).then((text) => {
+        setQuizExplanations((prev) => ({ ...prev, [q.id]: text }));
+      }).catch(() => {});
+    });
+  };
 
   useEffect(() => {
     if (!materialId) {
@@ -241,8 +321,9 @@ export default function GenerateQuizScreen() {
             const updatedRaw = await getMaterials(materialId);
             const updated = updatedRaw ? applyWrongFilter(updatedRaw) : null;
             if (updated) {
+              const updatedFlashcards = updated.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back }));
               setMaterials({
-                flashcards: updated.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back })),
+                flashcards: updatedFlashcards,
                 quiz_questions: updated.quiz_questions.map((q) => shuffleQuizOptions({
                   id: q.id,
                   question: q.question,
@@ -261,6 +342,8 @@ export default function GenerateQuizScreen() {
                 })),
                 notes: updated.notes,
               });
+              if (selectedIds.includes('flashcards')) generateFlashcardExplanations(updatedFlashcards);
+              if (selectedIds.includes('quiz')) generateQuizExplanations(updated.quiz_questions);
               setQuizAnswers(updated.user_answers?.quiz_questions ?? {});
               setFlashcardAnswers(updated.user_answers?.flashcards ?? {});
               setWrittenAnswers(updated.user_answers?.written_questions ?? {});
@@ -292,8 +375,9 @@ export default function GenerateQuizScreen() {
         }
       } else {
         // No generation needed, just load existing content
+        const existingFlashcards = m.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back }));
         setMaterials({
-          flashcards: m.flashcards.map((f) => ({ id: f.id, front: f.front, back: f.back })),
+          flashcards: existingFlashcards,
           quiz_questions: m.quiz_questions.map((q) => shuffleQuizOptions({
             id: q.id,
             question: q.question,
@@ -312,6 +396,8 @@ export default function GenerateQuizScreen() {
           })),
           notes: m.notes,
         });
+        if (selectedIds.includes('flashcards')) generateFlashcardExplanations(existingFlashcards);
+        if (selectedIds.includes('quiz')) generateQuizExplanations(m.quiz_questions);
         setQuizAnswers(m.user_answers?.quiz_questions ?? {});
         setFlashcardAnswers(m.user_answers?.flashcards ?? {});
         setWrittenAnswers(m.user_answers?.written_questions ?? {});
@@ -379,14 +465,14 @@ export default function GenerateQuizScreen() {
     return base.map(shuffleQuizOptions);
   }, [materials?.quiz_questions, isWrongOnly]);
 
-  // Compute overall mastery across ALL methods (not just selected) so bar matches home/report
+  // Compute overall mastery across scorable methods only (notes excluded)
   const overallMastery = useMemo(() => {
     const pairs: [number, number][] = [];
     const qTotal = quizTotalFull > 0 ? quizTotalFull : quizQuestions.length;
-    if (qTotal > 0) pairs.push([sessionQuizCorrect, qTotal]);
-    if (flashcardTotal > 0) pairs.push([flashcardCorrect, flashcardTotal]);
-    if (writtenTotal > 0) pairs.push([writtenCorrect, writtenTotal]);
-    if (fillTotal > 0) pairs.push([fillCorrect, fillTotal]);
+    if (selectedIds.includes('quiz') && qTotal > 0) pairs.push([sessionQuizCorrect, qTotal]);
+    if (selectedIds.includes('flashcards') && flashcardTotal > 0) pairs.push([flashcardCorrect, flashcardTotal]);
+    if (selectedIds.includes('written') && writtenTotal > 0) pairs.push([writtenCorrect, writtenTotal]);
+    if (selectedIds.includes('fill') && fillTotal > 0) pairs.push([fillCorrect, fillTotal]);
     const totalCorrect = pairs.reduce((s, [c]) => s + c, 0);
     const totalQs = pairs.reduce((s, [, t]) => s + t, 0);
     return totalQs > 0 ? Math.min(100, Math.round((totalCorrect / totalQs) * 100)) : 0;
@@ -401,10 +487,48 @@ export default function GenerateQuizScreen() {
     }
   }, [overallMastery, loading]);
 
+  useEffect(() => {
+    if (loading || !materials || reportShownRef.current) return;
+    const scorable = selectedIds.filter((id) => id !== 'notes' && id !== 'tutor');
+    if (scorable.length === 0) return;
+
+    let allDone = true;
+    if (selectedIds.includes('quiz') && (materials.quiz_questions?.length ?? 0) > 0) {
+      const realCount = materials.quiz_questions.filter((q) => !q.id.startsWith('scaffold_')).length;
+      const attempted = [...sessionAnsweredIds.current].filter((k) => !k.startsWith('scaffold_')).length;
+      if (attempted < realCount) allDone = false;
+    }
+    if (selectedIds.includes('flashcards') && (materials.flashcards?.length ?? 0) > 0) {
+      const ids = new Set(materials.flashcards.map((f) => f.id));
+      if (Object.keys(flashcardAnswers).filter((id) => ids.has(id)).length < materials.flashcards.length) allDone = false;
+    }
+    if (selectedIds.includes('written') && (materials.written_questions?.length ?? 0) > 0) {
+      const ids = new Set(materials.written_questions.map((w) => w.id));
+      if (Object.keys(writtenAnswers).filter((id) => ids.has(id)).length < materials.written_questions.length) allDone = false;
+    }
+    if (selectedIds.includes('fill') && (materials.fill_in_blank_questions?.length ?? 0) > 0) {
+      const ids = new Set(materials.fill_in_blank_questions.map((f) => f.id));
+      if (Object.keys(fillAnswers).filter((id) => ids.has(id)).length < materials.fill_in_blank_questions.length) allDone = false;
+    }
+    if (!allDone) return;
+
+    reportShownRef.current = true;
+
+    setTimeout(() => {
+      if (materialId) {
+        router.push({ pathname: '/report', params: { materialId } });
+      }
+    }, 1200);
+  }, [quizAnswers, flashcardAnswers, writtenAnswers, fillAnswers, loading, materials]);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingCenter, { backgroundColor: '#f8fafc' }]}>
-        <GeneratingContentScreen contentTypes={selectedIds} />
+        {isResume ? (
+          <ActivityIndicator size="large" color="#FD8A8A" />
+        ) : (
+          <GeneratingContentScreen contentTypes={selectedIds} />
+        )}
       </View>
     );
   }
@@ -482,39 +606,87 @@ export default function GenerateQuizScreen() {
   const notesContent = materials?.notes ?? undefined;
   const quizData = quizQuestions[questionIndex] ?? { id: 'scaffold_0', ...SCAFFOLD_QUIZ[0] };
   const correctIndex = quizData.correct_answer_index;
-  const answered = selectedAnswer !== null;
+  const quizLocked = selectedAnswer === correctIndex || wrongAttempts >= 2;
+  const answered = quizLocked;
   const totalQuestions = quizQuestions.length;
-  const displayTotal = quizTotalFull > 0 ? Math.max(quizTotalFull, 10) : totalQuestions;
+  const displayTotal = isWrongOnly ? totalQuestions : (quizTotalFull > 0 ? Math.max(quizTotalFull, 10) : totalQuestions);
   const displayIndex = isWrongOnly
     ? (materials?.quiz_questions?.findIndex((q) => q.id === quizData.id) ?? -1) + 1 || questionIndex + 1
     : questionIndex + 1;
 
   const handleSelectAnswer = (i: number) => {
-    if (answered) return;
+    if (quizLocked) return;
     setSelectedAnswer(i);
     const isCorrect = i === correctIndex;
-    const newCorrect = isCorrect && !creditedRef.current.has(quizData.id) && !quizData.id.startsWith('scaffold_');
-    if (newCorrect) {
-      creditedRef.current.add(quizData.id);
-      setSessionQuizCorrect((prev) => prev + 1);
-    }
-    if (materialId && !quizData.id.startsWith('scaffold_')) {
-      const updatedAnswers = { ...quizAnswers, [quizData.id]: i };
-      setQuizAnswers(updatedAnswers);
-      getMaterials(materialId).then((m) => {
-        if (!m) return;
-        const realAnswers = Object.fromEntries(
-          Object.entries(updatedAnswers).filter(([id]) => !id.startsWith('scaffold_'))
-        );
-        const currentCorrect = newCorrect ? sessionQuizCorrect + 1 : sessionQuizCorrect;
-        const realCorrect = Math.min(currentCorrect, quizTotalFull || (m.quiz_questions?.length ?? 0));
-        console.log(`[SaveAnswer] Q id=${quizData.id} selectedIdx=${i} correctIdx=${correctIndex} isCorrect=${isCorrect} newCorrect=${newCorrect} realCorrect=${realCorrect}/${quizTotalFull}`);
-        console.log('[SaveAnswer] merging answers:', JSON.stringify(realAnswers));
-        updateMaterials(materialId, {
-          user_answers: { ...m.user_answers, quiz_questions: { ...m.user_answers?.quiz_questions, ...realAnswers } },
-          progress: { ...m.progress, multipleChoice: realCorrect },
-        });
+
+    if (isCorrect) {
+      triggerFlash('#4ade80');
+      triggerQuip(true);
+      setQuizStreak((s) => {
+        const next = s + 1;
+        if (next >= 2) {
+          const targetScale = Math.min(1 + (next - 2) * 0.08, 1.6);
+          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.6); lottieRef.current?.play(); }
+          Animated.spring(fireScale, { toValue: targetScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+          popNumber();
+        }
+        return next;
       });
+      const newCorrect = !creditedRef.current.has(quizData.id) && !quizData.id.startsWith('scaffold_');
+      if (newCorrect) {
+        creditedRef.current.add(quizData.id);
+        setSessionQuizCorrect((prev) => prev + 1);
+      }
+      if (!quizData.id.startsWith('scaffold_')) sessionAnsweredIds.current.add(quizData.id);
+      if (materialId && !quizData.id.startsWith('scaffold_')) {
+        const updatedAnswers = { ...quizAnswers, [quizData.id]: i };
+        setQuizAnswers(updatedAnswers);
+        getMaterials(materialId).then((m) => {
+          if (!m) return;
+          const realAnswers = Object.fromEntries(Object.entries(updatedAnswers).filter(([id]) => !id.startsWith('scaffold_')));
+          const realCorrect = Math.min(newCorrect ? sessionQuizCorrect + 1 : sessionQuizCorrect, quizTotalFull || (m.quiz_questions?.length ?? 0));
+          updateMaterials(materialId, {
+            user_answers: { ...m.user_answers, quiz_questions: { ...m.user_answers?.quiz_questions, ...realAnswers } },
+            progress: { ...m.progress, multipleChoice: realCorrect },
+          });
+        });
+      }
+    } else {
+      const newWrongAttempts = wrongAttempts + 1;
+      setWrongAttempts(newWrongAttempts);
+      // Record on first wrong attempt so completion detection can fire on the last question
+      if (!quizData.id.startsWith('scaffold_') && !(quizData.id in quizAnswers)) {
+        sessionAnsweredIds.current.add(quizData.id);
+        setQuizAnswers((prev) => ({ ...prev, [quizData.id]: i }));
+      }
+      if (newWrongAttempts >= 2) {
+        triggerFlash('#ef4444');
+        triggerQuip(false);
+        setQuizStreak(0);
+        // Show inline explanation
+        const exp = quizExplanations[quizData.id];
+        if (exp) {
+          setQuizInlineExplain(exp);
+          quizExplainOpacity.setValue(0);
+          quizExplainY.setValue(16);
+          Animated.parallel([
+            Animated.timing(quizExplainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+            Animated.timing(quizExplainY, { toValue: 0, duration: 350, useNativeDriver: true }),
+          ]).start();
+        }
+        // Save the final wrong answer
+        if (materialId && !quizData.id.startsWith('scaffold_')) {
+          const updatedAnswers = { ...quizAnswers, [quizData.id]: i };
+          setQuizAnswers(updatedAnswers);
+          getMaterials(materialId).then((m) => {
+            if (!m) return;
+            const realAnswers = Object.fromEntries(Object.entries(updatedAnswers).filter(([id]) => !id.startsWith('scaffold_')));
+            updateMaterials(materialId, {
+              user_answers: { ...m.user_answers, quiz_questions: { ...m.user_answers?.quiz_questions, ...realAnswers } },
+            });
+          });
+        }
+      }
     }
   };
 
@@ -568,18 +740,22 @@ export default function GenerateQuizScreen() {
   };
 
   const getAnswerCardStyle = (i: number) => {
-    if (!answered) return [styles.answerCard];
-    const isCorrect = i === correctIndex;
     const isChosen = i === selectedAnswer;
+    const isCorrect = i === correctIndex;
+    // First wrong attempt: only highlight the chosen wrong, don't reveal correct
+    if (!quizLocked && wrongAttempts === 1 && isChosen) {
+      return [styles.answerCard, styles.answerCardWrong, styles.answerCardHoverShadow];
+    }
+    if (!quizLocked) return [styles.answerCard];
+    // Locked: full reveal
     const chosenCorrect = isChosen && isCorrect;
     const chosenWrong = isChosen && !isCorrect;
-    const showCorrect = isCorrect && selectedAnswer !== correctIndex;
-    const hoverShadow = chosenCorrect || chosenWrong || showCorrect;
+    const showCorrect = isCorrect;
     return [
       styles.answerCard,
       (chosenCorrect || showCorrect) && styles.answerCardCorrect,
       chosenWrong && styles.answerCardWrong,
-      hoverShadow && styles.answerCardHoverShadow,
+      (chosenCorrect || chosenWrong || showCorrect) && styles.answerCardHoverShadow,
     ].filter(Boolean);
   };
 
@@ -597,23 +773,27 @@ export default function GenerateQuizScreen() {
 
     if (questionIndex >= totalQuestions - 1) return;
     setSelectedAnswer(null);
+    setWrongAttempts(0);
+    setQuizInlineExplain('');
+    quizExplainOpacity.setValue(0);
+    quizExplainY.setValue(16);
     setQuestionIndex((i) => i + 1);
     setExplainOpen(false);
     setExplainChatMessages([]);
     setExplainText('');
   };
 
-  const tryAgain = () => {
+  const tryAgainQuiz = () => {
     setSelectedAnswer(null);
-    setQuizAnswers((prev) => {
-      const next = { ...prev };
-      delete next[quizData.id];
-      return next;
-    });
   };
 
   const goPrev = () => {
     if (questionIndex <= 0) return;
+    setSelectedAnswer(null);
+    setWrongAttempts(0);
+    setQuizInlineExplain('');
+    quizExplainOpacity.setValue(0);
+    quizExplainY.setValue(16);
     setQuestionIndex((i) => i - 1);
     setExplainOpen(false);
     setExplainChatMessages([]);
@@ -631,11 +811,8 @@ export default function GenerateQuizScreen() {
           <Ionicons name="close" size={28} color="#333" />
         </Pressable>
       </View>
-      {/* Mastery progress bar */}
-      <View style={styles.masteryBarBg}>
-        <View style={[styles.masteryBarFill, { width: `${overallMastery}%` }]} />
-      </View>
       <ScrollView
+        ref={tabsScrollRef}
         horizontal 
         showsHorizontalScrollIndicator={false} 
         style={styles.tabs} 
@@ -645,7 +822,16 @@ export default function GenerateQuizScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {tabs.map((t) => (
-          <Pressable key={t.id} onPress={() => setActiveTab(t.id)} style={[styles.tab, activeTab === t.id && styles.tabActive]}>
+          <Pressable
+            key={t.id}
+            onLayout={(e) => { tabOffsetsRef.current[t.id] = e.nativeEvent.layout.x; }}
+            onPress={() => {
+              setActiveTab(t.id);
+              const x = tabOffsetsRef.current[t.id] ?? 0;
+              tabsScrollRef.current?.scrollTo({ x: Math.max(0, x - 24), animated: true });
+            }}
+            style={[styles.tab, activeTab === t.id && styles.tabActive]}
+          >
             {t.iconText ? (
               <Text style={styles.tabIconText}>{t.iconText}</Text>
             ) : (
@@ -656,6 +842,12 @@ export default function GenerateQuizScreen() {
         ))}
       </ScrollView>
       <View style={styles.divider} />
+      {/* Mastery progress bar — hidden when only notes selected */}
+      {selectedIds.some((id) => id !== 'notes') && (
+        <View style={styles.masteryBarBg}>
+          <View style={[styles.masteryBarFill, { width: `${overallMastery}%` }]} />
+        </View>
+      )}
 
       {activeTab === 'notes' && (
         <View style={styles.notesTabWrap}>
@@ -745,7 +937,7 @@ export default function GenerateQuizScreen() {
         </View>
       )}
       {activeTab === 'tutor' && <TutorStudy notes={notesContent} />}
-      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} initialIndex={flashcardInitIdx} displayTotal={flashcardTotalFull || undefined} displayIndexMap={flashcardDisplayMap} />}
+      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} initialIndex={flashcardInitIdx} displayTotal={flashcardTotalFull || undefined} displayIndexMap={flashcardDisplayMap} explanations={flashcardExplanations} />}
       {activeTab === 'written' && (
         <WrittenStudy
           items={writtenItems}
@@ -772,15 +964,20 @@ export default function GenerateQuizScreen() {
       )}
       {activeTab === 'quiz' && (
         <>
+          <Modal visible={flashVisible} transparent animationType="none" statusBarTranslucent>
+            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderWidth: borderW, borderColor: flashColor, opacity: flashOpacity }]} />
+          </Modal>
+          {/* Streak — only takes layout space when active */}
+          {quizStreak >= 2 && (
+            <Animated.View pointerEvents="none" style={[styles.quizStreakRow, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
+              <Animated.Text style={[styles.quizStreakCount, { transform: [{ scale: numScale }] }]}>{quizStreak}</Animated.Text>
+              <LottieView ref={lottieRef} source={require('../assets/Flame animation.json')} style={styles.quizFireLottie} loop autoPlay={false} />
+            </Animated.View>
+          )}
           <ScrollView 
             style={styles.body} 
-            contentContainerStyle={styles.bodyContent} 
+            contentContainerStyle={[styles.bodyContent, quizInlineExplain ? { paddingBottom: 16 } : null]} 
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={true}
-            alwaysBounceVertical={false}
-            removeClippedSubviews={false}
-            scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
             bounces={true}
             alwaysBounceVertical={false}
@@ -793,9 +990,9 @@ export default function GenerateQuizScreen() {
                 key={i}
                 style={getAnswerCardStyle(i)}
                 onPress={() => handleSelectAnswer(i)}
-                disabled={answered}
+                disabled={quizLocked}
               >
-                <View style={[styles.answerNum, answered && i === correctIndex && styles.answerNumCorrect]}>
+                <View style={[styles.answerNum, quizLocked && i === correctIndex && styles.answerNumCorrect]}>
                   <Text style={styles.answerNumText}>{i + 1}</Text>
                 </View>
                 <View style={styles.answerTextWrap}>
@@ -803,21 +1000,27 @@ export default function GenerateQuizScreen() {
                 </View>
               </Pressable>
             ))}
+            {/* Inline explanation after 2 wrong attempts */}
+            {quizInlineExplain ? (
+              <Animated.View style={[styles.quizExplainWrap, { opacity: quizExplainOpacity, transform: [{ translateY: quizExplainY }] }]}>
+                <Ionicons name="bulb-outline" size={16} color="#E06C78" style={{ marginRight: 6 }} />
+                <Text style={styles.quizExplainText}>{quizInlineExplain}</Text>
+              </Animated.View>
+            ) : null}
           </ScrollView>
-          {answered && (
-            <View style={selectedAnswer !== correctIndex ? styles.buttonRow : styles.buttonRowCenter}>
-              <Pressable style={[styles.explainBtnRow, selectedAnswer === correctIndex && styles.explainBtnSolo]} onPress={openExplain}>
-                <Ionicons name="star" size={20} color="#fff" />
-                <Text style={styles.explainBtnTextRow}>Explain</Text>
+          {/* Fading quip on correct/wrong lock */}
+          {quipText ? (
+            <Animated.Text style={[styles.quipLabel, { opacity: quipOpacity }]}>{quipText}</Animated.Text>
+          ) : null}
+          {/* First wrong: Try Again */}
+          {!quizLocked && wrongAttempts === 1 && (
+            <View style={styles.buttonRow}>
+              <Pressable style={styles.tryAgainBtnRow} onPress={tryAgainQuiz}>
+                <Text style={styles.tryAgainTextRow}>Try Again</Text>
               </Pressable>
-              {selectedAnswer !== correctIndex && (
-                <Pressable style={styles.tryAgainBtnRow} onPress={tryAgain}>
-                  <Text style={styles.tryAgainTextRow}>Try Again</Text>
-                </Pressable>
-              )}
             </View>
           )}
-          <View style={styles.quizDivider} />
+          {!quizInlineExplain && <View style={styles.quizDivider} />}
           <View style={styles.quizNav}>
             <Pressable onPress={goPrev} style={styles.quizNavBtn} disabled={questionIndex === 0}>
               <Ionicons name="chevron-back" size={24} color={questionIndex === 0 ? '#999' : '#fff'} />
@@ -981,10 +1184,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginLeft: 10,  
   },
-  tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16 },
+  tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16, marginHorizontal: -24 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#ccc', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
   },
-  tabsContent: { gap: 8, paddingRight: 24 },
+  tabsContent: { gap: 8, paddingHorizontal: 24 },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1104,14 +1307,55 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
+  quipLabel: {
+    fontFamily: 'FredokaOne_400Regular',
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  quizStreakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    marginBottom: 0,
+    gap: 0,
+  },
+  quizStreakCount: {
+    fontFamily: 'FredokaOne_400Regular',
+    fontSize: 28,
+    color: '#1A1A1A',
+    marginBottom: -8,
+    marginRight: -14,
+  },
+  quizFireLottie: { width: 68, height: 68 },
+  quizExplainWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fff0f0',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 2,
+    borderWidth: 1,
+    borderColor: '#fdd',
+  },
+  quizExplainText: {
+    flex: 1,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
   answerCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    marginBottom: 8,
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1164,15 +1408,15 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   masteryBarBg: {
-    height: 6,
+    height: 10,
     backgroundColor: '#E8D8D8',
-    borderRadius: 3,
+    borderRadius: 5,
     overflow: 'hidden',
     marginBottom: 12,
   },
   masteryBarFill: {
-    height: 6,
-    borderRadius: 3,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: SALMON,
   },
   quizDivider: {

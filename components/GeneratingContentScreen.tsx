@@ -2,26 +2,50 @@ import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-const ROTATING_TEXTS = [
-  'Analyzing your material…',
-  'Extracting key concepts…',
-  'Organizing notes for clarity…',
-  'Generating study-ready insights…',
-  'Finalizing your content…',
-];
-
-const TYPEWRITER_MS = 50;
-const HOLD_MS = 2000;
+const TYPEWRITER_MS = 45;
+const HOLD_MS = 1800;
 
 type Props = {
   contentTypes: string[];
+  contentName?: string;
+  materialTitle?: string | null;
 };
 
-export function GeneratingContentScreen(_props: Props) {
+function phase1Texts(contentName?: string): string[] {
+  const name = contentName ? contentName.replace(/(\.[a-zA-Z0-9]{1,5})+$/, '') : null;
+  return [
+    name ? `Reading "${name}"…` : 'Analyzing your material…',
+    'Pulling out the key concepts…',
+    name ? `Breaking down "${name}"…` : 'Organizing your notes…',
+    'Identifying what matters most…',
+    'Almost there…',
+  ];
+}
+
+function phase2Texts(materialTitle: string): string[] {
+  return [
+    `Looks like you're studying ${materialTitle}…`,
+    `Building your study set for ${materialTitle}…`,
+    'Putting the final touches on…',
+  ];
+}
+
+export function GeneratingContentScreen({ contentName, materialTitle }: Props) {
+  const [texts, setTexts] = useState<string[]>(() => phase1Texts(contentName));
   const [index, setIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
   const lottieRef = useRef<LottieView>(null);
-  const phrase = ROTATING_TEXTS[index];
+
+  // Switch to phase 2 when materialTitle arrives
+  useEffect(() => {
+    if (!materialTitle) return;
+    const next = phase2Texts(materialTitle);
+    setTexts(next);
+    setIndex(0);
+    setDisplayed('');
+  }, [materialTitle]);
+
+  const phrase = texts[index] ?? '';
 
   useEffect(() => {
     setDisplayed('');
@@ -30,7 +54,7 @@ export function GeneratingContentScreen(_props: Props) {
   useEffect(() => {
     if (displayed.length >= phrase.length) {
       const t = setTimeout(() => {
-        setIndex((i) => (i + 1) % ROTATING_TEXTS.length);
+        setIndex((i) => Math.min(i + 1, texts.length - 1));
       }, HOLD_MS);
       return () => clearTimeout(t);
     }
@@ -38,7 +62,7 @@ export function GeneratingContentScreen(_props: Props) {
       setDisplayed(phrase.slice(0, displayed.length + 1));
     }, TYPEWRITER_MS);
     return () => clearTimeout(t);
-  }, [displayed, phrase]);
+  }, [displayed, phrase, texts.length]);
 
   useEffect(() => {
     lottieRef.current?.play();

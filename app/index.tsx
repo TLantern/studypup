@@ -159,7 +159,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 80, paddingBottom: insets.bottom + 24 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
       <MeshGradientBackground />
       <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>
       <Text style={styles.subtext}> AI Study Tool built for students</Text>

@@ -39,6 +39,7 @@ import * as StoreReview from 'expo-store-review';
 import { getItem, setItem } from '@/lib/storage';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 import LottieView from 'lottie-react-native';
+import { InAppOnboardingModal } from '@/components/InAppOnboardingModal';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -154,9 +155,17 @@ export default function HomeScreen() {
   const [showSavedRecordingsModal, setShowSavedRecordingsModal] = useState(false);
   const emptyArrowLottieRef = useRef<LottieView>(null);
   const [isDevReviewer, setIsDevReviewer] = useState(false);
+  const [showInAppOnboarding, setShowInAppOnboarding] = useState(false);
 
   useEffect(() => {
     getItem('dev:reviewer').then((v) => { if (v) setIsDevReviewer(true); });
+  }, []);
+
+  useEffect(() => {
+
+    getItem('in_app_onboarding:step1').then((v) => {
+      if (!v) setShowInAppOnboarding(true);
+    });
   }, []);
 
   useFocusEffect(
@@ -175,7 +184,7 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (superwallAvailable && subscriptionStatus !== 'active' && !isDevReviewer) {
+      if (superwallAvailable && subscriptionStatus != null && subscriptionStatus !== 'active' && !isDevReviewer && !__DEV__) {
         trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
         showPaywall(PLACEMENT_APP_OPEN);
       }
@@ -1635,6 +1644,14 @@ export default function HomeScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <InAppOnboardingModal
+        visible={showInAppOnboarding}
+        onContinue={() => {
+          setShowInAppOnboarding(false);
+          setItem('in_app_onboarding:step1', 'shown');
+        }}
+      />
       </View>
     </TouchableWithoutFeedback>
   );

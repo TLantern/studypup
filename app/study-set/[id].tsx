@@ -33,6 +33,7 @@ export default function StudySetScreen() {
   const [loading, setLoading] = useState(!!id);
   const [showChat, setShowChat] = useState(false);
   const [showVoice, setShowVoice] = useState(false);
+  const [resumeMethods, setResumeMethods] = useState<string>('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -42,6 +43,13 @@ export default function StudySetScreen() {
       setEmoji(m.emoji ?? '📚');
       setDate(new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
       setNotes(m.notes ?? '');
+      const methodsWithData: string[] = [];
+      if (m.flashcards?.length) methodsWithData.push('flashcards');
+      if (m.quiz_questions?.length) methodsWithData.push('quiz');
+      if (m.written_questions?.length) methodsWithData.push('written');
+      if (m.fill_in_blank_questions?.length) methodsWithData.push('fill');
+      if (m.notes?.trim()) methodsWithData.push('notes');
+      setResumeMethods(methodsWithData.join(','));
       let srcs = m.sources ?? [];
       if (srcs.length === 0 && m.knowledge_graph_id) {
         const kg = await getKnowledgeGraph(m.knowledge_graph_id);
@@ -108,6 +116,16 @@ export default function StudySetScreen() {
             </Pressable>
           ))}
         </View>
+
+        {resumeMethods.length > 0 && (
+          <Pressable
+            style={styles.resumeBtn}
+            onPress={() => router.push({ pathname: '/generate-quiz', params: { methods: resumeMethods, materialId: id, resume: '1' } })}
+          >
+            <Ionicons name="play-circle" size={20} color="#fff" />
+            <Text style={styles.resumeLabel}>Resume Study Session</Text>
+          </Pressable>
+        )}
 
         <View style={styles.sourceDivider}>
           <View style={styles.sourceDividerLine} />
@@ -259,6 +277,22 @@ const styles = StyleSheet.create({
   },
   stickyEmoji: { fontSize: 17 },
   stickyLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 12, color: '#444', lineHeight: 15 },
+  resumeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FD8A8A',
+    borderRadius: 16,
+    paddingVertical: 15,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  resumeLabel: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 17,
+    color: '#fff',
+  },
   sourceDivider: {
     flexDirection: 'row',
     alignItems: 'center',
