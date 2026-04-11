@@ -208,6 +208,7 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     explainOpacity.setValue(0);
     explainTranslateY.setValue(16);
   };
+  const isLastCard = index >= total - 1;
   const next = () => { setIndex((i) => (i < total - 1 ? i + 1 : i)); resetFlip(); };
 
   const handleThumbsUp = () => {
@@ -217,7 +218,8 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     onProgressUpdate?.(Object.values(n).filter((a) => a === 'correct').length, total);
     onAnswersUpdate?.(n);
     runCorrect();
-    setTimeout(() => next(), 2000);
+    if (!isLastCard) setTimeout(() => next(), 2000);
+    else setWrongAnswered(true); // shows Got It / done button on last card
   };
 
   const handleThumbsDown = () => {
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
     marginRight: -14,
   },
   topSection: { flex: 1, justifyContent: 'center' },
-  cardWrap: { height: 180, marginBottom: 24 },
+  cardWrap: { height: 240, marginBottom: 24 },
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,

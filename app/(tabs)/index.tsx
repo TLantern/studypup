@@ -155,10 +155,14 @@ export default function HomeScreen() {
   const [showSavedRecordingsModal, setShowSavedRecordingsModal] = useState(false);
   const emptyArrowLottieRef = useRef<LottieView>(null);
   const [isDevReviewer, setIsDevReviewer] = useState(false);
+  const [devReviewerLoaded, setDevReviewerLoaded] = useState(false);
   const [showInAppOnboarding, setShowInAppOnboarding] = useState(false);
 
   useEffect(() => {
-    getItem('dev:reviewer').then((v) => { if (v) setIsDevReviewer(true); });
+    getItem('dev:reviewer').then((v) => {
+      if (v) setIsDevReviewer(true);
+      setDevReviewerLoaded(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -184,11 +188,11 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (superwallAvailable && subscriptionStatus != null && subscriptionStatus !== 'active' && !isDevReviewer && !__DEV__) {
+      if (devReviewerLoaded && superwallAvailable && subscriptionStatus != null && subscriptionStatus !== 'active' && !isDevReviewer && !__DEV__) {
         trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
         showPaywall(PLACEMENT_APP_OPEN);
       }
-    }, [showPaywall, superwallAvailable, subscriptionStatus, isDevReviewer])
+    }, [showPaywall, superwallAvailable, subscriptionStatus, isDevReviewer, devReviewerLoaded])
   );
 
   useEffect(() => {
@@ -923,17 +927,17 @@ export default function HomeScreen() {
               <View style={styles.weekStatsRow}>
                 <View style={styles.weekStat}>
                   <Text style={styles.weekStatNum}>{daysStudied}</Text>
-                  <Text style={styles.weekStatLabel}>days studied</Text>
+                  <Text style={styles.weekStatLabel}>{daysStudied === 1 ? 'day studied' : 'days studied'}</Text>
                 </View>
                 <View style={styles.weekStatDivider} />
                 <View style={styles.weekStat}>
                   <Text style={styles.weekStatNum}>{materials.length}</Text>
-                  <Text style={styles.weekStatLabel}>sets completed</Text>
+                  <Text style={styles.weekStatLabel}>{materials.length === 1 ? 'set completed' : 'sets completed'}</Text>
                 </View>
                 <View style={styles.weekStatDivider} />
                 <View style={styles.weekStat}>
                   <Text style={[styles.weekStatNum, styles.weekStatNumBold]}>{cardsReviewed}</Text>
-                  <Text style={styles.weekStatLabel}>cards reviewed</Text>
+                  <Text style={styles.weekStatLabel}>{cardsReviewed === 1 ? 'card reviewed' : 'cards reviewed'}</Text>
                 </View>
               </View>
             </View>

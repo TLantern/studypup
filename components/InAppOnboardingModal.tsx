@@ -59,6 +59,16 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
     }
   };
 
+  const handleStep1DropZone = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['audio/*'], copyToCacheDirectory: true });
+    if (!result.canceled && result.assets?.[0]) {
+      const a = result.assets[0];
+      setPickedFiles([{ uri: a.uri, name: a.name, size: a.size }]);
+      setSelectedId('audio');
+      setStep('input');
+    }
+  };
+
   const pickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({
       type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -153,14 +163,14 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
                   </View>
                 </Pressable>
 
-                <View style={s.dropZone}>
+                <Pressable style={s.dropZone} onPress={handleStep1DropZone}>
                   <View style={s.dropIconWrap}>
                     <Ionicons name="mic" size={isTablet ? 36 : 22} color="#7C5CBF" />
                   </View>
                   <Text style={s.dropTitle}>Drop your audio file here</Text>
                   <Text style={s.dropBrowse}>or browse files</Text>
                   <Text style={s.dropHint}>MP3, WAV, M4A — up to 2 hours</Text>
-                </View>
+                </Pressable>
               </View>
             )}
 
