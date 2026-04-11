@@ -186,29 +186,27 @@ export default function GenerateQuizScreen() {
     }
   };
 
-  const generateFlashcardExplanations = (flashcards: { id: string; front: string; back: string }[]) => {
-    flashcards.forEach((f) => {
-      callOpenAIText(
-        'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
-        `Question: ${f.front}\nCorrect answer: ${f.back}`,
-        { maxTokens: 80 }
-      ).then((text) => {
-        setFlashcardExplanations((prev) => ({ ...prev, [f.id]: text }));
-      }).catch(() => {});
-    });
+  const fetchFlashcardExplanation = (f: { id: string; front: string; back: string }) => {
+    if (flashcardExplanations[f.id]) return;
+    callOpenAIText(
+      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+      `Question: ${f.front}\nCorrect answer: ${f.back}`,
+      { maxTokens: 80 }
+    ).then((text) => {
+      setFlashcardExplanations((prev) => ({ ...prev, [f.id]: text }));
+    }).catch(() => {});
   };
 
-  const generateQuizExplanations = (questions: { id: string; question: string; options: string[]; correct_answer_index: number }[]) => {
-    questions.forEach((q) => {
-      const correct = q.options[q.correct_answer_index] ?? '';
-      callOpenAIText(
-        'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
-        `Question: ${q.question}\nCorrect answer: ${correct}`,
-        { maxTokens: 80 }
-      ).then((text) => {
-        setQuizExplanations((prev) => ({ ...prev, [q.id]: text }));
-      }).catch(() => {});
-    });
+  const fetchQuizExplanation = (q: { id: string; question: string; options: string[]; correct_answer_index: number }) => {
+    if (quizExplanations[q.id]) return;
+    const correct = q.options[q.correct_answer_index] ?? '';
+    callOpenAIText(
+      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+      `Question: ${q.question}\nCorrect answer: ${correct}`,
+      { maxTokens: 80 }
+    ).then((text) => {
+      setQuizExplanations((prev) => ({ ...prev, [q.id]: text }));
+    }).catch(() => {});
   };
 
   useEffect(() => {
@@ -342,8 +340,6 @@ export default function GenerateQuizScreen() {
                 })),
                 notes: updated.notes,
               });
-              if (selectedIds.includes('flashcards')) generateFlashcardExplanations(updatedFlashcards);
-              if (selectedIds.includes('quiz')) generateQuizExplanations(updated.quiz_questions);
               setQuizAnswers(updated.user_answers?.quiz_questions ?? {});
               setFlashcardAnswers(updated.user_answers?.flashcards ?? {});
               setWrittenAnswers(updated.user_answers?.written_questions ?? {});
@@ -396,8 +392,6 @@ export default function GenerateQuizScreen() {
           })),
           notes: m.notes,
         });
-        if (selectedIds.includes('flashcards')) generateFlashcardExplanations(existingFlashcards);
-        if (selectedIds.includes('quiz')) generateQuizExplanations(m.quiz_questions);
         setQuizAnswers(m.user_answers?.quiz_questions ?? {});
         setFlashcardAnswers(m.user_answers?.flashcards ?? {});
         setWrittenAnswers(m.user_answers?.written_questions ?? {});
@@ -658,6 +652,7 @@ export default function GenerateQuizScreen() {
       if (!quizData.id.startsWith('scaffold_') && !(quizData.id in quizAnswers)) {
         sessionAnsweredIds.current.add(quizData.id);
         setQuizAnswers((prev) => ({ ...prev, [quizData.id]: i }));
+        fetchQuizExplanation(quizData);
       }
       if (newWrongAttempts >= 2) {
         triggerFlash('#ef4444');
@@ -937,7 +932,7 @@ export default function GenerateQuizScreen() {
         </View>
       )}
       {activeTab === 'tutor' && <TutorStudy notes={notesContent} />}
-      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} initialIndex={flashcardInitIdx} displayTotal={flashcardTotalFull || undefined} displayIndexMap={flashcardDisplayMap} explanations={flashcardExplanations} />}
+      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} onWrongAnswer={(card) => fetchFlashcardExplanation({ id: card.id, front: card.question, back: card.answer })} initialIndex={flashcardInitIdx} displayTotal={flashcardTotalFull || undefined} displayIndexMap={flashcardDisplayMap} explanations={flashcardExplanations} />}
       {activeTab === 'written' && (
         <WrittenStudy
           items={writtenItems}
@@ -1319,7 +1314,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 52,
-    marginBottom: 0,
+    marginBottom: 16,
     gap: 0,
   },
   quizStreakCount: {

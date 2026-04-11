@@ -19,6 +19,7 @@ type Props = {
   materialId?: string;
   savedAnswers?: Record<string, 'correct' | 'incorrect'>;
   onAnswersUpdate?: (answers: Record<string, 'correct' | 'incorrect'>) => void;
+  onWrongAnswer?: (card: Card) => void;
   initialIndex?: number;
   displayTotal?: number;
   displayIndexMap?: Record<string, number>;
@@ -45,7 +46,7 @@ function useButtonAnim() {
   return { scale, glowOpacity, plusOpacity, plusY, plusScale, microOpacity, shakeX };
 }
 
-export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap, explanations = {} }: Props) {
+export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, onWrongAnswer, initialIndex = 0, displayTotal, displayIndexMap, explanations = {} }: Props) {
   const { width, height } = useWindowDimensions();
   const isTablet = width >= 768;
   const borderW = Math.round(Math.min(width, height) * 0.018);
@@ -228,6 +229,7 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     setAnswers(n);
     onProgressUpdate?.(Object.values(n).filter((a) => a === 'correct').length, total);
     onAnswersUpdate?.(n);
+    onWrongAnswer?.(card);
     runWrong();
     setWrongAnswered(true);
     const preloaded = explanations[card.id];
