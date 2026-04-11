@@ -91,9 +91,8 @@ export default function ChooseMethodsScreen() {
       entitlements: (subscriptionStatus as any)?.entitlements?.map((e: any) => e.id) 
     });
 
-    if (!hasProEntitlement) {
+    if (!hasProEntitlement && !__DEV__) {
       const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
-      if (__DEV__) console.log('[Studypup] Free generation check:', { freeUsed, superwallAvailable });
       if (freeUsed === 'true') {
         if (superwallAvailable) {
           try {
