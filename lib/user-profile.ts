@@ -8,6 +8,7 @@ export type AppUser = {
   auth_provider: string;
   phone?: string;
   email?: string;
+  display_name?: string;
   created_at: unknown;
   onboarding?: OnboardingData;
   onboarding_logged_at?: unknown;
@@ -23,6 +24,7 @@ export async function ensureUserDoc(user: User): Promise<void> {
     auth_provider: provider,
     ...(user.phoneNumber ? { phone: user.phoneNumber } : {}),
     ...(user.email ? { email: user.email } : {}),
+    ...(user.displayName ? { display_name: user.displayName } : {}),
     created_at: serverTimestamp(),
   };
   if (Object.keys(onboarding).length > 0) {

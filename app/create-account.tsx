@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
 import { getItem, setItem } from '@/lib/storage';
-import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn } from '@/lib/auth';
+import { confirmPhoneOtp, sendMagicLink, startPhoneSignIn, signInWithGoogle, signInWithApple, googleStatusCodes } from '@/lib/auth';
 import * as Linking from 'expo-linking';
 import { scaleFont, scaleSize, SCREEN_WIDTH, RESPONSIVE } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
@@ -48,6 +48,62 @@ const COUNTRIES = [
   { label: '🇧🇩 Bangladesh', dial: '+880' },
   { label: '🇮🇩 Indonesia', dial: '+62' },
 ];
+
+function ShineButton({
+  label,
+  icon,
+  onPress,
+  disabled,
+  delayMs = 0,
+  buttonStyle,
+  textStyle,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+  delayMs?: number;
+  buttonStyle?: object;
+  textStyle?: object;
+}) {
+  const shineX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+
+  useEffect(() => {
+    const run = () => {
+      shineX.setValue(-SCREEN_WIDTH * 0.6);
+      Animated.timing(shineX, {
+        toValue: SCREEN_WIDTH * 0.6,
+        duration: 650,
+        useNativeDriver: true,
+      }).start();
+    };
+    const initial = setTimeout(run, delayMs);
+    const interval = setInterval(run, 3200);
+    return () => { clearTimeout(initial); clearInterval(interval); };
+  }, []);
+
+  return (
+    <Pressable
+      style={[styles.socialBtn, buttonStyle, disabled && styles.continueBtnDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      {icon}
+      <Text style={[styles.socialBtnText, textStyle]}>{label}</Text>
+      <Animated.View
+        style={[styles.shineSweep, { transform: [{ translateX: shineX }] }]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.5)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={{ width: SCREEN_WIDTH * 0.35, height: '100%' }}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -233,8 +289,35 @@ export default function CreateAccountScreen() {
     }
   };
 
-  // Google OAuth commented out
-  // const handleGoogle = async () => { ... };
+  const handleGoogle = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithGoogle();
+    } catch (e: any) {
+      if (e?.code !== googleStatusCodes.SIGN_IN_CANCELLED) {
+        setError(e?.message ?? 'Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleApple = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await signInWithApple();
+    } catch (e: any) {
+      if (e?.code !== 'ERR_REQUEST_CANCELED') {
+        setError(e?.message ?? 'Apple sign-in failed. Please try again.');
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
@@ -320,6 +403,30 @@ export default function CreateAccountScreen() {
         </Pressable>
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <ShineButton
+          label="Continue with Google"
+          icon={<Image source={require('@/assets/icons/google.png')} style={styles.socialIcon} contentFit="contain" />}
+          onPress={handleGoogle}
+          disabled={busy}
+          delayMs={400}
+          buttonStyle={styles.googleBtn}
+        />
+        <ShineButton
+          label="Continue with Apple"
+          icon={<Image source={require('@/assets/icons/apple.png')} style={[styles.socialIcon, styles.socialIconWhite]} contentFit="contain" />}
+          onPress={handleApple}
+          disabled={busy}
+          delayMs={1800}
+          buttonStyle={styles.appleBtn}
+          textStyle={{ color: '#fff' }}
+        />
 
         {false && (
           <>
@@ -489,4 +596,43 @@ const styles = StyleSheet.create({
   optionIcon: { width: 24, height: 24, marginRight: 12 },
   optionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
   magicHint: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#333', marginTop: 12, textAlign: 'center' },
+  socialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(20),
+    marginBottom: scaleSize(12),
+    minHeight: scaleSize(56),
+    overflow: 'hidden',
+    ...BUTTON_SHADOW,
+  },
+  googleBtn: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  appleBtn: {
+    backgroundColor: '#000',
+  },
+  socialIcon: {
+    width: scaleSize(22),
+    height: scaleSize(22),
+    marginRight: scaleSize(10),
+  },
+  socialIconWhite: {
+    tintColor: '#fff',
+  },
+  socialBtnText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(18),
+    color: '#333',
+  },
+  shineSweep: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
 });
