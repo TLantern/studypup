@@ -7,6 +7,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -47,12 +48,13 @@ export default function SubjectsScreen() {
   };
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={60} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>Which subjects are you struggling with?</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>Which subject(s) are you struggling with?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {SUBJECTS.map((s) => (
             <Pressable
@@ -79,7 +81,8 @@ export default function SubjectsScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

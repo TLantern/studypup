@@ -62,6 +62,28 @@ export default function RootLayout() {
         <PaywallTriggerProvider>
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
+            {[
+              'index',
+              'students-improve',
+              'where-study',
+              'grade-level',
+              'subjects',
+              'study-duration',
+              'notification-optin',
+              'current-gpa',
+              'target-gpa',
+              'plan-usage',
+              'creating-plan',
+              'plan-ready',
+              'micro-quiz',
+              'quiz-results',
+              'record',
+              'flashcards',
+              'instantanswers',
+              'quizzes',
+            ].map((name) => (
+              <Stack.Screen key={name} name={name} options={{ animation: 'none' }} />
+            ))}
           </Stack>
         </PaywallTriggerProvider>
       </View>

@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { scaleSize, scaleFont, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { applyNotifPrefs, getNotifPrefs, requestPermissions } from '@/lib/notifications';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -37,7 +38,8 @@ export default function NotificationOptinScreen() {
   }
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}>
@@ -73,7 +75,8 @@ export default function NotificationOptinScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

@@ -2,13 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { callOpenAI, callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
+import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { callOpenAI, callOpenAIText } from '@/lib/openai-service';
 
 const SALMON = '#FD8A8A';
 const GREEN = '#BCFFC0';
 const RED = '#EA898B';
-const PURPLE = '#7c3aed';
 
 type Item = { id: string; text: string; answer: string };
 
@@ -37,25 +36,16 @@ const SCAFFOLD_ITEMS: Item[] = [
   ...Array(9).fill(null).map((_, i) => ({ id: `scaffold_${i + 1}`, text: `Fill in the blank question ${i + 2}: The answer is ___.`, answer: `Answer ${i + 2}` })),
 ];
 
-type ChatMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
 export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materialId, savedAnswers = {}, onAnswersUpdate, initialIndex = 0, displayTotal, displayIndexMap }: Props) {
   const [index, setIndex] = useState(initialIndex);
   const [answer, setAnswer] = useState('');
   const [results, setResults] = useState<Record<string, { answer: string; correct: boolean; explanation?: string }>>(savedAnswers);
   const [checking, setChecking] = useState(false);
-  const [showExplain, setShowExplain] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatSending, setChatSending] = useState(false);
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const chatScrollRef = useRef<ScrollView>(null);
-  const explainPanelHeight = Dimensions.get('window').height * 0.5;
+  const [inlineExplain, setInlineExplain] = useState('');
   const hydratedRef = useRef(false);
+  const explanationsRef = useRef<Record<string, string>>({});
+  const explainOpacity = useRef(new Animated.Value(0)).current;
+  const explainY = useRef(new Animated.Value(16)).current;
   const [streak, setStreak] = useState(0);
   const lottieRef = useRef<LottieView>(null);
   const fireOpacity = useRef(new Animated.Value(0)).current;
@@ -109,8 +99,16 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
   }, [savedAnswers]);
 
   useEffect(() => {
+    setInlineExplain('');
+    explainOpacity.setValue(0);
+    explainY.setValue(16);
     if (item.id && results[item.id]) {
       setAnswer(results[item.id].answer);
+      if (!results[item.id].correct && explanationsRef.current[item.id]) {
+        setInlineExplain(explanationsRef.current[item.id]);
+        explainOpacity.setValue(1);
+        explainY.setValue(0);
+      }
     } else {
       setAnswer('');
     }
@@ -131,6 +129,9 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
       const result = await gradeAnswer(item.text, answer, item.answer);
       setResults((prev) => ({ ...prev, [item.id]: { answer, ...result } }));
       triggerStreak(result.correct);
+      if (!result.correct) {
+        fetchAndShowExplanation(item.id, item.text, item.answer);
+      }
     } catch (error) {
       console.error('Failed to grade answer:', error);
     } finally {
@@ -145,65 +146,34 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
     setIndex((i) => (i < total - 1 ? i + 1 : i));
   };
 
+  const fetchAndShowExplanation = (itemId: string, question: string, correctAnswer: string) => {
+    const show = (text: string) => {
+      setInlineExplain(text);
+      explainOpacity.setValue(0);
+      explainY.setValue(16);
+      Animated.parallel([
+        Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(explainY, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]).start();
+    };
+    if (explanationsRef.current[itemId]) { show(explanationsRef.current[itemId]); return; }
+    callOpenAIText(
+      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+      `Fill-in-the-blank: ${question}\nCorrect answer: ${correctAnswer}`,
+      { maxTokens: 80 }
+    ).then((text) => { explanationsRef.current[itemId] = text; show(text); }).catch(() => {});
+  };
+
   const tryAgain = () => {
+    setInlineExplain('');
+    explainOpacity.setValue(0);
+    explainY.setValue(16);
     setResults((prev) => {
       const next = { ...prev };
       delete next[item.id];
       return next;
     });
     setAnswer('');
-  };
-
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: showExplain ? 1 : 0,
-      duration: 280,
-      useNativeDriver: true,
-    }).start();
-  }, [showExplain, slideAnim]);
-
-  const openExplain = async () => {
-    slideAnim.setValue(0);
-    setShowExplain(true);
-    setChatMessages([]);
-    setChatLoading(true);
-    if (!isOpenAIConfigured()) {
-      setChatMessages([{ role: 'assistant', content: 'OpenAI is not configured. Add EXPO_PUBLIC_OPENAI_API_KEY to .env to get AI explanations.' }]);
-      setChatLoading(false);
-      return;
-    }
-    try {
-      const systemPrompt = "You are a study tutor. In 2-4 sentences explain why the user's answer was wrong or right and clarify the concept. Be clear and encouraging.";
-      const userPrompt = `Fill-in-the-blank: ${item.text}\nExpected answer: ${item.answer}\nStudent's answer: ${answer}\n${currentResult?.explanation ? `Why it was incorrect: ${currentResult.explanation}\n` : ''}Student was ${currentResult?.correct ? 'correct' : 'incorrect'}.`;
-      const text = await callOpenAIText(systemPrompt, userPrompt, { maxTokens: 256 });
-      setChatMessages([{ role: 'assistant', content: text }]);
-    } catch (error) {
-      console.error('Failed to get explanation:', error);
-      setChatMessages([{ role: 'assistant', content: 'Could not load explanation. Please try again.' }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const sendChat = async (suggestion?: string) => {
-    const msg = (suggestion ?? chatInput.trim()).trim();
-    if (!msg || chatSending) return;
-    setChatMessages((prev) => [...prev, { role: 'user', content: msg }]);
-    if (!suggestion) setChatInput('');
-    setChatSending(true);
-    const systemMsg = { role: 'system' as const, content: `You are a study tutor. Context: Fill-in-the-blank: "${item.text}". Expected: "${item.answer}". Student's answer: "${answer}". Keep responses clear and concise.` };
-    const messages = [systemMsg, ...chatMessages, { role: 'user' as const, content: msg }];
-    callOpenAIChat(messages, { maxTokens: 256 })
-      .then((reply) => setChatMessages((prev) => [...prev, { role: 'assistant', content: reply }]))
-      .catch(() => setChatMessages((prev) => [...prev, { role: 'assistant', content: 'Could not get response. Try again.' }]))
-      .finally(() => setChatSending(false));
-  };
-
-  const closeExplain = () => {
-    Animated.timing(slideAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start(() => {
-      setShowExplain(false);
-      setChatMessages([]);
-    });
   };
 
   return (
@@ -226,37 +196,24 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
         onChangeText={setAnswer}
         editable={!currentResult}
       />
-      {currentResult && !currentResult.correct && currentResult.explanation && (
-        <View style={styles.explanationBox}>
-          <Text style={styles.explanationText}>{currentResult.explanation}</Text>
-        </View>
-      )}
       {!currentResult && (
         <Pressable
-          style={styles.submitBtn}
+          style={[styles.submitBtn, (!answer.trim() || checking) && styles.submitBtnDisabled]}
           onPress={submit}
           disabled={!answer.trim() || checking}
         >
           {checking ? (
-            <ActivityIndicator color="#fff" />
+            <Ionicons name="hourglass-outline" size={20} color="#fff" />
           ) : (
             <Text style={styles.submitText}>Submit</Text>
           )}
         </Pressable>
       )}
       {currentResult?.correct && (
-        <>
-          <View style={styles.resultCorrect}>
-            <Ionicons name="checkmark-circle" size={32} color="#16a34a" />
-            <Text style={styles.resultCorrectText}>Correct</Text>
-          </View>
-          <View style={styles.buttonRowCenter}>
-            <Pressable style={styles.explainBtnSolo} onPress={openExplain}>
-              <Ionicons name="star" size={20} color="#fff" />
-              <Text style={styles.explainTextRow}>Explain</Text>
-            </Pressable>
-          </View>
-        </>
+        <View style={styles.resultCorrect}>
+          <Ionicons name="checkmark-circle" size={32} color="#16a34a" />
+          <Text style={styles.resultCorrectText}>Correct</Text>
+        </View>
       )}
       {currentResult && !currentResult.correct && (
         <>
@@ -264,15 +221,15 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
             <Ionicons name="close-circle" size={32} color="#dc2626" />
             <Text style={styles.resultWrongText}>Incorrect</Text>
           </View>
-          <View style={styles.buttonRow}>
-            <Pressable style={styles.explainBtnRow} onPress={openExplain}>
-              <Ionicons name="star" size={20} color="#fff" />
-              <Text style={styles.explainTextRow}>Explain</Text>
-            </Pressable>
-            <Pressable style={styles.tryAgainBtnRow} onPress={tryAgain}>
-              <Text style={styles.tryAgainTextRow}>Try again</Text>
-            </Pressable>
-          </View>
+          {inlineExplain ? (
+            <Animated.View style={[styles.inlineExplainWrap, { opacity: explainOpacity, transform: [{ translateY: explainY }] }]}>
+              <Ionicons name="bulb-outline" size={16} color="#E06C78" style={{ marginRight: 6 }} />
+              <Text style={styles.inlineExplainText}>{inlineExplain}</Text>
+            </Animated.View>
+          ) : null}
+          <Pressable style={styles.tryAgainBtn} onPress={tryAgain}>
+            <Text style={styles.tryAgainText}>Try again</Text>
+          </Pressable>
         </>
       )}
       
@@ -287,73 +244,6 @@ export function FillInBlankStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, mat
         <Ionicons name="chevron-forward" size={24} color={index === total - 1 ? '#999' : '#fff'} />
       </Pressable>
     </View>
-    {showExplain && (
-      <>
-        <Pressable style={StyleSheet.absoluteFill} onPress={closeExplain} />
-        <Animated.View
-          style={[
-            styles.explainPanel,
-            { height: explainPanelHeight, transform: [{ translateY: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [explainPanelHeight, 0] }) }] },
-          ]}
-        >
-          <View style={styles.explainHeader}>
-            <Text style={styles.explainTitle}>AI Tutor</Text>
-            <Pressable onPress={closeExplain} hitSlop={12}>
-              <Ionicons name="close" size={24} color="#333" />
-            </Pressable>
-          </View>
-          {chatLoading ? (
-            <View style={styles.explainLoadingWrap}>
-              <ActivityIndicator size="large" color={PURPLE} />
-              <Text style={styles.explainLoadingText}>Getting explanation…</Text>
-            </View>
-          ) : (
-            <>
-              <ScrollView
-                ref={chatScrollRef}
-                style={styles.explainChat}
-                contentContainerStyle={styles.explainChatContent}
-                keyboardShouldPersistTaps="handled"
-                onContentSizeChange={() => chatScrollRef.current?.scrollToEnd({ animated: true })}
-              >
-                {chatMessages.map((msg, i) => (
-                  <View key={i} style={[styles.explainBubble, msg.role === 'user' && styles.explainBubbleUser]}>
-                    <Text style={[styles.explainBubbleText, msg.role === 'user' && styles.explainBubbleTextUser]}>{msg.content}</Text>
-                  </View>
-                ))}
-                {chatSending && (
-                  <View style={[styles.explainBubble, styles.explainBubbleUser]}>
-                    <ActivityIndicator size="small" color={PURPLE} />
-                  </View>
-                )}
-              </ScrollView>
-              <Pressable style={styles.explainSuggestionBtn} onPress={() => sendChat("Explain this to me like I'm 10")} disabled={chatSending}>
-                <Text style={styles.explainSuggestionText}>explain this to me like I'm 10</Text>
-              </Pressable>
-              <View style={styles.explainInputRow}>
-                <TextInput
-                  style={styles.explainInput}
-                  placeholder="Ask a follow-up…"
-                  placeholderTextColor="#999"
-                  value={chatInput}
-                  onChangeText={setChatInput}
-                  editable={!chatSending}
-                  multiline
-                  maxLength={500}
-                />
-                <Pressable
-                  style={[styles.explainSendBtn, (!chatInput.trim() || chatSending) && styles.explainSendBtnDisabled]}
-                  onPress={() => sendChat()}
-                  disabled={!chatInput.trim() || chatSending}
-                >
-                  <Ionicons name="send" size={20} color="#fff" />
-                </Pressable>
-              </View>
-            </>
-          )}
-        </Animated.View>
-      </>
-    )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -458,146 +348,45 @@ const styles = StyleSheet.create({
     borderColor: '#F5686A',
   },
   resultWrongText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
-  tryAgainBtn: {
-    backgroundColor: '#333',
-    borderRadius: 16,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  tryAgainText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
-  explainBtn: {
+  submitBtnDisabled: { opacity: 0.5 },
+  inlineExplainWrap: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
-    alignSelf: 'flex-start',
-  },
-  explainText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#fff' },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  buttonRowCenter: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  explainBtnSolo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: PURPLE,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  tryAgainBtnRow: {
-    flex: 1,
-    backgroundColor: '#333',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  tryAgainTextRow: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 16,
-    color: '#fff',
-  },
-  explainBtnRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: PURPLE,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  explainTextRow: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 16,
-    color: '#fff',
-  },
-  explainPanel: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  explainHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  explainTitle: { fontFamily: 'Fredoka_400Regular', fontSize: 20, color: '#333' },
-  explainLoadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  explainLoadingText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
-  explainChat: { flex: 1 },
-  explainChatContent: { paddingBottom: 16, gap: 12 },
-  explainBubble: { backgroundColor: '#f0f0f0', borderRadius: 16, padding: 12, maxWidth: '85%', alignSelf: 'flex-start' },
-  explainBubbleUser: { backgroundColor: PURPLE, alignSelf: 'flex-end' },
-  explainBubbleText: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#333' },
-  explainBubbleTextUser: { color: '#fff' },
-  explainSuggestionBtn: {
-    alignSelf: 'center',
-    backgroundColor: '#F2E4E4',
-    borderRadius: 24,
+    alignItems: 'flex-start',
+    backgroundColor: '#fff0f0',
+    borderRadius: 12,
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    marginTop: 12,
-    shadowColor: '#999',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  explainSuggestionText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#444' },
-  explainInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#e0e0e0' },
-  explainInput: {
-    flex: 1,
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxHeight: 80,
+    paddingHorizontal: 12,
+    marginTop: 2,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#fdd',
   },
-  explainSendBtn: { backgroundColor: PURPLE, borderRadius: 20, width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  explainSendBtnDisabled: { opacity: 0.5 },
-  explanationBox: {
+  inlineExplainText: {
+    flex: 1,
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
+  },
+  tryAgainBtn: {
+    alignSelf: 'center',
+    marginHorizontal: 32,
+    width: '70%',
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: RED,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    shadowColor: '#333',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  explanationText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 15,
-    color: '#333',
-  },
+  tryAgainText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333' },
   divider: { height: 1, backgroundColor: '#ddd', marginHorizontal: -24, marginTop: 16, marginBottom: 0 },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 },
   navBtn: {

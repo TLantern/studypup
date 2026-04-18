@@ -8,6 +8,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -24,7 +25,8 @@ export default function RecordScreen() {
     trackPageViewed('onboarding_record');
   }, []);
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill1.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Record Your Lectures</Text>
@@ -38,7 +40,8 @@ export default function RecordScreen() {
         </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

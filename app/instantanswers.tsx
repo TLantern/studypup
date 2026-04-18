@@ -8,6 +8,7 @@ import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -24,7 +25,8 @@ export default function InstantAnswersScreen() {
     trackPageViewed('onboarding_instantanswers');
   }, []);
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill3.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Snap a Photo, Get Instant AI Answers!</Text>
@@ -38,7 +40,8 @@ export default function InstantAnswersScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

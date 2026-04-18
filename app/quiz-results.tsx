@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -70,7 +71,8 @@ export default function QuizResultsScreen() {
   };
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <ScrollView
         contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
@@ -143,7 +145,8 @@ export default function QuizResultsScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

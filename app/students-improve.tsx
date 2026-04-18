@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { OnboardingView } from '@/components/OnboardingView';
 import { trackPageViewed } from '@/lib/analytics';
 import { SCREEN_WIDTH } from '@/lib/responsive';
 
@@ -38,7 +39,8 @@ export default function StudentsImproveScreen() {
   }));
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 84, paddingBottom: insets.bottom + 24 }]}>
+    <OnboardingView>
+      <View style={[styles.container, { paddingTop: insets.top + 84, paddingBottom: insets.bottom + 24 }]}>
       <Text style={styles.title}>Students Boost Grades with StudyPup</Text>
       <View style={styles.lottieWrap}>
         <LottieView
@@ -61,7 +63,8 @@ export default function StudentsImproveScreen() {
           </Animated.View>
         </>
       )}
-    </View>
+      </View>
+    </OnboardingView>
   );
 }
 

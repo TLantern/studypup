@@ -18,6 +18,7 @@ import Animated, {
   SlideInRight,
   SlideOutLeft,
 } from 'react-native-reanimated';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const BUTTON_SHADOW = {
   shadowColor: '#1a1a1a',
@@ -159,7 +160,8 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
+    <OnboardingView>
+      <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
       <MeshGradientBackground />
       <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>
       <Text style={styles.subtext}> AI Study Tool built for students</Text>
@@ -202,7 +204,8 @@ export default function OnboardingScreen() {
           </Text>
         </Pressable>
       </View>
-    </View>
+      </View>
+    </OnboardingView>
   );
 }
 

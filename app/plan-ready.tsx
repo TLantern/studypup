@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -25,7 +26,8 @@ export default function PlanReadyScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.middle}>
           <View style={styles.lottieWrap}>
@@ -52,7 +54,8 @@ export default function PlanReadyScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

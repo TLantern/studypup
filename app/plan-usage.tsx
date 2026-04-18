@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 const IS_IPAD = SCREEN_WIDTH >= 768;
@@ -45,7 +46,8 @@ export default function PlanUsageScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={80} /></View>
@@ -83,7 +85,8 @@ export default function PlanUsageScreen() {
         </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

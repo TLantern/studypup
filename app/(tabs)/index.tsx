@@ -195,14 +195,6 @@ export default function HomeScreen() {
     }, [showPaywall, superwallAvailable, subscriptionStatus, isDevReviewer, devReviewerLoaded])
   );
 
-  useEffect(() => {
-    getItem('review:shown').then(async (shown) => {
-      if (!shown) {
-        await setItem('review:shown', 'true');
-        if (await StoreReview.hasAction()) StoreReview.requestReview();
-      }
-    });
-  }, []);
 
   useEffect(() => {
     if (materials.length === 0) emptyArrowLottieRef.current?.play();

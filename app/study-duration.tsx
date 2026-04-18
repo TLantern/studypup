@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -35,7 +36,8 @@ export default function StudyDurationScreen() {
   }, []);
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={65} /></View>
@@ -68,7 +70,8 @@ export default function StudyDurationScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

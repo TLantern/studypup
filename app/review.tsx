@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import * as StoreReview from 'expo-store-review';
+
 import { useSuperwall } from 'expo-superwall';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -26,14 +26,6 @@ export default function ReviewScreen() {
 
   useEffect(() => {
     trackPageViewed('onboarding_review');
-  }, []);
-
-  useEffect(() => {
-    const show = async () => {
-      if (await StoreReview.hasAction()) await StoreReview.requestReview();
-    };
-    const t = setTimeout(show, 500);
-    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {

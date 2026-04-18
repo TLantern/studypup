@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { trackPageViewed } from '@/lib/analytics';
 import { SCREEN_WIDTH } from '@/lib/responsive';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -178,7 +179,8 @@ export default function WhereStudyScreen() {
   );
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
         <ProgressBar progress={20} />
         <Text style={[styles.title, { marginTop: 24 }]}>Where do you study?</Text>
@@ -240,7 +242,8 @@ export default function WhereStudyScreen() {
           onClose={() => setShowRegionPicker(false)}
         />
       ) : null}
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

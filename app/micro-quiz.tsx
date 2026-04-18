@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { OnboardingView } from '@/components/OnboardingView';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -270,7 +271,8 @@ export default function MicroQuizScreen() {
   const isLast = currentQ === 2;
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <OnboardingView>
+      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.screen, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}>
         <ScrollView
           contentContainerStyle={styles.container}
@@ -321,7 +323,8 @@ export default function MicroQuizScreen() {
           </Pressable>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </OnboardingView>
   );
 }
 

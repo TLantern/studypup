@@ -1,3 +1,4 @@
+import { OnboardingView } from '@/components/OnboardingView';
 import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -53,7 +54,8 @@ export default function CreatingPlanScreen() {
   const barWidth = Math.min(scaleSize(340), SCREEN_WIDTH - 2 * RESPONSIVE.horizontalPadding);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+    <OnboardingView>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
       <View style={styles.headerWrap}>
         <Text style={styles.header}>Creating your Personalized Study Plan</Text>
       </View>
@@ -77,7 +79,8 @@ export default function CreatingPlanScreen() {
           style={styles.lottie}
         />
       </View>
-    </View>
+      </View>
+    </OnboardingView>
   );
 }
 
