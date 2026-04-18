@@ -281,10 +281,10 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: scaleSize(20),
+    borderTopRightRadius: scaleSize(20),
     maxHeight: '70%',
-    paddingBottom: 32,
+    paddingBottom: scaleSize(32),
   },
   modalTitle: {
     fontFamily: 'FredokaOne_400Regular',
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: scaleFont(16),
   },
-  otpHint: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#666', textAlign: 'center', marginBottom: 8 },
+  otpHint: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(13), color: '#666', textAlign: 'center', marginBottom: scaleSize(8) },
   resendBtn: { alignItems: 'center', marginBottom: scaleSize(16), paddingVertical: scaleSize(8) },
   resendBtnDisabled: { opacity: 0.5 },
   resendBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#333', textDecorationLine: 'underline' },
@@ -334,5 +334,5 @@ const styles = StyleSheet.create({
   },
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(20), color: '#fff' },
-  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: 4, textAlign: 'center' },
+  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(4), textAlign: 'center' },
 });

@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.6 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(16), marginTop: scaleSize(4) },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
-  dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', marginHorizontal: 16 },
+  dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#333', marginHorizontal: scaleSize(16) },
   phoneBtn: {
     alignItems: 'center',
     paddingVertical: scaleSize(14),
@@ -315,5 +315,5 @@ const styles = StyleSheet.create({
     color: '#333',
     textDecorationLine: 'underline',
   },
-  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#b91c1c', marginTop: 8, textAlign: 'center' },
+  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(8), textAlign: 'center' },
 });
