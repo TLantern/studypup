@@ -1,0 +1,45 @@
+diff --git a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RCTConvert+WebRTC.h b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RCTConvert+WebRTC.h
+index d73abc2..90009b9 100644
+--- a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RCTConvert+WebRTC.h
++++ b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RCTConvert+WebRTC.h
+@@ -1,3 +1,4 @@
++#pragma clang system_header
+ #import <React/RCTConvert.h>
+ #import <WebRTC/RTCConfiguration.h>
+ #import <WebRTC/RTCDataChannelConfiguration.h>
+diff --git a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RTCVideoViewManager.h b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RTCVideoViewManager.h
+index 7fd4a41..49d2204 100644
+--- a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RTCVideoViewManager.h
++++ b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/RTCVideoViewManager.h
+@@ -1,3 +1,4 @@
++#pragma clang system_header
+ #import <Foundation/Foundation.h>
+ #import <React/RCTViewManager.h>
+ 
+diff --git a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/SampleBufferVideoCallView.h b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/SampleBufferVideoCallView.h
+index 6f7e5a2..0578f9b 100644
+--- a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/SampleBufferVideoCallView.h
++++ b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/SampleBufferVideoCallView.h
+@@ -1,3 +1,4 @@
++#pragma clang system_header
+ #import <AVKit/AVKit.h>
+ #import <Foundation/Foundation.h>
+ #import <React/RCTViewManager.h>
+diff --git a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/ScreenCapturePickerViewManager.h b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/ScreenCapturePickerViewManager.h
+index a8b42d6..0a0db6f 100644
+--- a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/ScreenCapturePickerViewManager.h
++++ b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/ScreenCapturePickerViewManager.h
+@@ -1,3 +1,4 @@
++#pragma clang system_header
+ #import <Foundation/Foundation.h>
+ #import <React/RCTViewManager.h>
+ 
+diff --git a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/WebRTCModule.h b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/WebRTCModule.h
+index 4e07677..308c58d 100644
+--- a/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/WebRTCModule.h
++++ b/node_modules/@livekit/react-native-webrtc/ios/RCTWebRTC/WebRTCModule.h
+@@ -1,3 +1,4 @@
++#pragma clang system_header
+ #import <AVFoundation/AVFoundation.h>
+ #import <Foundation/Foundation.h>
+ 
