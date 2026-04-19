@@ -72,7 +72,49 @@ export default function ChooseMethodsScreen() {
   };
 
   const canGenerate = selected.length >= 1 && contentItems.length > 0 && !isGenerating;
+  const canStartAvatar = contentItems.length > 0 && !isGenerating;
   if (__DEV__ && contentItems.length > 0) console.log('[Studypup] Generate button state:', { selectedCount: selected.length, contentCount: contentItems.length, isGenerating, canGenerate });
+
+  const handleStartAvatar = async () => {
+    if (!canStartAvatar) return;
+    const hasProEntitlement = __DEV__ ||
+      (subscriptionStatus?.status === 'ACTIVE' &&
+      (subscriptionStatus as any)?.entitlements?.some((e: any) => e.id === 'pro'));
+
+    if (!hasProEntitlement && !__DEV__) {
+      const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
+      if (freeUsed === 'true') {
+        if (superwallAvailable) {
+          try { await showPaywall(PLACEMENT_GENERATE); } catch {}
+        } else {
+          router.push('/create-account');
+        }
+        return;
+      }
+    }
+
+    setIsGenerating(true);
+    try {
+      const text = await contentToText(contentItems, () => {});
+      if (!text.trim()) {
+        Alert.alert('No content', 'Could not extract text from your content.');
+        return;
+      }
+      const userId = (await getItem('userId')) ?? 'local_user';
+      const { materials } = await processContentAndGenerateMaterials(userId, text, 'lecture', {}, true, ['notes']);
+      if (materials.title) {
+        setMaterialTitle(materials.title);
+        await new Promise((r) => setTimeout(r, 1800));
+      }
+      if (!hasProEntitlement) await setItem(FREE_GENERATION_USED_KEY, 'true');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push({ pathname: '/avatar-tutor' as any, params: { materialId: materials.id } });
+    } catch (err: any) {
+      Alert.alert('Failed to start session', err.message ?? 'Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleGenerate = async () => {
     console.log('[Studypup] handleGenerate called!'); // Always show this
@@ -202,6 +244,26 @@ export default function ChooseMethodsScreen() {
         ))}
       </ScrollView>
 
+      {/* AI Avatar section */}
+      <View style={styles.avatarSection}>
+        <View style={styles.avatarDividerRow}>
+          <View style={styles.avatarDividerLine} />
+          <Text style={styles.avatarDividerText}>or</Text>
+          <View style={styles.avatarDividerLine} />
+        </View>
+        <Pressable
+          onPress={handleStartAvatar}
+          style={[styles.avatarCard, !canStartAvatar && styles.generateBtnDisabled]}
+        >
+          <Text style={styles.avatarEmoji}>✨</Text>
+          <View style={styles.avatarCardText}>
+            <Text style={styles.avatarTitle}>AI Avatar</Text>
+            <Text style={styles.avatarSubtitle}>Live AI tutor session</Text>
+          </View>
+          <Text style={styles.avatarChevron}>›</Text>
+        </Pressable>
+      </View>
+
       <Pressable
         style={[styles.generateBtn, !canGenerate && styles.generateBtnDisabled]}
         onPress={handleGenerate}
@@ -293,6 +355,53 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
     color: '#333',
+  },
+  avatarSection: { marginBottom: scaleSize(12) },
+  avatarDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaleSize(12),
+    gap: scaleSize(10),
+  },
+  avatarDividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
+  avatarDividerText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(13),
+    color: '#999',
+  },
+  avatarCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: scaleSize(16),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(20),
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+    gap: scaleSize(14),
+    borderWidth: 1.5,
+    borderColor: '#ede9fe',
+  },
+  avatarEmoji: { fontSize: scaleFont(24) },
+  avatarCardText: { flex: 1 },
+  avatarTitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: RESPONSIVE.subtitle,
+    color: '#7c3aed',
+  },
+  avatarSubtitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(12),
+    color: '#999',
+    marginTop: 2,
+  },
+  avatarChevron: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(22),
+    color: '#7c3aed',
   },
   generateBtnDisabled: { opacity: 0.5 },
   generateBtn: {

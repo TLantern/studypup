@@ -23,6 +23,48 @@ export async function stopElevenLabsAudio() {
   }
 }
 
+/**
+ * Stream PCM 16-bit 24kHz audio from ElevenLabs to a callback.
+ * Used by useLiveAvatarSession to forward audio chunks to LiveAvatar via WebSocket.
+ */
+export async function elevenLabsPCMStream(
+  text: string,
+  onChunk: (pcmBase64: string) => void,
+  voiceIdOverride?: string
+): Promise<void> {
+  const response = await fetch(
+    `https://api.elevenlabs.io/v1/text-to-speech/${voiceIdOverride ?? VOICE_ID}/stream?output_format=pcm_24000`,
+    {
+      method: 'POST',
+      headers: {
+        'xi-api-key': API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_turbo_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    }
+  );
+
+  if (!response.ok || !response.body) {
+    let body = '';
+    try { body = await response.text(); } catch {}
+    throw new Error(`ElevenLabs PCM stream error ${response.status}: ${body}`);
+  }
+
+  const reader = response.body.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    // Convert Uint8Array chunk to base64
+    let binary = '';
+    for (let i = 0; i < value.byteLength; i++) binary += String.fromCharCode(value[i]);
+    onChunk(btoa(binary));
+  }
+}
+
 export async function speakWithElevenLabs(
   text: string,
   onDone?: () => void,

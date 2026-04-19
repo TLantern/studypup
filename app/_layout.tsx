@@ -62,6 +62,7 @@ export default function RootLayout() {
         <PaywallTriggerProvider>
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
+            <Stack.Screen name="avatar-tutor" options={{ animation: 'slide_from_bottom', headerShown: false, gestureEnabled: false }} />
             {[
               'index',
               'students-improve',
