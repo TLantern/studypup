@@ -19,7 +19,7 @@ export async function transcribeAudio(uri: string): Promise<string> {
       type: 'audio/m4a',
       name: 'audio.m4a',
     } as any);
-    formData.append('model', 'whisper-1');
+    formData.append('model', 'gpt-4o-transcribe');
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',

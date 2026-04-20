@@ -27,11 +27,18 @@ export async function stopElevenLabsAudio() {
  * Stream PCM 16-bit 24kHz audio from ElevenLabs to a callback.
  * Used by useLiveAvatarSession to forward audio chunks to LiveAvatar via WebSocket.
  */
+// PCM 24kHz 16-bit mono = 48000 bytes per second
+const PCM_BYTES_PER_MS = 48;
+
+/**
+ * Stream PCM audio to LiveAvatar. Returns the audio duration in milliseconds
+ * so callers can sync animations to the actual speech length.
+ */
 export async function elevenLabsPCMStream(
   text: string,
   onChunk: (pcmBase64: string) => void,
   voiceIdOverride?: string
-): Promise<void> {
+): Promise<number> {
   const response = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceIdOverride ?? VOICE_ID}/stream?output_format=pcm_24000`,
     {
@@ -48,21 +55,29 @@ export async function elevenLabsPCMStream(
     }
   );
 
-  if (!response.ok || !response.body) {
+  if (!response.ok) {
     let body = '';
     try { body = await response.text(); } catch {}
+    console.error('[ElevenLabs] PCM stream HTTP error', response.status, body);
     throw new Error(`ElevenLabs PCM stream error ${response.status}: ${body}`);
   }
 
-  const reader = response.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    // Convert Uint8Array chunk to base64
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const durationMs = bytes.byteLength / PCM_BYTES_PER_MS;
+  console.log('[ElevenLabs] PCM audio downloaded, bytes:', bytes.byteLength, 'duration:', Math.round(durationMs), 'ms');
+
+  const CHUNK = 4096;
+  let chunkCount = 0;
+  for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+    const slice = bytes.subarray(i, i + CHUNK);
     let binary = '';
-    for (let i = 0; i < value.byteLength; i++) binary += String.fromCharCode(value[i]);
+    for (let j = 0; j < slice.byteLength; j++) binary += String.fromCharCode(slice[j]);
     onChunk(btoa(binary));
+    chunkCount++;
   }
+  console.log('[ElevenLabs] Sent', chunkCount, 'PCM chunks to avatar');
+  return durationMs;
 }
 
 export async function speakWithElevenLabs(

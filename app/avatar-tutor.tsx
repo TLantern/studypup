@@ -1,11 +1,11 @@
 import { getMaterials } from '@/lib/study-materials-storage';
-import { generateIntroScript, generateAvatarResponse } from '@/lib/avatarScriptService';
+import { generateIntroScript, generateSpokenNotes, generateAvatarResponse } from '@/lib/avatarScriptService';
 import { elevenLabsPCMStream } from '@/lib/elevenlabs';
 import { useLiveAvatarSession } from '@/lib/useLiveAvatarSession';
 import { useAvatarSTT } from '@/lib/useAvatarSTT';
 import { scaleFont, scaleSize } from '@/lib/responsive';
-import { Ionicons } from '@expo/vector-icons';
 import { VideoView } from '@livekit/react-native';
+import { Audio } from 'expo-av';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,17 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-type Phase = 'loading' | 'connecting' | 'intro' | 'listening' | 'thinking' | 'responding' | 'error';
-
-const PHASE_LABELS: Record<Phase, string> = {
-  loading: 'Preparing your session...',
-  connecting: 'Connecting to avatar...',
-  intro: 'Tutor is speaking...',
-  listening: 'Listening — ask anything',
-  thinking: 'Thinking...',
-  responding: 'Responding...',
-  error: 'Something went wrong',
-};
+type Phase = 'loading' | 'connecting' | 'intro' | 'explaining' | 'listening' | 'thinking' | 'responding' | 'error';
 
 export default function AvatarTutorScreen() {
   const insets = useSafeAreaInsets();
@@ -35,20 +25,81 @@ export default function AvatarTutorScreen() {
 
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [andrewWords, setAndrewWords] = useState<string[]>([]);
+  const [andrewWordCount, setAndrewWordCount] = useState(0);
+  const [userTranscript, setUserTranscript] = useState('');
   const notesRef = useRef<string>('');
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const { sessionState, videoTrack, connect, streamAudioChunk, interrupt, disconnect } =
+  const { sessionState, videoTrack, connect, streamAudioChunk, streamAudioEnd, interrupt, disconnect } =
     useLiveAvatarSession();
-  const { isListening, startListening, stopListening } = useAvatarSTT();
+  const { isUserSpeaking, initAudio, startVAD, stopVAD, setAvatarSpeaking, kickCycle } = useAvatarSTT();
 
-  const speakText = useCallback(
-    async (text: string) => {
-      await elevenLabsPCMStream(text, (chunk) => streamAudioChunk(chunk));
-    },
-    [streamAudioChunk]
-  );
+  const clearTypewriter = useCallback(() => {
+    if (typewriterRef.current) { clearInterval(typewriterRef.current); typewriterRef.current = null; }
+    setAndrewWords([]);
+    setAndrewWordCount(0);
+  }, []);
 
-  // Mount: load material → generate intro → connect avatar → speak intro
+  // Stored in ref so onSpeechStart always gets the latest version
+  const clearTypewriterRef = useRef(clearTypewriter);
+  clearTypewriterRef.current = clearTypewriter;
+
+  const speak = useCallback(async (text: string) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    const eventId = `speak_${Date.now()}`;
+
+    // Suppress VAD auto-restart while Andrew speaks so mic doesn't pick up his voice
+    setAvatarSpeaking(true);
+    // Switch to speaker-output mode so LiveKit WebRTC audio plays through the speaker.
+    // Without this, iOS routes audio to the earpiece while allowsRecordingIOS: true is active.
+    await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false, defaultToSpeaker: true });
+
+    // Download audio — returns exact duration so typewriter matches speech
+    const durationMs = await elevenLabsPCMStream(text, (chunk) => streamAudioChunk(chunk));
+
+    // Avatar starts speaking now — kick off typewriter synced to audio duration
+    setAndrewWords(words);
+    setAndrewWordCount(1);
+    if (words.length > 1) {
+      const msPerWord = durationMs / words.length;
+      let count = 1;
+      typewriterRef.current = setInterval(() => {
+        count++;
+        setAndrewWordCount(count);
+        if (count >= words.length) {
+          clearInterval(typewriterRef.current!);
+          typewriterRef.current = null;
+        }
+      }, msPerWord);
+    }
+
+    await streamAudioEnd(eventId, durationMs);
+    clearTypewriter();
+
+    // Andrew is done — allow VAD to restart and kick cycle if it died during his speech
+    setAvatarSpeaking(false);
+    await kickCycle();
+  }, [streamAudioChunk, streamAudioEnd, clearTypewriter, setAvatarSpeaking, kickCycle]);
+
+  // Stored in a ref so the VAD callback always has the latest version
+  const handleTranscriptRef = useRef<(transcript: string) => Promise<void>>();
+  handleTranscriptRef.current = async (transcript: string) => {
+    await stopVAD();
+    setUserTranscript(transcript);
+    setPhase('thinking');
+    const answer = await generateAvatarResponse(transcript, notesRef.current);
+    setPhase('responding');
+    await speak(answer); // speak() calls setAvatarSpeaking + kickCycle internally
+    setUserTranscript('');
+    setPhase('listening');
+    // Restart VAD fresh for next turn
+    await startVAD(
+      () => { interrupt(); clearTypewriterRef.current(); },
+      (t) => handleTranscriptRef.current?.(t),
+    );
+  };
+
   useEffect(() => {
     if (!materialId) {
       setPhase('error');
@@ -64,25 +115,39 @@ export default function AvatarTutorScreen() {
         if (cancelled) return;
         if (!material) throw new Error('Study material not found.');
 
+        notesRef.current = material.notes ?? '';
         const title = material.title ?? 'this topic';
-        const notes = material.notes ?? '';
-        notesRef.current = notes;
 
-        const script = await generateIntroScript(title, notes);
+        // Generate both in parallel during loading so there's no gap after the greeting
+        const [greeting, spokenNotes] = await Promise.all([
+          generateIntroScript(title),
+          generateSpokenNotes(title, notesRef.current),
+        ]);
         if (cancelled) return;
 
         setPhase('connecting');
+        await initAudio();
         await connect();
         if (cancelled) return;
 
+        // Start VAD now so user can interrupt at any point
+        await startVAD(
+          () => { interrupt(); clearTypewriterRef.current(); },
+          (t) => handleTranscriptRef.current?.(t),
+        );
+
         setPhase('intro');
-        await speakText(script);
+        await speak(greeting);
+        if (cancelled) return;
+
+        setPhase('explaining');
+        await speak(spokenNotes);
         if (cancelled) return;
 
         setPhase('listening');
-        await startListening();
       } catch (e: any) {
         if (!cancelled) {
+          console.error('[AvatarTutor] Session error:', e.message, e);
           setPhase('error');
           setErrorMsg(e.message ?? 'Session failed.');
         }
@@ -94,70 +159,58 @@ export default function AvatarTutorScreen() {
     };
   }, [materialId]);
 
-  const handleMicPress = useCallback(async () => {
-    if (isListening) {
-      setPhase('thinking');
-      const transcript = await stopListening();
-      if (!transcript) {
-        setPhase('listening');
-        await startListening();
-        return;
-      }
-      interrupt();
-      setPhase('responding');
-      const answer = await generateAvatarResponse(transcript, notesRef.current);
-      await speakText(answer);
-      setPhase('listening');
-      await startListening();
-    } else {
-      await startListening();
-      setPhase('listening');
-    }
-  }, [isListening, stopListening, startListening, interrupt, speakText]);
-
   const handleEnd = useCallback(() => {
-    stopListening().catch(() => {});
+    stopVAD();
     disconnect();
     router.back();
-  }, [stopListening, disconnect]);
+  }, [stopVAD, disconnect]);
+
+  const statusText =
+    phase === 'loading' ? 'Preparing your session...' :
+    phase === 'connecting' ? 'Connecting...' :
+    phase === 'thinking' ? 'Thinking...' :
+    isUserSpeaking ? 'Listening...' :
+    '';
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      {/* Avatar video or loading state */}
+    <View style={styles.container}>
       {videoTrack ? (
         <VideoView style={styles.video} videoTrack={videoTrack} />
       ) : (
         <View style={styles.placeholder}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.placeholderText}>{PHASE_LABELS[phase]}</Text>
+          <Text style={styles.placeholderText}>{statusText}</Text>
         </View>
       )}
 
-      {/* Bottom HUD */}
       <View style={styles.hud}>
-        <Text style={styles.statusLabel}>{PHASE_LABELS[phase]}</Text>
+        {/* Andrew's subtitles — typewritten in sync with audio */}
+        {andrewWords.length > 0 ? (
+          <View style={styles.subtitleBox}>
+            <Text style={styles.speakerLabel}>Andrew</Text>
+            <Text style={styles.subtitleText}>
+              {andrewWords.slice(0, andrewWordCount).join(' ')}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* User speaking / transcript */}
+        {isUserSpeaking || userTranscript ? (
+          <View style={styles.userBox}>
+            <Text style={styles.userLabel}>You</Text>
+            <Text style={styles.userText}>
+              {isUserSpeaking && !userTranscript ? '...' : userTranscript}
+            </Text>
+          </View>
+        ) : null}
 
         {phase === 'error' && errorMsg ? (
           <Text style={styles.errorText}>{errorMsg}</Text>
         ) : null}
 
-        <View style={styles.controls}>
-          <Pressable
-            onPress={handleMicPress}
-            style={[styles.micBtn, isListening && styles.micBtnActive]}
-            disabled={phase === 'loading' || phase === 'connecting' || phase === 'thinking'}
-          >
-            <Ionicons
-              name={isListening ? 'mic' : 'mic-outline'}
-              size={scaleSize(28)}
-              color="#fff"
-            />
-          </Pressable>
-
-          <Pressable onPress={handleEnd} style={styles.endBtn}>
-            <Text style={styles.endBtnText}>End Session</Text>
-          </Pressable>
-        </View>
+        <Pressable onPress={handleEnd} style={styles.endBtn}>
+          <Text style={styles.endBtnText}>End Session</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -182,45 +235,61 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: scaleSize(24),
-    paddingVertical: scaleSize(24),
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    gap: scaleSize(12),
+    paddingHorizontal: scaleSize(20),
+    paddingVertical: scaleSize(20),
+    gap: scaleSize(10),
+    alignItems: 'stretch',
   },
-  statusLabel: {
+  subtitleBox: {
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
+  },
+  speakerLabel: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(12),
+    color: '#a78bfa',
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(15),
+    color: '#fff',
+    lineHeight: scaleFont(22),
+  },
+  userBox: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: scaleSize(12),
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(10),
+  },
+  userLabel: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(12),
+    color: '#86efac',
+    marginBottom: 2,
+  },
+  userText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: scaleFont(14),
-    color: '#ccc',
+    color: '#e5e7eb',
   },
   errorText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: scaleFont(14),
     color: '#ef4444',
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleSize(24),
-  },
-  micBtn: {
-    width: scaleSize(60),
-    height: scaleSize(60),
-    borderRadius: scaleSize(30),
-    backgroundColor: '#7c3aed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  micBtnActive: {
-    backgroundColor: '#ef4444',
+    textAlign: 'center',
   },
   endBtn: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(12),
     paddingHorizontal: scaleSize(20),
+    alignSelf: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    marginTop: scaleSize(4),
   },
   endBtnText: {
     fontFamily: 'Fredoka_400Regular',
