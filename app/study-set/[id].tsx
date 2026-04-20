@@ -19,7 +19,7 @@ const METHODS = [
   { id: 'quiz', label: 'Quiz', icon: require('../../assets/icons/quizicon.png') },
   { id: 'written', label: 'Written', icon: require('../../assets/icons/pencilicon.png') },
   { id: 'fill', label: 'Fill in the blank', icon: require('../../assets/icons/fillicon.png') },
-  { id: 'tutor', label: 'Tutor', icon: require('../../assets/icons/teachericon.png') },
+  { id: 'tutor', label: 'AI Avatar', subtitle: 'Your personal tutor', customIcon: '✦', isAvatar: true },
 ];
 
 export default function StudySetScreen() {
@@ -67,6 +67,11 @@ export default function StudySetScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const openMethod = (methodId: string) => {
+    if (methodId === 'tutor') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      router.push({ pathname: '/avatar-tutor' as any, params: { materialId: id } });
+      return;
+    }
     router.push({ pathname: '/generate-quiz', params: { methods: methodId, materialId: id } });
   };
 
@@ -110,9 +115,20 @@ export default function StudySetScreen() {
 
         <View style={styles.methodsGrid}>
           {METHODS.map((m) => (
-            <Pressable key={m.id} style={styles.methodBtn} onPress={() => openMethod(m.id)}>
-              <Image source={m.icon} style={styles.methodIcon} contentFit="contain" />
-              <Text style={styles.methodLabel}>{m.label}</Text>
+            <Pressable
+              key={m.id}
+              style={[styles.methodBtn, m.isAvatar && styles.methodBtnAvatar]}
+              onPress={() => openMethod(m.id)}
+            >
+              {m.isAvatar ? (
+                <Text style={styles.avatarIcon}>{m.customIcon}</Text>
+              ) : (
+                <Image source={m.icon} style={styles.methodIcon} contentFit="contain" />
+              )}
+              <View>
+                <Text style={[styles.methodLabel, m.isAvatar && styles.avatarLabel]}>{m.label}</Text>
+                {m.subtitle ? <Text style={styles.avatarSubtitle}>{m.subtitle}</Text> : null}
+              </View>
             </Pressable>
           ))}
         </View>
@@ -231,6 +247,19 @@ const styles = StyleSheet.create({
   },
   methodIcon: { width: 24, height: 24, marginRight: 10 },
   methodLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: PURPLE },
+  methodBtnAvatar: {
+    borderWidth: 1.5,
+    borderColor: '#ede9fe',
+    backgroundColor: '#fff',
+    shadowColor: '#7c3aed',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  avatarIcon: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#F5A623', marginRight: 10 },
+  avatarLabel: { color: PURPLE },
+  avatarSubtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: '#999', marginTop: 1 },
   notesActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -31,7 +31,7 @@ const METHODS = [
   { id: 'quiz', label: 'Quiz', icon: require('../assets/icons/quizicon.png') },
   { id: 'written', label: 'Written', icon: require('../assets/icons/pencilicon.png') },
   { id: 'fill', label: 'Fill in the blank', customIcon: '_' },
-  { id: 'tutor', label: 'Tutor', icon: require('../assets/icons/teachericon.png') },
+  { id: 'avatar', label: 'AI Avatar', subtitle: 'Your personal tutor', customIcon: '✦', isAvatar: true },
 ];
 
 const SALMON = '#FD8A8A';
@@ -47,6 +47,7 @@ export default function ChooseMethodsScreen() {
   const [selected, setSelected] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isAvatarMode, setIsAvatarMode] = useState(false);
   const [materialTitle, setMaterialTitle] = useState<string | null>(null);
 
   // Check subscription status for pro entitlement
@@ -93,6 +94,7 @@ export default function ChooseMethodsScreen() {
       }
     }
 
+    setIsAvatarMode(true);
     setIsGenerating(true);
     try {
       const text = await contentToText(contentItems, () => {});
@@ -197,6 +199,7 @@ export default function ChooseMethodsScreen() {
           contentTypes={selected}
           contentName={contentItems[0]?.name}
           materialTitle={materialTitle}
+          isAvatarTutor={isAvatarMode}
         />
       </View>
     );
@@ -225,44 +228,30 @@ export default function ChooseMethodsScreen() {
         {METHODS.map((m) => (
           <Pressable
             key={m.id}
-            onPress={() => toggle(m.id)}
+            onPress={'isAvatar' in m && m.isAvatar ? handleStartAvatar : () => toggle(m.id)}
             style={[
               styles.methodBtn,
               m.id === 'written' && styles.methodBtnFlat,
-              selected.includes(m.id) && styles.methodBtnSelected,
+              'isAvatar' in m && m.isAvatar && styles.methodBtnAvatar,
+              !('isAvatar' in m && m.isAvatar) && selected.includes(m.id) && styles.methodBtnSelected,
             ]}
           >
             {'customIcon' in m && m.customIcon ? (
               <View style={styles.methodIconWrap}>
-                <Text style={styles.methodCustomIcon}>{m.customIcon}</Text>
+                <Text style={['isAvatar' in m && m.isAvatar ? styles.methodCustomIconGold : styles.methodCustomIcon]}>{m.customIcon}</Text>
               </View>
             ) : (
               <Image source={m.icon} style={styles.methodIcon} />
             )}
-            <Text style={styles.methodLabel}>{m.label}</Text>
+            <View>
+              <Text style={'isAvatar' in m && m.isAvatar ? styles.methodLabelAvatar : styles.methodLabel}>{m.label}</Text>
+              {'subtitle' in m && m.subtitle ? (
+                <Text style={styles.methodSubtitle}>{m.subtitle}</Text>
+              ) : null}
+            </View>
           </Pressable>
         ))}
       </ScrollView>
-
-      {/* AI Avatar section */}
-      <View style={styles.avatarSection}>
-        <View style={styles.avatarDividerRow}>
-          <View style={styles.avatarDividerLine} />
-          <Text style={styles.avatarDividerText}>or</Text>
-          <View style={styles.avatarDividerLine} />
-        </View>
-        <Pressable
-          onPress={handleStartAvatar}
-          style={[styles.avatarCard, !canStartAvatar && styles.generateBtnDisabled]}
-        >
-          <Text style={styles.avatarEmoji}>✨</Text>
-          <View style={styles.avatarCardText}>
-            <Text style={styles.avatarTitle}>AI Avatar</Text>
-            <Text style={styles.avatarSubtitle}>Live AI tutor session</Text>
-          </View>
-          <Text style={styles.avatarChevron}>›</Text>
-        </Pressable>
-      </View>
 
       <Pressable
         style={[styles.generateBtn, !canGenerate && styles.generateBtnDisabled]}
@@ -344,6 +333,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   methodBtnSelected: { borderColor: PURPLE, borderWidth: 2 },
+  methodBtnAvatar: { borderColor: '#ede9fe', borderWidth: 1.5 },
   methodIcon: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium },
   methodIconWrap: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium, justifyContent: 'center', alignItems: 'center' },
   methodCustomIcon: {
@@ -351,10 +341,26 @@ const styles = StyleSheet.create({
     fontSize: RESPONSIVE.titleSmall,
     color: '#333',
   },
+  methodCustomIconGold: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: RESPONSIVE.titleSmall,
+    color: '#F5A623',
+  },
   methodLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
     color: '#333',
+  },
+  methodLabelAvatar: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: RESPONSIVE.subtitle,
+    color: '#7c3aed',
+  },
+  methodSubtitle: {
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: scaleFont(12),
+    color: '#999',
+    marginTop: 2,
   },
   avatarSection: { marginBottom: scaleSize(12) },
   avatarDividerRow: {

@@ -9,6 +9,7 @@ type Props = {
   contentTypes: string[];
   contentName?: string;
   materialTitle?: string | null;
+  isAvatarTutor?: boolean;
 };
 
 function phase1Texts(contentName?: string): string[] {
@@ -30,7 +31,7 @@ function phase2Texts(materialTitle: string): string[] {
   ];
 }
 
-export function GeneratingContentScreen({ contentName, materialTitle }: Props) {
+export function GeneratingContentScreen({ contentName, materialTitle, isAvatarTutor }: Props) {
   const [texts, setTexts] = useState<string[]>(() => phase1Texts(contentName));
   const [index, setIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
@@ -74,7 +75,9 @@ export function GeneratingContentScreen({ contentName, materialTitle }: Props) {
       <View style={styles.lottieWrap}>
         <LottieView
           ref={lottieRef}
-          source={require('../Astronaut_Dog.json')}
+          source={isAvatarTutor
+            ? require('../assets/icons/Sparkles Loop Loader ai.json')
+            : require('../Astronaut_Dog.json')}
           style={styles.lottie}
           loop
         />
