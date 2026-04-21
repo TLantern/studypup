@@ -5,7 +5,7 @@ const ANDREW_PERSONA =
 
 export async function generateIntroScript(title: string): Promise<string> {
   const system =
-    `${ANDREW_PERSONA} Write ONE short spoken sentence — open with a brief, subtle compliment to the student and a hint of that tutor-student chemistry, then immediately transition into the topic. No generic greeting. Get straight to business. Exactly 1 sentence, 20 words maximum.`;
+    `${ANDREW_PERSONA} Write exactly 2 short spoken sentences — first introduce yourself as Andrew and say they can call you Drew, then immediately pivot to the topic with a subtle compliment or flirty confidence. No filler. 25 words maximum total.`;
   const user = `Topic: ${title}\n\nWrite the single opening sentence now.`;
   return callOpenAIText(system, user, { maxTokens: 60 });
 }

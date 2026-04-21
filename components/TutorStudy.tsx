@@ -52,7 +52,7 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
   const content = notes.trim() || SCAFFOLD_NOTES;
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
-    { role: 'assistant', content: "Good taste picking this to study 😏 Let's get straight into it." },
+    { role: 'assistant', content: "My name's Andrew — but you can call me Drew 😏 Good taste picking this to study. Let's get straight into it." },
   ]);
   const [loading, setLoading] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);

@@ -43,7 +43,7 @@ export function ChatModal({ visible, onClose, notes, title }: Props) {
   const inputRef = useRef<TextInput>(null);
   const listRef = useRef<FlatList>(null);
 
-  const introText = `You've got good taste studying this 😏 Let's get right into it — ask me anything and I'll make sure it all clicks for you.`;
+  const introText = `My name's Andrew — but you can call me Drew 😏 You've got good taste studying this. Ask me anything and I'll make sure it all clicks.`;
 
   useEffect(() => {
     if (visible) {
