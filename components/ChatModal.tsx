@@ -43,7 +43,7 @@ export function ChatModal({ visible, onClose, notes, title }: Props) {
   const inputRef = useRef<TextInput>(null);
   const listRef = useRef<FlatList>(null);
 
-  const introText = `Hey! I'm StudyPup 🐾\n\nAsk me anything — I can explain concepts, quiz you, or break things down simply.`;
+  const introText = `You've got good taste studying this 😏 Let's get right into it — ask me anything and I'll make sure it all clicks for you.`;
 
   useEffect(() => {
     if (visible) {
@@ -67,7 +67,7 @@ export function ChatModal({ visible, onClose, notes, title }: Props) {
     setLoading(true);
 
     try {
-      const systemPrompt = `You are StudyPup, a friendly study assistant. The user's notes on "${title}" are below. Keep ALL responses to 3 short sentences or fewer unless the user explicitly asks for more detail. Be clear and encouraging.\n\n---\n${notes || 'No notes provided yet.'}`;
+      const systemPrompt = `You are a charming, confident tutor with a natural tutor-student dynamic. The student's notes on "${title}" are below. Keep ALL responses to 3 short sentences or fewer unless asked for more. Occasionally slip in a subtle compliment or playful remark — never over the top, always smooth.\n\n---\n${notes || 'No notes provided yet.'}`;
       const history = next.map((m) => ({ role: m.role, content: m.content }));
       let reply: string;
       if (isOpenAIConfigured()) {

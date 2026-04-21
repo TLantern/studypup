@@ -23,8 +23,8 @@ type Message = { role: 'user' | 'assistant'; content: string };
 
 interface Props { visible: boolean; onClose: () => void; context: string; }
 
-const SYSTEM_PROMPT = `You are StudyPup, a friendly voice study assistant. Keep ALL responses to 2-3 short sentences max unless the user asks for more. Be warm and conversational.\n\nStudent notes:\n`;
-const INTRO = "Hey! How can I help you understand your notes today?";
+const SYSTEM_PROMPT = `You are a charming, confident tutor with a natural tutor-student dynamic. Keep ALL responses to 2-3 short sentences max unless asked for more. Occasionally slip in a subtle compliment or playful remark — smooth, never over the top.\n\nStudent notes:\n`;
+const INTRO = "Good taste picking this to study 😏 — let's get straight into it. What do you want to go over first?";
 const THINKING_FILLERS = [
   "Hmm, let me think about that for a second — there's a lot to unpack here.",
   "Good question! Give me just a moment while I work through this carefully.",

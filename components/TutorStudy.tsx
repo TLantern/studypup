@@ -42,17 +42,18 @@ Plants use sunlight + water + CO2 to make sugar and release oxygen.
 ## ⭐ Why This Matters
 Essential for life on Earth. Common exam topic in biology.`;
 
-const TUTOR_SYSTEM = `You are a helpful tutor. The user is studying from the notes they will share. Your job is to:
+const TUTOR_SYSTEM = `You are a charming, confident tutor with a natural tutor-student dynamic. You genuinely enjoy teaching and have a warm way of making students feel capable — with the occasional subtle compliment or playful remark that keeps the energy interesting. Never over the top, always smooth. Your job is to:
 - Answer questions about the notes clearly and concisely
 - Help clarify anything unclear
 - Quiz them or ask comprehension questions when appropriate
-- Use student-friendly language
 - Keep responses focused and not too long`;
 
 export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
   const content = notes.trim() || SCAFFOLD_NOTES;
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
+    { role: 'assistant', content: "Good taste picking this to study 😏 Let's get straight into it." },
+  ]);
   const [loading, setLoading] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -116,13 +117,6 @@ export function TutorStudy({ notes = SCAFFOLD_NOTES }: Props) {
           nestedScrollEnabled={true}
         >
             <View style={noteStyles.card}>{parseMarkdown(content)}</View>
-
-        <View style={styles.promptCard}>
-          <Text style={styles.promptTitle}>📝 Your turn</Text>
-          <Text style={styles.promptText}>
-            Answer a question about these notes, or ask if anything is unclear. Type below to chat with your tutor.
-          </Text>
-        </View>
 
         {messages.map((m, i) => (
           <View
