@@ -38,6 +38,17 @@ yarn-error.*
 
 app-example
 
-# generated native folders
-/ios
+# generated native folders — exclude contents but allow specific tracked files
+/ios/*
+!/ios/Podfile
+!/ios/Podfile.lock
+!/ios/StudyPup.xcodeproj/
+/ios/StudyPup.xcodeproj/*
+!/ios/StudyPup.xcodeproj/project.pbxproj
+!/ios/StudyPup/
+/ios/StudyPup/*
+!/ios/StudyPup/Info.plist
+!/ios/StudyPup/AppDelegate.swift
+!/ios/StudyPup/TikTokAnalyticsModule.swift
+!/ios/StudyPup/TikTokAnalyticsModule.m
 /android

@@ -10,6 +10,7 @@ import { signInWithGoogle, signInWithApple, googleStatusCodes } from '@/lib/auth
 import * as StoreReview from 'expo-store-review';
 import { scaleFont, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { ttTrackRegistration, ttIdentify } from '@/lib/tiktok-analytics';
 import ReAnimated, { SlideInRight, SlideOutLeft, useSharedValue, useAnimatedStyle, withTiming, Easing as ReEasing } from 'react-native-reanimated';
 
 const BUTTON_SHADOW = {
@@ -122,7 +123,7 @@ function ShineButton({
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ then?: string; mode?: string }>();
-  const { uid } = useAuth();
+  const { uid, user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { carouselIndex, progressStyle } = useCarousel();
@@ -142,6 +143,8 @@ export default function CreateAccountScreen() {
 
   useEffect(() => {
     if (!uid) return;
+    ttTrackRegistration();
+    ttIdentify(uid, user?.email ?? '');
     if (params.then === 'paywall') router.replace('/paywall');
     else router.replace('/(tabs)');
   }, [uid, params.then]);

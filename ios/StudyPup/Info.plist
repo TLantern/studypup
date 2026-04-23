@@ -55,6 +55,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use your data to show you personalized ads and measure how well our ads perform.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>StudyPup uses the camera to capture notes and study materials.</string>
 	<key>NSLocalNetworkUsageDescription</key>

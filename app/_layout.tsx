@@ -1,9 +1,14 @@
+import '@/lib/dom-polyfills';
+import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
+import { registerGlobals } from '@livekit/react-native';
 import { useFonts, Fredoka_400Regular } from '@expo-google-fonts/fredoka';
 import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
+
+registerGlobals();
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,6 +44,10 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    requestTrackingPermissionsAsync();
+  }, []);
 
   useEffect(() => {
     initAnalytics();

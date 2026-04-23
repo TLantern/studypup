@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SuperwallAvailableContext, usePlacementHook, PLACEMENT_VALUE_SCREEN, transacAbandonPendingRef, retriggerMainPaywallRef, useSubscriptionStatus } from '@/lib/superwall';
 import { MeshGradientBackground } from '@/components/MeshGradientBackground';
 import { trackPageViewed } from '@/lib/analytics';
+import { ttTrackStartTrial } from '@/lib/tiktok-analytics';
 import { getItem } from '@/lib/storage';
 
 const PLACEMENT_ONBOARDING = 'onboarding_complete';
@@ -59,7 +60,7 @@ function PaywallWithSuperwall() {
         console.log('[Paywall] value dismissed → registering', placement, 'in 600ms');
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased →', placement); navigateToMain(); } })
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased →', placement); ttTrackStartTrial(); navigateToMain(); } })
             .catch(() => retryPaywallRef.current());
         }, 600);
       } else {
@@ -75,7 +76,7 @@ function PaywallWithSuperwall() {
         console.log('[Paywall] value skipped → registering', placement, 'in 600ms');
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (skip path) →', placement); navigateToMain(); } })
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (skip path) →', placement); ttTrackStartTrial(); navigateToMain(); } })
             .catch(() => retryPaywallRef.current());
         }, 600);
       } else {
@@ -104,7 +105,7 @@ function PaywallWithSuperwall() {
       setTimeout(() => {
         mainPaywallRegisteredRef.current = true;
         trackPlacementViewed(placement);
-        registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (retry) →', placement); navigateToMain(); } })
+        registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (retry) →', placement); ttTrackStartTrial(); navigateToMain(); } })
           .catch(() => {
             console.warn('[Paywall] retryPaywall: registerPlacement failed — retrying in 2s');
             mainPaywallRegisteredRef.current = false;
@@ -135,7 +136,7 @@ function PaywallWithSuperwall() {
     trackPageViewed('paywall', { placement, shouldReturn });
     if (didPresentRef.current) return;
     getItem('dev:reviewer').then((isDev) => {
-      if (isDev) { navigateToMain(); return; }
+      if (isDev) { ttTrackStartTrial(); navigateToMain(); return; }
       didPresentRef.current = true;
       phaseRef.current = 'value';
       trackPlacementViewed(PLACEMENT_VALUE_SCREEN);
@@ -146,7 +147,7 @@ function PaywallWithSuperwall() {
         mainPaywallRegisteredRef.current = true;
         setTimeout(() => {
           trackPlacementViewed(placement);
-          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (value_screen path) →', placement); navigateToMain(); } })
+          registerPlacement({ placement, feature: () => { console.log('[Paywall] purchased (value_screen path) →', placement); ttTrackStartTrial(); navigateToMain(); } })
             .catch(() => retryPaywallRef.current());
         }, 600);
       }}).catch(() => {

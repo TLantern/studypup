@@ -9,6 +9,7 @@ import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
 import { confirmPhoneOtp, startPhoneSignIn } from '@/lib/auth';
 import { scaleFont, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { ttTrackRegistration, ttIdentify } from '@/lib/tiktok-analytics';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -48,7 +49,7 @@ const COUNTRIES = [
 export default function PhoneLoginScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ then?: string }>();
-  const { uid } = useAuth();
+  const { uid, user } = useAuth();
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+1');
@@ -100,6 +101,8 @@ export default function PhoneLoginScreen() {
 
   useEffect(() => {
     if (!uid) return;
+    ttTrackRegistration();
+    ttIdentify(uid, user?.email ?? '', user?.phoneNumber ?? '');
     if (params.then === 'paywall') router.replace('/paywall');
     else router.replace('/(tabs)');
   }, [uid, params.then]);
