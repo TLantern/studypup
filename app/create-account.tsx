@@ -1,10 +1,11 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Animated, Pressable, StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-store';
+import { checkUserRegistered, setUserRegistered } from '@/lib/user-profile';
 import { getItem, setItem } from '@/lib/storage';
 import { signInWithGoogle, signInWithApple, googleStatusCodes } from '@/lib/auth';
 import * as StoreReview from 'expo-store-review';
@@ -123,9 +124,10 @@ function ShineButton({
 export default function CreateAccountScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ then?: string; mode?: string }>();
-  const { uid, user } = useAuth();
+  const { uid, user, signOut } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [noAccountModal, setNoAccountModal] = useState(false);
   const { carouselIndex, progressStyle } = useCarousel();
 
   useEffect(() => {
@@ -143,11 +145,35 @@ export default function CreateAccountScreen() {
 
   useEffect(() => {
     if (!uid) return;
+    console.log('[create-account] uid set, mode:', params.mode, 'uid:', uid);
+
+    if (params.mode === 'login') {
+      console.log('[create-account] login mode — checking Firestore for registered flag');
+      checkUserRegistered(uid).then((registered) => {
+        console.log('[create-account] checkUserRegistered result:', registered);
+        if (!registered) {
+          console.log('[create-account] no account found — signing out, showing modal');
+          signOut();
+          setNoAccountModal(true);
+        } else {
+          console.log('[create-account] account verified — navigating to tabs');
+          ttTrackRegistration();
+          ttIdentify(uid, user?.email ?? '');
+          router.replace('/(tabs)');
+        }
+      }).catch((e) => {
+        console.error('[create-account] checkUserRegistered error:', e);
+      });
+      return;
+    }
+
+    console.log('[create-account] signup mode — stamping registered, navigating');
+    setUserRegistered(uid).catch((e) => console.error('[create-account] setUserRegistered error:', e));
     ttTrackRegistration();
     ttIdentify(uid, user?.email ?? '');
     if (params.then === 'paywall') router.replace('/paywall');
     else router.replace('/(tabs)');
-  }, [uid, params.then]);
+  }, [uid, params.then, params.mode]);
 
   const handleGoogle = async () => {
     if (busy) return;
@@ -238,7 +264,7 @@ export default function CreateAccountScreen() {
 
           <Pressable
             style={styles.phoneBtn}
-            onPress={() => router.push({ pathname: '/phone-login', params: { then: params.then } })}
+            onPress={() => router.push({ pathname: '/phone-login', params: { then: params.then, mode: params.mode } })}
           >
             <Text style={styles.phoneBtnText}>Login with phone number</Text>
           </Pressable>
@@ -247,6 +273,23 @@ export default function CreateAccountScreen() {
           </View>
         </View>
       </TouchableWithoutFeedback>
+
+      <Modal visible={noAccountModal} transparent animationType="fade" onRequestClose={() => setNoAccountModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>No account found</Text>
+            <Text style={styles.modalBody}>
+              We couldn't find an account linked to that sign-in. Please go through sign-up first.
+            </Text>
+            <Pressable
+              style={styles.modalBtn}
+              onPress={() => { setNoAccountModal(false); router.replace('/'); }}
+            >
+              <Text style={styles.modalBtnText}>Back to Welcome</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -319,4 +362,10 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(8), textAlign: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaleSize(32) },
+  modalCard: { backgroundColor: '#fff', borderRadius: scaleSize(20), padding: scaleSize(28), width: '100%', alignItems: 'center' },
+  modalTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
+  modalBody: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
+  modalBtn: { backgroundColor: '#FD8A8A', borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
+  modalBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#fff' },
 });

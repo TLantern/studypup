@@ -1,5 +1,5 @@
 import type { User } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getFirebase } from '@/lib/firebase';
 import { getOnboarding, type OnboardingData } from '@/lib/onboarding-storage';
 
@@ -12,7 +12,19 @@ export type AppUser = {
   created_at: unknown;
   onboarding?: OnboardingData;
   onboarding_logged_at?: unknown;
+  registered?: boolean;
 };
+
+export async function checkUserRegistered(uid: string): Promise<boolean> {
+  const { db } = getFirebase();
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() && snap.data()?.registered === true;
+}
+
+export async function setUserRegistered(uid: string): Promise<void> {
+  const { db } = getFirebase();
+  await setDoc(doc(db, 'users', uid), { registered: true }, { merge: true });
+}
 
 export async function ensureUserDoc(user: User): Promise<void> {
   const { db } = getFirebase();

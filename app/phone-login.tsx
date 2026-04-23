@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
+import { checkUserRegistered } from '@/lib/user-profile';
 import { confirmPhoneOtp, startPhoneSignIn } from '@/lib/auth';
 import { scaleFont, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
@@ -48,8 +49,9 @@ const COUNTRIES = [
 
 export default function PhoneLoginScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ then?: string }>();
-  const { uid, user } = useAuth();
+  const params = useLocalSearchParams<{ then?: string; mode?: string }>();
+  const { uid, user, signOut } = useAuth();
+  const [noAccountModal, setNoAccountModal] = useState(false);
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+1');
@@ -101,11 +103,34 @@ export default function PhoneLoginScreen() {
 
   useEffect(() => {
     if (!uid) return;
+    console.log('[phone-login] uid set, mode:', params.mode, 'uid:', uid);
+
+    if (params.mode === 'login') {
+      console.log('[phone-login] login mode — checking Firestore for registered flag');
+      checkUserRegistered(uid).then((registered) => {
+        console.log('[phone-login] checkUserRegistered result:', registered);
+        if (!registered) {
+          console.log('[phone-login] no account found — signing out, showing modal');
+          signOut();
+          setNoAccountModal(true);
+        } else {
+          console.log('[phone-login] account verified — navigating to tabs');
+          ttTrackRegistration();
+          ttIdentify(uid, user?.email ?? '', user?.phoneNumber ?? '');
+          router.replace('/(tabs)');
+        }
+      }).catch((e) => {
+        console.error('[phone-login] checkUserRegistered error:', e);
+      });
+      return;
+    }
+
+    console.log('[phone-login] signup mode — navigating');
     ttTrackRegistration();
     ttIdentify(uid, user?.email ?? '', user?.phoneNumber ?? '');
     if (params.then === 'paywall') router.replace('/paywall');
     else router.replace('/(tabs)');
-  }, [uid, params.then]);
+  }, [uid, params.then, params.mode]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -250,6 +275,23 @@ export default function PhoneLoginScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
         </View>
       </TouchableWithoutFeedback>
+
+      <Modal visible={noAccountModal} transparent animationType="fade" onRequestClose={() => setNoAccountModal(false)}>
+        <View style={styles.noAccountOverlay}>
+          <View style={styles.noAccountCard}>
+            <Text style={styles.noAccountTitle}>No account found</Text>
+            <Text style={styles.noAccountBody}>
+              We couldn't find an account linked to that phone number. Please go through sign-up first.
+            </Text>
+            <Pressable
+              style={styles.noAccountBtn}
+              onPress={() => { setNoAccountModal(false); router.replace('/'); }}
+            >
+              <Text style={styles.noAccountBtnText}>Back to Welcome</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -338,4 +380,10 @@ const styles = StyleSheet.create({
   continueBtnDisabled: { opacity: 0.6 },
   continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(20), color: '#fff' },
   errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(4), textAlign: 'center' },
+  noAccountOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaleSize(32) },
+  noAccountCard: { backgroundColor: '#fff', borderRadius: scaleSize(20), padding: scaleSize(28), width: '100%', alignItems: 'center' },
+  noAccountTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
+  noAccountBody: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
+  noAccountBtn: { backgroundColor: '#FD8A8A', borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
+  noAccountBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#fff' },
 });
