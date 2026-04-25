@@ -1,5 +1,6 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { trackPageViewed } from '@/lib/analytics';
+import { ttTrackStartTrial, ttTrackSubscribe } from '@/lib/tiktok-analytics';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -217,6 +218,21 @@ function TransactionAbandonWatcher() {
   return null;
 }
 
+function TikTokPurchaseTracker() {
+  const useSuperwallEvents = useSuperwallEventsHook!;
+  useSuperwallEvents({
+    onSuperwallEvent: (eventInfo) => {
+      const ev = eventInfo.event;
+      if (ev.type === 'freeTrialStart') {
+        ttTrackStartTrial();
+      } else if (ev.type === 'subscriptionStart') {
+        ttTrackSubscribe();
+      }
+    },
+  });
+  return null;
+}
+
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pendingPlacement, setPendingPlacement] = useState<string | null>(null);
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
@@ -238,7 +254,10 @@ export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = (
     <PaywallTriggerContext.Provider value={value}>
       {children}
       {usePlacementHook != null && useSuperwallEventsHook != null && (
-        <TransactionAbandonWatcher />
+        <>
+          <TransactionAbandonWatcher />
+          <TikTokPurchaseTracker />
+        </>
       )}
       {usePlacementHook != null && (
         <ValueScreenInner
