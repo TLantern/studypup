@@ -24,7 +24,7 @@
         "dark": "./assets/images/notariomainicon.png",
         "tinted": "./assets/images/notariomainicon_tinted.png"
       },
-      "bundleIdentifier": "com.teniola.notario",
+      "bundleIdentifier": "com.teniola.studypup",
       "bitcode": false,
       "appleTeamId": "2VNNBBD2G9"
     },
