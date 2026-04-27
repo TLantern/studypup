@@ -4,7 +4,7 @@
     "slug": "studypup",
     "version": "1.2.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/mainicon.png",
+    "icon": "./assets/images/notariomainicon.png",
     "scheme": "studypup",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -20,11 +20,11 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "icon": {
-        "light": "./assets/icons/appcovericon.png",
-        "dark": "./assets/icons/appcovericon.png",
-        "tinted": "./assets/icons/appcovericon.png"
+        "light": "./assets/images/notariomainicon.png",
+        "dark": "./assets/images/notariomainicon.png",
+        "tinted": "./assets/images/notariomainicon_tinted.png"
       },
-      "bundleIdentifier": "com.teniola.studypup",
+      "bundleIdentifier": "com.teniola.notario",
       "bitcode": false,
       "appleTeamId": "2VNNBBD2G9"
     },
@@ -32,11 +32,11 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#add8e6",
-        "foregroundImage": "./assets/icons/appcovericon.png"
+        "foregroundImage": "./assets/images/notariomainicon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.studypup.app",
+      "package": "com.notario.app",
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.CAMERA",
@@ -83,9 +83,9 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#7AA3A3",
-          "image": "./assets/icons/mainicon.png",
+          "image": "./assets/images/notariomainicon.png",
           "dark": {
-            "image": "./assets/icons/mainicon.png",
+            "image": "./assets/images/notariomainicon.png",
             "backgroundColor": "#7AA3A3"
           },
           "imageWidth": 200
