@@ -210,7 +210,11 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     explainTranslateY.setValue(16);
   };
   const isLastCard = index >= total - 1;
-  const next = () => { setIndex((i) => (i < total - 1 ? i + 1 : i)); resetFlip(); };
+  const next = () => {
+    if (isLastCard) { resetFlip(); return; }
+    setIndex((i) => i + 1);
+    resetFlip();
+  };
 
   const handleThumbsUp = () => {
     if (currentAnswer) return;

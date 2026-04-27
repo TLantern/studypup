@@ -1,6 +1,6 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { trackPageViewed } from '@/lib/analytics';
-import { ttTrackStartTrial, ttTrackSubscribe } from '@/lib/tiktok-analytics';
+import { ttTrackPurchase, ttTrackStartTrial, ttTrackSubscribe } from '@/lib/tiktok-analytics';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -227,6 +227,7 @@ function TikTokPurchaseTracker() {
         ttTrackStartTrial();
       } else if (ev.type === 'subscriptionStart') {
         ttTrackSubscribe();
+        ttTrackPurchase(String(ev.product.price), ev.product.currencyCode ?? 'USD', ev.product.productIdentifier, ev.product.id);
       }
     },
   });

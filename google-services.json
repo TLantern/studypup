@@ -10,7 +10,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:114632107142:android:8b1d2ff72d9ab3e97b9d07",
         "android_client_info": {
-          "package_name": "com.teniola.studypup"
+          "package_name": "com.teniola.notario"
         }
       },
       "oauth_client": [
@@ -35,7 +35,7 @@
               "client_id": "114632107142-1djbvqo48p3ejp8lk9698jpqu65jbb6l.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.anonymous.studypup"
+                "bundle_id": "com.anonymous.notario"
               }
             }
           ]
