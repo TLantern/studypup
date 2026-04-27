@@ -1451,12 +1451,12 @@ export default function HomeScreen() {
               }}>
                 <View style={styles.settingsItemLeft}>
                   <Ionicons name="star" size={24} color="#000" />
-                  <Text style={styles.settingsItemText}>Give StudyPup 5 stars</Text>
+                  <Text style={styles.settingsItemText}>Give Notario 5 stars</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#999" />
               </Pressable>
               <Pressable style={styles.settingsItem} onPress={() => {
-                Alert.alert('Invite a Friend', 'Share StudyPup with your friends!', [
+                Alert.alert('Invite a Friend', 'Share Notario with your friends!', [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Share', onPress: () => {} }
                 ]);

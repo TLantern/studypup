@@ -41,7 +41,7 @@ export default function StudentsImproveScreen() {
   return (
     <OnboardingView>
       <View style={[styles.container, { paddingTop: insets.top + 84, paddingBottom: insets.bottom + 24 }]}>
-      <Text style={styles.title}>Students Boost Grades with StudyPup</Text>
+      <Text style={styles.title}>Students Boost Grades with Notario</Text>
       <View style={styles.lottieWrap}>
         <LottieView
           ref={lottieRef}

@@ -52,7 +52,7 @@ export default function PlanUsageScreen() {
         <View style={styles.headerRow}>
           <View style={styles.progressWrap}><ProgressBar progress={80} /></View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>How do you plan on using Studypup?</Text>
+        <Text style={[styles.title, { marginTop: 24 }]}>How do you plan on using Notario?</Text>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {OPTIONS.map((o) => (
             <Pressable

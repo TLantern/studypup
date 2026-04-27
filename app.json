@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "StudyPup",
-    "slug": "studypup",
+    "name": "Notario",
+    "slug": "notario",
     "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/notariomainicon.png",
-    "scheme": "studypup",
+    "scheme": "notario",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "StudyPup needs local network access to connect to the development server for live reload.",
-        "NSMicrophoneUsageDescription": "StudyPup uses the microphone to record lectures and study notes.",
-        "NSCameraUsageDescription": "StudyPup uses the camera to capture notes and study materials.",
-        "NSPhotoLibraryUsageDescription": "StudyPup needs access to your photos to import study materials and images.",
-        "NSPhotoLibraryAddUsageDescription": "StudyPup saves recordings and captures to your photo library.",
+        "NSLocalNetworkUsageDescription": "Notario needs local network access to connect to the development server for live reload.",
+        "NSMicrophoneUsageDescription": "Notario uses the microphone to record lectures and study notes.",
+        "NSCameraUsageDescription": "Notario uses the camera to capture notes and study materials.",
+        "NSPhotoLibraryUsageDescription": "Notario needs access to your photos to import study materials and images.",
+        "NSPhotoLibraryAddUsageDescription": "Notario saves recordings and captures to your photo library.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "icon": {
@@ -67,16 +67,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "StudyPup needs access to your photos to import study materials and images.",
-          "cameraPermission": "StudyPup uses the camera to capture notes and study materials.",
-          "microphonePermission": "StudyPup uses the microphone to record lectures and study notes."
+          "photosPermission": "Notario needs access to your photos to import study materials and images.",
+          "cameraPermission": "Notario uses the camera to capture notes and study materials.",
+          "microphonePermission": "Notario uses the microphone to record lectures and study notes."
         }
       ],
       [
         "expo-media-library",
         {
-          "photosPermission": "StudyPup needs access to your photos to import study materials and images.",
-          "savePhotosPermission": "StudyPup saves recordings and captures to your photo library."
+          "photosPermission": "Notario needs access to your photos to import study materials and images.",
+          "savePhotosPermission": "Notario saves recordings and captures to your photo library."
         }
       ],
       [

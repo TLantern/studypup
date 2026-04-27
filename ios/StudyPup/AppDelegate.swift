@@ -1,7 +1,6 @@
 import Expo
 import React
 import ReactAppDependencyProvider
-import TikTokBusinessSDK
 
 @UIApplicationMain
 public class AppDelegate: ExpoAppDelegate {
@@ -29,20 +28,6 @@ public class AppDelegate: ExpoAppDelegate {
       in: window,
       launchOptions: launchOptions)
 #endif
-
-    if let config = TikTokConfig(
-      accessToken: "TTslEB13wBmoWb9KbSsGFWQKxprzBjxQ",
-      appId: "6758959038",
-      tiktokAppId: "7631651812172365844"
-    ) {
-      TikTokBusiness.initializeSdk(config) { success, error in
-        if success {
-          print("TikTok SDK initialized successfully")
-        } else {
-          print("TikTok SDK initialization failed: \(error?.localizedDescription ?? "Unknown error")")
-        }
-      }
-    }
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

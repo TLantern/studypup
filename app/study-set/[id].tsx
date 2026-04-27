@@ -78,8 +78,8 @@ export default function StudySetScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out StudyPup! 📚✨\n\nThe smartest way to study - create flashcards, quizzes, and more from your notes!\n\nDownload now: https://studypup.app`,
-        title: 'StudyPup - Smart Study Tools',
+        message: `Check out Notario! 📚✨\n\nThe smartest way to study - create flashcards, quizzes, and more from your notes!\n\nDownload now: https://notario.app`,
+        title: 'Notario - Smart Study Tools',
       });
     } catch (error) {
       console.error('Error sharing:', error);

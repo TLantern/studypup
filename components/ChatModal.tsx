@@ -73,7 +73,7 @@ export function ChatModal({ visible, onClose, notes, title }: Props) {
       if (isOpenAIConfigured()) {
         reply = await callOpenAIChat([{ role: 'system', content: systemPrompt }, ...history]);
       } else {
-        reply = `I'm StudyPup! I'd love to help with "${title}". (OpenAI not configured — connect an API key to enable real responses.)`;
+        reply = `I'm Notario! I'd love to help with "${title}". (OpenAI not configured — connect an API key to enable real responses.)`;
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
     } catch {

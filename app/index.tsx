@@ -163,7 +163,7 @@ export default function OnboardingScreen() {
     <OnboardingView>
       <View style={[styles.container, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}>
       <MeshGradientBackground />
-      <Text style={styles.title}>Welcome to{'\n'}Studypup!</Text>
+      <Text style={styles.title}>Welcome to{'\n'}Notario!</Text>
       <Text style={styles.subtext}> AI Study Tool built for students</Text>
       <Animated.View style={[styles.logoWrap, logoStyle]}>
         <Image source={require('../assets/images/puppylogoo.png')} style={styles.logo} contentFit="contain" />

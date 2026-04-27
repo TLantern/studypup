@@ -2313,7 +2313,6 @@ PODS:
     - SuperwallKit (= 4.12.9)
   - SuperwallKit (4.12.9):
     - Superscript (= 1.0.12)
-  - TikTokBusinessSDK (1.6.1)
   - WebRTC-SDK (144.7559.01)
   - Yoga (0.0.0)
 
@@ -2434,7 +2433,6 @@ DEPENDENCIES:
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - SuperwallExpo (from `../node_modules/expo-superwall/ios`)
-  - TikTokBusinessSDK
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2465,7 +2463,6 @@ SPEC REPOS:
     - SDWebImageWebPCoder
     - Superscript
     - SuperwallKit
-    - TikTokBusinessSDK
     - WebRTC-SDK
 
 EXTERNAL SOURCES:
@@ -2845,10 +2842,9 @@ SPEC CHECKSUMS:
   Superscript: 00e98fcd78a2cefa33b658d4a16756b535eabd2c
   SuperwallExpo: 7fea7a273fb0cbb5c229df760c3d16d5ff12ed0c
   SuperwallKit: d39b3edf823893e134959fa7f873eed155435c24
-  TikTokBusinessSDK: 349bb1dea1f90d01f9b39418ebe7c8eb981c04af
   WebRTC-SDK: ab9b5319e458c2bfebdc92b3600740da35d5630d
   Yoga: 65431d43277b661ebc7289c6c5d82f64ce42cfe0
 
-PODFILE CHECKSUM: ce3f24d6f4b56cdafce21ca2a3f47d7048dfe0f4
+PODFILE CHECKSUM: b86ef111b1db952854741caf047491809b7fa8dd
 
 COCOAPODS: 1.16.2

@@ -35,7 +35,7 @@ export default function ReviewScreen() {
   return (
     <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
-        <Text style={styles.title}>Enjoying Studypup?</Text>
+        <Text style={styles.title}>Enjoying Notario?</Text>
         <Text style={styles.subtitle}>
           Your feedback helps us improve and helps other students discover a smarter way to study. If you have a moment, leaving a review means a lot to us!
         </Text>

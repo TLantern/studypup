@@ -78,7 +78,7 @@ export async function scheduleStreakProtection(enable: boolean): Promise<void> {
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Don't break your streak! 🔥",
-      body: "You haven't studied today. Open Studypup before midnight!",
+      body: "You haven't studied today. Open Notario before midnight!",
       sound: true,
     },
     trigger: {
@@ -135,7 +135,7 @@ export async function scheduleWeeklySummary(enable: boolean): Promise<void> {
   const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Weekly check-in 📊',
-      body: "How was your study week? Open Studypup to review your progress.",
+      body: "How was your study week? Open Notario to review your progress.",
       sound: true,
     },
     trigger: {
@@ -173,7 +173,7 @@ export async function schedulePaymentWarningNotifications(): Promise<void> {
   const now = Date.now();
   const [id1, id2, id3] = await Promise.all([
     Notifications.scheduleNotificationAsync({
-      content: { title: 'Your access is ending soon ⚠️', body: 'Renew your StudyPup subscription to keep studying.', sound: true },
+      content: { title: 'Your access is ending soon ⚠️', body: 'Renew your Notario subscription to keep studying.', sound: true },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(now + HOUR) },
     }),
     Notifications.scheduleNotificationAsync({
@@ -181,7 +181,7 @@ export async function schedulePaymentWarningNotifications(): Promise<void> {
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(now + DAY) },
     }),
     Notifications.scheduleNotificationAsync({
-      content: { title: 'Your access has expired 😢', body: 'Come back to StudyPup — your notes are waiting for you.', sound: true },
+      content: { title: 'Your access has expired 😢', body: 'Come back to Notario — your notes are waiting for you.', sound: true },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(now + 2 * DAY) },
     }),
   ]);

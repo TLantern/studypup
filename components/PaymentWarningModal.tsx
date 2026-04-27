@@ -43,7 +43,7 @@ export function PaymentWarningModal({ visible, onRenew, onDismiss }: Props) {
 
           <Text style={styles.title}>Your access is ending soon</Text>
           <Text style={styles.body}>
-            Your StudyPup subscription has a pending payment. Fix your payment to keep your streak, notes, and study sets.
+            Your Notario subscription has a pending payment. Fix your payment to keep your streak, notes, and study sets.
           </Text>
 
           <View style={styles.pillRow}>
