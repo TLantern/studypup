@@ -1,28 +1,20 @@
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ProgressBar } from '@/components/ProgressBar';
-import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
-import { trackPageViewed } from '@/lib/analytics';
 import { OnboardingView } from '@/components/OnboardingView';
-
-const IS_IPAD = SCREEN_WIDTH >= 768;
-
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
+import { updateOnboarding } from '@/lib/onboarding-storage';
+import { scaleSize, scaleFont } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
+import { hapticSelect } from '@/lib/haptics';
+import { ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 
 const SUBJECTS = [
   { id: 'biology', label: 'Biology', emoji: '🧬' },
   { id: 'cs', label: 'Computer Science', emoji: '💻' },
-  { id: 'math', label: 'Math', emoji: '÷' },
+  { id: 'math', label: 'Math', emoji: '➗' },
   { id: 'history', label: 'History', emoji: '🏛️' },
   { id: 'geography', label: 'Geography', emoji: '🌍' },
   { id: 'music', label: 'Music', emoji: '🎵' },
@@ -32,94 +24,70 @@ const SUBJECTS = [
 
 export default function SubjectsScreen() {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    trackPageViewed('onboarding_subjects');
+    trackPageViewed('ob_student_subjects');
   }, []);
 
-  const toggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const handleSelect = async (id: string) => {
+    hapticSelect();
+    setSelected(id);
+    await updateOnboarding({ subjects: [id] });
+    router.push('/students-improve');
   };
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={60} /></View>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+        <View style={styles.progressRow}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
+          </Pressable>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '28%' }]} />
+          </View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>Which subject(s) are you struggling with?</Text>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        <Text style={styles.title}>Which subject are you struggling with most?</Text>
+        <Text style={styles.subtitle}>Pick your biggest challenge right now.</Text>
+
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {SUBJECTS.map((s) => (
             <Pressable
               key={s.id}
-              style={[styles.subjectBtn, selected.has(s.id) && styles.subjectBtnSelected]}
-              onPress={() => toggle(s.id)}
+              style={({ pressed }) => [
+                styles.card,
+                selected === s.id && styles.cardSelected,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => handleSelect(s.id)}
             >
-              <Text style={styles.subjectText}>{s.label}</Text>
-              <Text style={styles.subjectEmoji}>{s.emoji}</Text>
+              <Text style={[styles.cardText, selected === s.id && styles.cardTextSelected]}>{s.label}</Text>
+              <Text style={styles.cardEmoji}>{s.emoji}</Text>
             </Pressable>
           ))}
         </ScrollView>
-        <View style={styles.buttons}>
-          <Pressable
-            style={[styles.continueBtn, selected.size === 0 && styles.continueBtnDisabled]}
-            onPress={async () => {
-              if (selected.size === 0) return;
-              await updateOnboarding({ subjects: Array.from(selected) });
-              router.push('/study-duration');
-            }}
-            disabled={selected.size === 0}
-          >
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
-        </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
-  progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
+  container: sharedStyles.container,
+  progressTrack: sharedStyles.progressTrack,
+  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
+  title: sharedStyles.title,
+  subtitle: sharedStyles.subtitle,
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: scaleSize(16) },
-  subjectBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
-    paddingVertical: scaleSize(IS_IPAD ? 12 : 14),
-    paddingHorizontal: scaleSize(IS_IPAD ? 14 : 16),
-    marginBottom: scaleSize(IS_IPAD ? 8 : 10),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    ...BUTTON_SHADOW,
-  },
-  subjectBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
-  subjectText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
-  subjectEmoji: { fontSize: RESPONSIVE.titleSmall },
-  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
-  continueBtn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
-  },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
-  continueBtnDisabled: { opacity: 0.6 },
+  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
+  card: sharedStyles.card,
+  cardSelected: sharedStyles.cardSelected,
+  cardPressed: sharedStyles.cardPressed,
+  cardText: sharedStyles.cardText,
+  cardTextSelected: sharedStyles.cardTextSelected,
+  cardEmoji: { fontSize: scaleFont(20) },
+  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
+  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
+  backBtn: { padding: scaleSize(4) },
 });

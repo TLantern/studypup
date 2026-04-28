@@ -1,22 +1,12 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
+import { scaleFont, scaleSize } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { OnboardingView } from '@/components/OnboardingView';
-
-const IS_IPAD = SCREEN_WIDTH >= 768;
-
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
+import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 
 type Question = {
   text: string;
@@ -85,13 +75,13 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
     },
     highschool: {
       easy: { text: 'What is the slope of y = 3x − 7?', options: ['−7', '3', '7', '−3'], correctIndex: 1, concept: 'Linear functions' },
-      medium: { text: 'A quadratic equation has two solutions: x = 2 and x = 3. Which equation could it be?', options: ['x^2 - 5x + 6 = 0', 'x^2 + 5x + 6 = 0', 'x^2 - 6x + 5 = 0', 'x^2 - x - 6 = 0'], correctIndex: 0, concept: 'Quadratic equations' },
+      medium: { text: 'A quadratic equation has two solutions: x = 2 and x = 3. Which equation could it be?', options: ['x²-5x+6=0', 'x²+5x+6=0', 'x²-6x+5=0', 'x²-x-6=0'], correctIndex: 0, concept: 'Quadratic equations' },
       hard: { text: 'As x approaches 0, what does the expression sin(x)/x approach?', options: ['0', 'undefined', '1', 'infinity'], correctIndex: 2, concept: 'Limits' },
     },
     college: {
-      easy: { text: 'What is the derivative of f(x) = x cubed?', options: ['3x', '3x squared', 'x squared', '3x to the 4th'], correctIndex: 1, concept: 'Differentiation' },
-      medium: { text: 'The integral of 2x with respect to x equals:', options: ['x + C', '2 + C', 'x squared + C', '2x squared + C'], correctIndex: 2, concept: 'Integration' },
-      hard: { text: 'A matrix A is invertible if and only if:', options: ['det(A) equals 1', 'det(A) is not zero', 'A is symmetric', 'rank(A) is less than n'], correctIndex: 1, concept: 'Linear algebra' },
+      easy: { text: 'What is the derivative of f(x) = x³?', options: ['3x', '3x²', 'x²', '3x⁴'], correctIndex: 1, concept: 'Differentiation' },
+      medium: { text: 'The integral of 2x with respect to x equals:', options: ['x + C', '2 + C', 'x² + C', '2x² + C'], correctIndex: 2, concept: 'Integration' },
+      hard: { text: 'A matrix A is invertible if and only if:', options: ['det(A) = 1', 'det(A) ≠ 0', 'A is symmetric', 'rank(A) < n'], correctIndex: 1, concept: 'Linear algebra' },
     },
   },
   cs: {
@@ -106,13 +96,13 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
       hard: { text: 'A function is called 5 times inside a loop that runs 3 times. How many total function calls happen?', options: ['5', '3', '15', '8'], correctIndex: 2, concept: 'Nested iteration' },
     },
     highschool: {
-      easy: { text: 'What is the time complexity of accessing an element in an array by index?', options: ['O(n)', 'O(log n)', 'O(1)', 'O(n^2)'], correctIndex: 2, concept: 'Big-O notation' },
+      easy: { text: 'What is the time complexity of accessing an element in an array by index?', options: ['O(n)', 'O(log n)', 'O(1)', 'O(n²)'], correctIndex: 2, concept: 'Big-O notation' },
       medium: { text: 'Which data structure operates on LIFO (Last In, First Out)?', options: ['Queue', 'Stack', 'Array', 'Tree'], correctIndex: 1, concept: 'Data structures' },
       hard: { text: 'Binary search requires the input array to be:', options: ['Unsorted', 'Sorted', 'Unique values only', 'Numeric only'], correctIndex: 1, concept: 'Search algorithms' },
     },
     college: {
       easy: { text: 'What does TCP guarantee that UDP does not?', options: ['Speed', 'Reliable delivery', 'Encryption', 'Low latency'], correctIndex: 1, concept: 'Networking' },
-      medium: { text: 'In object-oriented programming, encapsulation means:', options: ['Inheriting from a parent class', 'Hiding internal state and exposing only an interface', 'Running code concurrently', 'Recursively calling a function'], correctIndex: 1, concept: 'OOP principles' },
+      medium: { text: 'In OOP, encapsulation means:', options: ['Inheriting from a parent class', 'Hiding internal state and exposing only an interface', 'Running code concurrently', 'Recursively calling a function'], correctIndex: 1, concept: 'OOP principles' },
       hard: { text: 'Which normal form eliminates transitive dependencies in a relational database?', options: ['1NF', '2NF', '3NF', 'BCNF'], correctIndex: 2, concept: 'Database normalization' },
     },
   },
@@ -135,19 +125,19 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
     college: {
       easy: { text: 'The French Revolution began in which year?', options: ['1776', '1789', '1804', '1815'], correctIndex: 1, concept: 'French Revolution' },
       medium: { text: 'Decolonization in Africa and Asia was most rapid during which decade?', options: ['1930s', '1940s', '1950s–60s', '1970s'], correctIndex: 2, concept: 'Decolonization' },
-      hard: { text: "Historian Fernand Braudel's \"longue durée\" approach emphasizes:", options: ['Individual leaders\' decisions', 'Short-term political events', 'Slow-moving structural forces over centuries', 'Military strategies'], correctIndex: 2, concept: 'Historiography' },
+      hard: { text: "Braudel's \"longue durée\" approach emphasizes:", options: ['Individual leaders\' decisions', 'Short-term political events', 'Slow-moving structural forces over centuries', 'Military strategies'], correctIndex: 2, concept: 'Historiography' },
     },
   },
   geography: {
     elementary: {
       easy: { text: 'Which is the largest ocean?', options: ['Atlantic', 'Indian', 'Arctic', 'Pacific'], correctIndex: 3, concept: 'World geography' },
       medium: { text: 'Which continent is the Sahara Desert located on?', options: ['Asia', 'Africa', 'Australia', 'South America'], correctIndex: 1, concept: 'Physical geography' },
-      hard: { text: "A map's legend explains symbols used. What does a map's scale tell you?", options: ['The direction of north', 'The map\'s age', 'The real-world distance', 'The elevation'], correctIndex: 2, concept: 'Map reading' },
+      hard: { text: "What does a map's scale tell you?", options: ['The direction of north', 'The map\'s age', 'The real-world distance', 'The elevation'], correctIndex: 2, concept: 'Map reading' },
     },
     middleschool: {
       easy: { text: 'Lines of latitude run in which direction on a map?', options: ['North-South', 'East-West', 'Diagonally', 'In circles around poles'], correctIndex: 1, concept: 'Map coordinates' },
       medium: { text: 'Which climate zone is found near the equator?', options: ['Polar', 'Temperate', 'Tropical', 'Arid'], correctIndex: 2, concept: 'Climate zones' },
-      hard: { text: 'A country has a young population pyramid. What does this suggest about its future?', options: ['Declining workforce', 'Rapid population growth', 'High elderly population', 'Low birth rate'], correctIndex: 1, concept: 'Population geography' },
+      hard: { text: 'A country has a young population pyramid. What does this suggest?', options: ['Declining workforce', 'Rapid population growth', 'High elderly population', 'Low birth rate'], correctIndex: 1, concept: 'Population geography' },
     },
     highschool: {
       easy: { text: 'The Ring of Fire is associated with:', options: ['Deserts', 'Volcanoes and earthquakes', 'Ocean trenches only', 'Forest fires'], correctIndex: 1, concept: 'Tectonic activity' },
@@ -157,19 +147,19 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
     college: {
       easy: { text: 'GIS stands for:', options: ['Global Income System', 'Geographic Information System', 'Geological Index Scale', 'General Interpolation Software'], correctIndex: 1, concept: 'Geographic tools' },
       medium: { text: 'The concept of "place" in human geography emphasizes:', options: ['Absolute coordinates', 'Physical terrain only', 'Meaning and identity attached to a location', 'Political borders'], correctIndex: 2, concept: 'Human geography' },
-      hard: { text: 'Wallerstein\'s world-systems theory classifies nations as core, periphery, and semi-periphery based on:', options: ['Military power', 'Cultural influence', 'Economic roles in global capitalism', 'Geographic location'], correctIndex: 2, concept: 'Political geography' },
+      hard: { text: "Wallerstein's world-systems theory classifies nations based on:", options: ['Military power', 'Cultural influence', 'Economic roles in global capitalism', 'Geographic location'], correctIndex: 2, concept: 'Political geography' },
     },
   },
   music: {
     elementary: {
       easy: { text: 'How many beats does a quarter note get in 4/4 time?', options: ['4', '2', '1', '½'], correctIndex: 2, concept: 'Note values' },
       medium: { text: 'Which family of instruments uses a bow to produce sound?', options: ['Woodwinds', 'Brass', 'Strings', 'Percussion'], correctIndex: 2, concept: 'Instrument families' },
-      hard: { text: 'A song repeats its opening section at the end (ABA form). What is this structure called?', options: ['Through-composed', 'Rondo', 'Ternary form', 'Binary form'], correctIndex: 2, concept: 'Musical form' },
+      hard: { text: 'A song with ABA form repeats its opening section at the end. What is this structure called?', options: ['Through-composed', 'Rondo', 'Ternary form', 'Binary form'], correctIndex: 2, concept: 'Musical form' },
     },
     middleschool: {
       easy: { text: 'How many sharps are in the key of G major?', options: ['0', '1', '2', '3'], correctIndex: 1, concept: 'Key signatures' },
       medium: { text: 'A minor scale differs from a major scale primarily in its:', options: ['Tempo', 'Rhythm', '3rd, 6th, and 7th scale degrees', 'Time signature'], correctIndex: 2, concept: 'Scales' },
-      hard: { text: 'A chord progression I–V–vi–IV is used in a song. In C major, what are those chords?', options: ['C–G–Am–F', 'C–F–Am–G', 'C–Em–Am–F', 'C–G–Em–F'], correctIndex: 0, concept: 'Chord progressions' },
+      hard: { text: 'In C major, the I–V–vi–IV progression gives which chords?', options: ['C–G–Am–F', 'C–F–Am–G', 'C–Em–Am–F', 'C–G–Em–F'], correctIndex: 0, concept: 'Chord progressions' },
     },
     highschool: {
       easy: { text: 'Which period did Bach and Handel compose in?', options: ['Classical', 'Romantic', 'Baroque', 'Modern'], correctIndex: 2, concept: 'Music history' },
@@ -177,9 +167,9 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
       hard: { text: 'A Neapolitan chord (♭II) in C minor is built on which note?', options: ['D♭', 'A♭', 'E♭', 'G'], correctIndex: 0, concept: 'Harmony & chord theory' },
     },
     college: {
-      easy: { text: 'Serialism, developed by Schoenberg, organizes music using:', options: ['Major and minor scales', 'A tone row of all 12 pitches', 'Pentatonic scales', 'Modal patterns'], correctIndex: 1, concept: 'Modern composition' },
+      easy: { text: "Schoenberg's serialism organizes music using:", options: ['Major and minor scales', 'A tone row of all 12 pitches', 'Pentatonic scales', 'Modal patterns'], correctIndex: 1, concept: 'Modern composition' },
       medium: { text: 'In sonata form, the "development" section primarily does what?', options: ['Introduces the main themes', 'Returns to the tonic key', 'Manipulates and transforms earlier themes', 'Provides a coda'], correctIndex: 2, concept: 'Sonata form' },
-      hard: { text: 'Heinrich Schenker\'s analytical method focuses on identifying what underlying structure in tonal music?', options: ['Surface melodic motives', 'Rhythmic cells', 'The Ursatz (fundamental structure)', 'Orchestration patterns'], correctIndex: 2, concept: 'Music analysis' },
+      hard: { text: "Schenker's analytical method focuses on identifying:", options: ['Surface melodic motives', 'Rhythmic cells', 'The Ursatz (fundamental structure)', 'Orchestration patterns'], correctIndex: 2, concept: 'Music analysis' },
     },
   },
   religious: {
@@ -191,17 +181,17 @@ const QUESTION_BANK: Record<string, Record<string, QuestionSet>> = {
     middleschool: {
       easy: { text: 'What is the holy city for Muslims, Christians, and Jews?', options: ['Mecca', 'Rome', 'Jerusalem', 'Varanasi'], correctIndex: 2, concept: 'Holy sites' },
       medium: { text: 'The Four Noble Truths are central to which religion?', options: ['Hinduism', 'Buddhism', 'Sikhism', 'Jainism'], correctIndex: 1, concept: 'Buddhist doctrine' },
-      hard: { text: 'The concept of "dharma" appears in both Hinduism and Buddhism but means slightly different things. In Hinduism, dharma primarily refers to:', options: ['Enlightenment', 'Karma and rebirth', 'One\'s duty and righteous conduct', 'Sacred scripture'], correctIndex: 2, concept: 'Comparative religion' },
+      hard: { text: 'In Hinduism, dharma primarily refers to:', options: ['Enlightenment', 'Karma and rebirth', "One's duty and righteous conduct", 'Sacred scripture'], correctIndex: 2, concept: 'Comparative religion' },
     },
     highschool: {
-      easy: { text: 'The Five Pillars of Islam include Salah (prayer) and Zakat (charity). How many pillars are there in total?', options: ['3', '4', '5', '6'], correctIndex: 2, concept: 'Islamic practice' },
+      easy: { text: 'How many pillars are there in Islam?', options: ['3', '4', '5', '6'], correctIndex: 2, concept: 'Islamic practice' },
       medium: { text: 'Protestant Christianity emerged primarily as a result of:', options: ['The Crusades', 'The Protestant Reformation of the 16th century', 'The Council of Nicaea', 'The Great Schism'], correctIndex: 1, concept: 'Reformation history' },
-      hard: { text: 'Liberation theology, which emerged in Latin America in the 1960s, combined Christian doctrine with:', options: ['Eastern mysticism', 'Marxist social analysis', 'Protestant evangelism', 'Islamic jurisprudence'], correctIndex: 1, concept: 'Modern religious movements' },
+      hard: { text: 'Liberation theology combined Christian doctrine with:', options: ['Eastern mysticism', 'Marxist social analysis', 'Protestant evangelism', 'Islamic jurisprudence'], correctIndex: 1, concept: 'Modern religious movements' },
     },
     college: {
-      easy: { text: 'Which philosopher argued that religion is "the opium of the people"?', options: ['Nietzsche', 'Freud', 'Marx', 'Durkheim'], correctIndex: 2, concept: 'Philosophy of religion' },
-      medium: { text: 'Rudolf Otto\'s concept of the "numinous" describes:', options: ['Ethical religious duty', 'The rational proof of God', 'The awe-inspiring mystery of the sacred', 'Scriptural interpretation'], correctIndex: 2, concept: 'Religious experience' },
-      hard: { text: 'In Émile Durkheim\'s theory, religion\'s primary social function is to:', options: ['Explain natural phenomena', 'Reinforce social cohesion and collective identity', 'Provide individual salvation', 'Justify political authority'], correctIndex: 1, concept: 'Sociology of religion' },
+      easy: { text: 'Who argued that religion is "the opium of the people"?', options: ['Nietzsche', 'Freud', 'Marx', 'Durkheim'], correctIndex: 2, concept: 'Philosophy of religion' },
+      medium: { text: "Rudolf Otto's concept of the \"numinous\" describes:", options: ['Ethical religious duty', 'The rational proof of God', 'The awe-inspiring mystery of the sacred', 'Scriptural interpretation'], correctIndex: 2, concept: 'Religious experience' },
+      hard: { text: "In Durkheim's theory, religion's primary social function is to:", options: ['Explain natural phenomena', 'Reinforce social cohesion and collective identity', 'Provide individual salvation', 'Justify political authority'], correctIndex: 1, concept: 'Sociology of religion' },
     },
   },
 };
@@ -234,7 +224,7 @@ export default function MicroQuizScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    trackPageViewed('onboarding_micro_quiz');
+    trackPageViewed('ob_student_micro_quiz');
     getOnboarding().then((data) => {
       const subject = data.subjects?.[0] ?? FALLBACK_SUBJECT;
       const grade = data.grade_level ?? FALLBACK_GRADE;
@@ -258,13 +248,6 @@ export default function MicroQuizScreen() {
     }
   };
 
-  const handleNext = () => {
-    if (selected === null) return;
-    advance(selected === questions[currentQ].correctIndex);
-  };
-
-  const handleSkip = () => advance(false);
-
   if (loading || questions.length === 0) return null;
 
   const q = questions[currentQ];
@@ -272,35 +255,35 @@ export default function MicroQuizScreen() {
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.screen, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 32 }]}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.dotsRow}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.dot, i <= currentQ && styles.dotActive]} />
-            ))}
-          </View>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+        {/* Progress dots */}
+        <View style={styles.dotsRow}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={[styles.dot, i <= currentQ && styles.dotActive]} />
+          ))}
+        </View>
 
-          <Text style={styles.subtitle}>{subjectLabel} Quiz</Text>
-          <Text style={styles.title}>Quick Knowledge Check</Text>
+        <Text style={styles.eyebrow}>{subjectLabel} · Question {currentQ + 1} of 3</Text>
+        <Text style={styles.title}>Quick Knowledge Check</Text>
 
-          <View style={styles.card}>
-            <Text style={styles.questionLabel}>Question {currentQ + 1} of 3</Text>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.questionCard}>
             <Text style={styles.questionText}>{q.text}</Text>
           </View>
 
-          <View style={styles.optionsWrap}>
+          <View style={styles.optionsList}>
             {q.options.map((opt, i) => (
               <Pressable
                 key={i}
-                style={[styles.option, selected === i && styles.optionSelected]}
+                style={({ pressed }) => [
+                  styles.option,
+                  selected === i && styles.optionSelected,
+                  pressed && styles.optionPressed,
+                ]}
                 onPress={() => setSelected(i)}
               >
-                <View style={[styles.optionBullet, selected === i && styles.optionBulletSelected]}>
-                  <Text style={[styles.optionBulletText, selected === i && styles.optionBulletTextSelected]}>
+                <View style={[styles.bullet, selected === i && styles.bulletSelected]}>
+                  <Text style={[styles.bulletText, selected === i && styles.bulletTextSelected]}>
                     {String.fromCharCode(65 + i)}
                   </Text>
                 </View>
@@ -310,97 +293,115 @@ export default function MicroQuizScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.ctaWrap}>
-          <Pressable style={styles.skipBtn} onPress={handleSkip}>
+        <View style={styles.footer}>
+          <Pressable style={styles.skipBtn} onPress={() => advance(false)}>
             <Text style={styles.skipText}>I'm not sure</Text>
           </Pressable>
           <Pressable
-            style={[styles.btn, selected === null && styles.btnDisabled]}
-            onPress={handleNext}
+            style={[styles.nextBtn, selected === null && styles.nextBtnDisabled]}
+            onPress={() => {
+              if (selected === null) return;
+              advance(selected === q.correctIndex);
+            }}
             disabled={selected === null}
           >
-            <Text style={styles.btnText}>{isLast ? 'See My Results' : 'Next Question'}</Text>
+            <Text style={styles.nextBtnText}>{isLast ? 'See My Results' : 'Next Question'}</Text>
           </Pressable>
         </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  screen: { flex: 1, paddingHorizontal: 24 },
-  container: { flexGrow: 1 },
-  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: scaleSize(10), marginBottom: scaleSize(20) },
-  dot: { width: scaleSize(10), height: scaleSize(10), borderRadius: scaleSize(5), backgroundColor: 'rgba(255,255,255,0.5)' },
-  dotActive: { backgroundColor: '#7c3aed' },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#555', textAlign: 'center', marginBottom: scaleSize(4) },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(24) },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 14 : 16),
-    padding: scaleSize(IS_IPAD ? 16 : 20),
-    marginBottom: scaleSize(IS_IPAD ? 12 : 16),
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: scaleSize(24),
   },
-  questionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 12 : 13), color: '#7c3aed', marginBottom: scaleSize(IS_IPAD ? 6 : 8) },
-  questionText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(IS_IPAD ? 16 : 18), color: '#111', lineHeight: scaleFont(IS_IPAD ? 24 : 26) },
-  optionsWrap: { gap: scaleSize(IS_IPAD ? 8 : 10), marginBottom: scaleSize(IS_IPAD ? 16 : 24) },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: scaleSize(8),
+    marginBottom: scaleSize(24),
+  },
+  dot: {
+    width: scaleSize(8),
+    height: scaleSize(8),
+    borderRadius: scaleSize(4),
+    backgroundColor: 'rgba(0,0,0,0.12)',
+  },
+  dotActive: { backgroundColor: ACCENT_BLUE },
+  eyebrow: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(13),
+    color: SUBTITLE_GRAY,
+    fontWeight: '500',
+    marginBottom: scaleSize(4),
+  },
+  title: sharedStyles.title,
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: scaleSize(16) },
+  questionCard: {
+    backgroundColor: OFF_WHITE,
+    borderRadius: scaleSize(8),
+    padding: scaleSize(20),
+    marginBottom: scaleSize(20),
+    ...CARD_SHADOW,
+  },
+  questionText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(17),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+    lineHeight: scaleFont(26),
+  },
+  optionsList: { gap: scaleSize(12) },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
-    padding: scaleSize(IS_IPAD ? 12 : 14),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: OFF_WHITE,
+    borderRadius: scaleSize(8),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(16),
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    ...CARD_SHADOW,
   },
-  optionSelected: { borderColor: '#7c3aed', borderWidth: 2, backgroundColor: '#f5f0ff' },
-  optionBullet: {
-    width: scaleSize(IS_IPAD ? 24 : 28),
-    height: scaleSize(IS_IPAD ? 24 : 28),
-    borderRadius: scaleSize(IS_IPAD ? 12 : 14),
-    backgroundColor: '#f0f0f0',
+  optionSelected: {
+    borderColor: ACCENT_BLUE,
+    backgroundColor: '#EEF3FF',
+  },
+  optionPressed: { opacity: 0.75 },
+  bullet: {
+    width: scaleSize(28),
+    height: scaleSize(28),
+    borderRadius: scaleSize(14),
+    backgroundColor: 'rgba(0,0,0,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: scaleSize(IS_IPAD ? 10 : 12),
+    marginRight: scaleSize(12),
   },
-  optionBulletSelected: { backgroundColor: '#7c3aed' },
-  optionBulletText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 13 : 14), color: '#666' },
-  optionBulletTextSelected: { color: '#fff' },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(IS_IPAD ? 14 : 15), color: '#222', flex: 1 },
-  optionTextSelected: { color: '#4a1d96' },
-  ctaWrap: { gap: scaleSize(8), marginBottom: -34 },
-  skipBtn: { alignItems: 'center', paddingVertical: scaleSize(10) },
-  skipText: {
-    fontFamily: 'Fredoka_400Regular',
+  bulletSelected: { backgroundColor: ACCENT_BLUE },
+  bulletText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: SUBTITLE_GRAY,
+  },
+  bulletTextSelected: { color: '#FFFFFF' },
+  optionText: {
+    fontFamily: SF_PRO,
     fontSize: scaleFont(15),
-    color: 'rgba(0,0,0,0.45)',
-    textDecorationLine: 'none',
+    fontWeight: '500',
+    color: DEEP_BLACK,
+    flex: 1,
   },
-  btn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    shadowColor: '#333333',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : RESPONSIVE.button, color: '#fff' },
+  optionTextSelected: { color: ACCENT_BLUE },
+  footer: { gap: scaleSize(4), paddingTop: scaleSize(12) },
+  skipBtn: { alignItems: 'center', paddingVertical: scaleSize(10) },
+  skipText: sharedStyles.skipText,
+  nextBtn: sharedStyles.continueBtn,
+  nextBtnDisabled: sharedStyles.continueBtnDisabled,
+  nextBtnText: sharedStyles.continueBtnText,
 });

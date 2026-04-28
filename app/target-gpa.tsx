@@ -1,26 +1,16 @@
-import { ProgressBar } from '@/components/ProgressBar';
-import { updateOnboarding } from '@/lib/onboarding-storage';
-import { RESPONSIVE, scaleSize } from '@/lib/responsive';
-import { SuperwallAvailableContext } from '@/lib/superwall';
-import { setItem } from '@/lib/storage';
-import { trackPageViewed } from '@/lib/analytics';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SCREEN_WIDTH } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
-
-const IS_IPAD = SCREEN_WIDTH >= 768;
-
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
+import { updateOnboarding } from '@/lib/onboarding-storage';
+import { setItem } from '@/lib/storage';
+import { scaleSize } from '@/lib/responsive';
+import { trackPageViewed } from '@/lib/analytics';
+import { hapticSelect } from '@/lib/haptics';
+import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
 
 const OPTIONS = [
   { id: '2.5+', label: '2.5+' },
@@ -32,95 +22,74 @@ const OPTIONS = [
 
 export default function TargetGpaScreen() {
   const insets = useSafeAreaInsets();
-  const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string | null>(null);
   const [tapped, setTapped] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    trackPageViewed('onboarding_target_gpa');
+    trackPageViewed('ob_student_target_gpa');
   }, []);
+
+  const handleSelect = async (id: string) => {
+    hapticSelect();
+    setSelected(id);
+    setTapped((prev) => {
+      const next = new Set(prev).add(id);
+      if (next.size === OPTIONS.length) setItem('dev:reviewer', 'true');
+      return next;
+    });
+    await updateOnboarding({ target_gpa: id });
+    router.push('/plan-usage');
+  };
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={75} /></View>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+        <View style={styles.progressRow}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
+          </Pressable>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '84%' }]} />
+          </View>
         </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>What GPA do you want to work toward?</Text>
+
+        <Text style={styles.title}>What GPA do you want to work toward?</Text>
         <Text style={styles.subtitle}>Progress matters more than perfection.</Text>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {OPTIONS.map((o) => (
             <Pressable
               key={o.id}
-              style={[styles.optionBtn, selected === o.id && styles.optionBtnSelected]}
-              onPress={() => {
-                setSelected(o.id);
-                setTapped((prev) => {
-                  const next = new Set(prev).add(o.id);
-                  if (next.size === OPTIONS.length) setItem('dev:reviewer', 'true');
-                  return next;
-                });
-              }}
+              style={({ pressed }) => [
+                styles.card,
+                selected === o.id && styles.cardSelected,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => handleSelect(o.id)}
             >
-              <Text style={styles.optionText}>{o.label}</Text>
+              <Text style={[styles.cardText, selected === o.id && styles.cardTextSelected]}>{o.label}</Text>
             </Pressable>
           ))}
         </ScrollView>
-        <View style={styles.buttons}>
-          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
-            <Text style={styles.skipText}>Skip</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
-            onPress={async () => {
-              if (!selected) return;
-              await updateOnboarding({ target_gpa: selected });
-              router.push('/plan-usage');
-            }}
-            disabled={!selected}
-          >
-            <Text style={styles.continueBtnText}>Continue</Text>
-          </Pressable>
-        </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
-  progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 18, color: '#000', textAlign: 'center', marginBottom: 24 },
+  container: sharedStyles.container,
+  progressTrack: sharedStyles.progressTrack,
+  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
+  title: sharedStyles.title,
+  subtitle: sharedStyles.subtitle,
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: scaleSize(16) },
-  optionBtn: {
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
-    paddingVertical: scaleSize(IS_IPAD ? 12 : 14),
-    paddingHorizontal: scaleSize(IS_IPAD ? 14 : 16),
-    marginBottom: scaleSize(IS_IPAD ? 8 : 10),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    ...BUTTON_SHADOW,
-  },
-  optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
-  buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
-  continueBtn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
-  },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
-  continueBtnDisabled: { opacity: 0.6 },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#555', textAlign: 'center', textDecorationLine: 'underline', marginBottom: 12 },
+  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
+  card: sharedStyles.card,
+  cardSelected: sharedStyles.cardSelected,
+  cardPressed: sharedStyles.cardPressed,
+  cardText: sharedStyles.cardText,
+  cardTextSelected: sharedStyles.cardTextSelected,
+  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
+  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
+  backBtn: { padding: scaleSize(4) },
 });

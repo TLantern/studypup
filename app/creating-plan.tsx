@@ -1,15 +1,15 @@
-import { OnboardingView } from '@/components/OnboardingView';
 import LottieView from 'lottie-react-native';
 import { router } from 'expo-router';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OnboardingView } from '@/components/OnboardingView';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
-import { RESPONSIVE, SCREEN_WIDTH, scaleSize } from '@/lib/responsive';
+import { RESPONSIVE, SCREEN_WIDTH, scaleSize, scaleFont } from '@/lib/responsive';
+import { DEEP_BLACK, ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO } from '@/lib/onboarding-theme';
 
 const DURATION_MS = 2500;
-
 const GRADIENT_LOTTIE = require('../assets/Progress Bar - Gradient.json');
 const HERO_LOTTIE = require('../assets/connecting.json');
 
@@ -23,7 +23,7 @@ export default function CreatingPlanScreen() {
   const percentLabel = `${Math.min(100, Math.round(lottieProgress * 100))}%`;
 
   useEffect(() => {
-    trackPageViewed('onboarding_creating_plan');
+    trackPageViewed('ob_student_creating_plan');
     heroLottieRef.current?.play();
   }, []);
 
@@ -44,10 +44,7 @@ export default function CreatingPlanScreen() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(
-      () => router.replace('/plan-ready'),
-      DURATION_MS
-    );
+    const t = setTimeout(() => router.replace('/plan-ready'), DURATION_MS);
     return () => clearTimeout(t);
   }, [superwallAvailable]);
 
@@ -56,53 +53,57 @@ export default function CreatingPlanScreen() {
   return (
     <OnboardingView>
       <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
-      <View style={styles.headerWrap}>
-        <Text style={styles.header}>Creating your Personalized Study Plan</Text>
-      </View>
-      <View style={styles.centerBlock}>
-        <View style={styles.heroLottieWrap}>
+        <View style={styles.headerWrap}>
+          <Text style={styles.header}>Creating your Personalized Study Plan</Text>
+        </View>
+        <View style={styles.centerBlock}>
+          <View style={styles.heroLottieWrap}>
+            <LottieView
+              ref={heroLottieRef}
+              source={HERO_LOTTIE}
+              style={styles.heroLottie}
+              loop
+            />
+          </View>
+        </View>
+        <Text style={styles.timer}>{percentLabel}</Text>
+        <View style={[styles.lottieWrap, { width: barWidth }]}>
           <LottieView
-            ref={heroLottieRef}
-            source={HERO_LOTTIE}
-            style={styles.heroLottie}
-            loop
+            source={GRADIENT_LOTTIE}
+            progress={lottieProgress}
+            loop={false}
+            resizeMode="contain"
+            style={styles.lottie}
           />
         </View>
-      </View>
-      <Text style={styles.timer}>{percentLabel}</Text>
-      <View style={[styles.lottieWrap, { width: barWidth }]}>
-        <LottieView
-          source={GRADIENT_LOTTIE}
-          progress={lottieProgress}
-          loop={false}
-          resizeMode="contain"
-          style={styles.lottie}
-        />
-      </View>
       </View>
     </OnboardingView>
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   headerWrap: {
     width: '100%',
-    paddingTop: scaleSize(16),
+    paddingTop: scaleSize(80),
     paddingBottom: scaleSize(28),
+    paddingHorizontal: scaleSize(16),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: RESPONSIVE.titleMedium,
-    color: '#333',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(28),
+    fontWeight: '700',
+    color: DEEP_BLACK,
     textAlign: 'center',
+    letterSpacing: -0.5,
+    lineHeight: scaleFont(36),
   },
   centerBlock: {
     flex: 1,
@@ -113,24 +114,16 @@ const styles = StyleSheet.create({
   heroLottieWrap: {
     width: scaleSize(200),
     height: scaleSize(200),
-    marginBottom: scaleSize(16),
   },
-  heroLottie: {
-    width: '100%',
-    height: '100%',
-  },
+  heroLottie: { width: '100%', height: '100%' },
   timer: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleSize(36),
-    color: '#333',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(36),
+    fontWeight: '700',
+    color: DEEP_BLACK,
     marginBottom: scaleSize(8),
+    letterSpacing: -1,
   },
-  lottieWrap: {
-    aspectRatio: 1080 / 200,
-    maxWidth: '100%',
-  },
-  lottie: {
-    width: '100%',
-    height: '100%',
-  },
+  lottieWrap: { aspectRatio: 1080 / 200, maxWidth: '100%' },
+  lottie: { width: '100%', height: '100%' },
 });

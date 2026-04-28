@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { trackPageViewed } from '@/lib/analytics';
+import { hapticContinue } from '@/lib/haptics';
 import { SCREEN_WIDTH } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 
@@ -212,8 +213,9 @@ export default function WhereStudyScreen() {
           <Pressable
             style={styles.continueBtn}
             onPress={async () => {
+              hapticContinue();
               await updateOnboarding({ country, region: showRegion ? region : undefined });
-              router.push('/grade-level');
+              router.push('/user-type');
             }}
           >
             <Text style={styles.continueBtnText}>Continue</Text>

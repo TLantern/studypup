@@ -1,7 +1,8 @@
+import { getAuth } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { getFirebase } from '@/lib/firebase';
-import { getOnboarding, type OnboardingData } from '@/lib/onboarding-storage';
+import { getOnboarding, type OnboardingData, type UserTag } from '@/lib/onboarding-storage';
 
 export type AppUser = {
   id: string;
@@ -13,7 +14,15 @@ export type AppUser = {
   onboarding?: OnboardingData;
   onboarding_logged_at?: unknown;
   registered?: boolean;
+  user_tag?: UserTag;
 };
+
+export async function writeUserTag(tag: UserTag): Promise<void> {
+  const { db, auth } = getFirebase();
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  await setDoc(doc(db, 'users', uid), { user_tag: tag }, { merge: true });
+}
 
 export async function checkUserRegistered(uid: string): Promise<boolean> {
   const { db } = getFirebase();

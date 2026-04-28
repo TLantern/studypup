@@ -30,7 +30,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>notario</string>
-				<string>com.teniola.notario</string>
+				<string>com.teniola.studypup</string>
 			</array>
 		</dict>
 		<dict>
@@ -61,6 +61,8 @@
 	<string>Notario needs local network access to connect to the development server for live reload.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Notario uses the microphone to record lectures and study notes.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>Notario uses this to measure ad performance and improve your experience. Your data is never sold.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Notario saves recordings and captures to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

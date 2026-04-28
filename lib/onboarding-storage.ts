@@ -1,14 +1,21 @@
 import { getItem, setItem } from '@/lib/storage';
 
+export type UserTag = 'student' | 'working-class';
+
 export type OnboardingData = {
   country?: string;
   region?: string;
   grade_level?: string;
+  user_tag?: UserTag;
   subjects?: string[];
   study_duration?: string;
   current_gpa?: string;
   target_gpa?: string;
   plan_usage?: string[];
+  work_type?: string;
+  meetings_per_week?: string;
+  meeting_notes_method?: string[];
+  focus_struggle?: string;
 };
 
 const ONBOARDING_KEY = 'onboarding';

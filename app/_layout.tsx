@@ -6,7 +6,7 @@ import { FredokaOne_400Regular } from '@expo-google-fonts/fredoka-one';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 registerGlobals();
 
@@ -20,6 +20,7 @@ Notifications.setNotificationHandler({
   }),
 });
 import { LogBox, View } from 'react-native';
+import { SplashTransition } from '@/components/SplashTransition';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
@@ -40,6 +41,7 @@ const SUPERWALL_ANDROID_KEY = process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? '
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Fredoka_400Regular, FredokaOne_400Regular });
+  const [splashMounted, setSplashMounted] = useState(true);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
@@ -63,20 +65,20 @@ export default function RootLayout() {
     } catch {}
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
-
   const content = (
     <AuthProvider>
       <View style={{ flex: 1 }}>
         <PaywallTriggerProvider>
-          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }}>
             <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
             <Stack.Screen name="avatar-tutor" options={{ animation: 'slide_from_bottom', headerShown: false, gestureEnabled: false }} />
             {[
               'index',
               'students-improve',
               'where-study',
-              'grade-level',
+              'user-type',
+              'professional-welcome',
+              'social-proof',
               'subjects',
               'study-duration',
               'notification-optin',
@@ -112,18 +114,30 @@ export default function RootLayout() {
     keys: apiKeys,
   });
 
+  const splash = splashMounted ? (
+    <SplashTransition fontsReady={fontsLoaded} onDone={() => setSplashMounted(false)} />
+  ) : null;
+
   if (SuperwallProvider) {
     return (
-      <SuperwallProvider
-        apiKeys={apiKeys}
-        onConfigurationError={(e: any) => {
-          console.error('[RootLayout] Superwall config failed:', e);
-        }}
-      >
-        <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
-      </SuperwallProvider>
+      <>
+        <SuperwallProvider
+          apiKeys={apiKeys}
+          onConfigurationError={(e: any) => {
+            console.error('[RootLayout] Superwall config failed:', e);
+          }}
+        >
+          <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
+        </SuperwallProvider>
+        {splash}
+      </>
     );
   }
   console.warn('[RootLayout] SuperwallProvider not available, Superwall disabled');
-  return <SuperwallAvailableContext.Provider value={false}>{content}</SuperwallAvailableContext.Provider>;
+  return (
+    <>
+      <SuperwallAvailableContext.Provider value={false}>{content}</SuperwallAvailableContext.Provider>
+      {splash}
+    </>
+  );
 }

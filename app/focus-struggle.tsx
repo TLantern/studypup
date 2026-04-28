@@ -2,37 +2,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleSize } from '@/lib/responsive';
+import { ACCENT_BLUE, DEEP_BLACK, OFF_WHITE, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
+import { scaleSize, scaleFont } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
-import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
 
 const OPTIONS = [
-  { id: 'below-2', label: 'Below 2.0' },
-  { id: '2-2.5', label: '2.0 – 2.5' },
-  { id: '2.5-3', label: '2.5 – 3.0' },
-  { id: '3-3.5', label: '3.0 – 3.5' },
-  { id: '3.5+', label: '3.5+' },
-  { id: 'unsure', label: "I'm not sure" },
+  { id: 'very_often', label: 'Very often' },
+  { id: 'often', label: 'Often' },
+  { id: 'not_often', label: 'Not often' },
 ];
 
-export default function CurrentGpaScreen() {
+export default function FocusStruggleScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
-    trackPageViewed('ob_student_current_gpa');
+    trackPageViewed('ob_pro_focus_challenge');
   }, []);
 
   const handleSelect = async (id: string) => {
     hapticSelect();
     setSelected(id);
-    await updateOnboarding({ current_gpa: id });
-    router.push('/target-gpa');
+    await updateOnboarding({ focus_struggle: id });
+    router.push('/meeting-review');
   };
 
   return (
@@ -43,12 +39,12 @@ export default function CurrentGpaScreen() {
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
           </Pressable>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '70%' }]} />
+            <View style={styles.progressFill} />
           </View>
         </View>
 
-        <Text style={styles.title}>What's your current GPA?</Text>
-        <Text style={styles.subtitle}>This helps tailor your study plan.</Text>
+        <Text style={styles.title}>How often do you struggle to focus or "zone out" in meetings?</Text>
+        <Text style={styles.subtitle}>Personalizing your Notario...</Text>
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {OPTIONS.map((o) => (
@@ -72,18 +68,47 @@ export default function CurrentGpaScreen() {
 
 const styles = StyleSheet.create({
   container: sharedStyles.container,
-  progressTrack: sharedStyles.progressTrack,
-  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
-  title: sharedStyles.title,
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: scaleSize(36),
+    gap: scaleSize(8),
+  },
+  backBtn: { padding: scaleSize(4) },
+  progressTrack: {
+    flex: 1,
+    height: 10,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    borderRadius: 6,
+  },
+  progressFill: {
+    height: '100%',
+    width: '72%',
+    backgroundColor: ACCENT_BLUE,
+    borderRadius: 6,
+  },
+  title: { ...sharedStyles.title, fontSize: scaleFont(20) },
   subtitle: sharedStyles.subtitle,
   scroll: { flex: 1 },
   list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
-  card: sharedStyles.card,
+  card: {
+    backgroundColor: OFF_WHITE,
+    borderRadius: scaleSize(8),
+    paddingVertical: scaleSize(18),
+    paddingHorizontal: scaleSize(20),
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    ...CARD_SHADOW,
+  },
   cardSelected: sharedStyles.cardSelected,
   cardPressed: sharedStyles.cardPressed,
-  cardText: sharedStyles.cardText,
+  cardText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(16),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+    textAlign: 'center',
+  },
   cardTextSelected: sharedStyles.cardTextSelected,
-  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
-  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
-  backBtn: { padding: scaleSize(4) },
 });

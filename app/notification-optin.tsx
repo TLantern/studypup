@@ -1,34 +1,26 @@
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ProgressBar } from '@/components/ProgressBar';
-import { scaleSize, scaleFont, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
+import { OnboardingView } from '@/components/OnboardingView';
+import { scaleSize, scaleFont, SCREEN_WIDTH } from '@/lib/responsive';
 import { applyNotifPrefs, getNotifPrefs, requestPermissions } from '@/lib/notifications';
 import { trackPageViewed } from '@/lib/analytics';
-import { OnboardingView } from '@/components/OnboardingView';
+import { hapticContinue } from '@/lib/haptics';
+import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO, CARD_SHADOW, sharedStyles } from '@/lib/onboarding-theme';
 
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
-
-const BELL_SIZE = SCREEN_WIDTH * 0.28;
-const IS_IPAD = SCREEN_WIDTH >= 768;
+const BELL_SIZE = SCREEN_WIDTH * 0.24;
 
 export default function NotificationOptinScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    trackPageViewed('onboarding_notification_optin');
+    trackPageViewed('ob_student_reminders');
   }, []);
 
   async function allow() {
+    hapticContinue();
     const granted = await requestPermissions();
     if (granted) {
       const prefs = await getNotifPrefs();
@@ -39,17 +31,19 @@ export default function NotificationOptinScreen() {
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.progressWrap}>
-            <ProgressBar progress={70} />
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+        <View style={styles.progressRow}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
+          </Pressable>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '56%' }]} />
           </View>
         </View>
 
         <View style={styles.middle}>
           <View style={styles.bellWrap}>
-            <Ionicons name="notifications" size={BELL_SIZE * 0.55} color="#FD8A8A" />
+            <Ionicons name="notifications" size={BELL_SIZE * 0.52} color={ACCENT_BLUE} />
           </View>
 
           <Text style={styles.title}>Stay on track with reminders</Text>
@@ -58,7 +52,7 @@ export default function NotificationOptinScreen() {
           </Text>
 
           <View style={styles.pillRow}>
-            {['📚 Daily reminder', '🔥 Streak alerts', '🧠 Review nudges'].map(p => (
+            {['📚 Daily reminder', '🔥 Streak alerts', '🧠 Review nudges'].map((p) => (
               <View key={p} style={styles.pill}>
                 <Text style={styles.pillText}>{p}</Text>
               </View>
@@ -66,105 +60,73 @@ export default function NotificationOptinScreen() {
           </View>
         </View>
 
-        <View style={styles.buttons}>
-          <Pressable style={styles.allowBtn} onPress={allow}>
-            <Text style={styles.allowBtnText}>Allow Notifications</Text>
+        <View style={styles.footer}>
+          <Pressable style={styles.continueBtn} onPress={allow}>
+            <Text style={styles.continueBtnText}>Allow Notifications</Text>
           </Pressable>
-          <Pressable style={styles.skipBtn} onPress={() => router.push('/current-gpa')}>
-            <Text style={styles.skipBtnText}>Not now</Text>
+          <Pressable style={styles.skipWrap} onPress={() => { hapticContinue(); router.push('/current-gpa'); }}>
+            <Text style={styles.skipText}>Not now</Text>
           </Pressable>
         </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
+  container: { ...sharedStyles.container, justifyContent: 'space-between' },
+  progressTrack: sharedStyles.progressTrack,
+  progressFill: {
+    height: '100%',
+    backgroundColor: ACCENT_BLUE,
+    borderRadius: 6,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
-  progressWrap: { flex: 1 },
   middle: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: scaleSize(8),
   },
   bellWrap: {
     width: BELL_SIZE,
     height: BELL_SIZE,
     borderRadius: BELL_SIZE / 2,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: '#EEF3FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: scaleSize(32),
-    shadowColor: '#FD8A8A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 8,
   },
-  title: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: IS_IPAD ? 34 : RESPONSIVE.titleSmall,
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: scaleSize(12),
-  },
-  subtitle: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: IS_IPAD ? 22 : RESPONSIVE.body,
-    color: 'rgba(0,0,0,0.65)',
-    textAlign: 'center',
-    lineHeight: scaleFont(24),
-    marginBottom: scaleSize(28),
-    paddingHorizontal: scaleSize(8),
-  },
+  title: { ...sharedStyles.title, textAlign: 'center' },
+  subtitle: { ...sharedStyles.subtitle, textAlign: 'center', lineHeight: scaleFont(22) },
   pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: scaleSize(8),
+    marginTop: scaleSize(8),
   },
   pill: {
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: OFF_WHITE,
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(6),
     paddingHorizontal: scaleSize(14),
   },
   pillText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(14),
-    color: '#333',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(13),
+    color: DEEP_BLACK,
+    fontWeight: '500',
   },
-  buttons: {
-    gap: scaleSize(12),
-    marginBottom: -34,
-  },
-  allowBtn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
-  },
-  allowBtnText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: IS_IPAD ? 22 : 24,
-    color: '#fff',
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: scaleSize(12),
-  },
-  skipBtnText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(16),
-    color: 'rgba(0,0,0,0.45)',
+  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(16), gap: scaleSize(8) },
+  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
+  backBtn: { padding: scaleSize(4) },
+  footer: { gap: scaleSize(4) },
+  continueBtn: sharedStyles.continueBtn,
+  continueBtnText: sharedStyles.continueBtnText,
+  skipWrap: { alignItems: 'center', paddingVertical: scaleSize(14) },
+  skipText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: SUBTITLE_GRAY,
   },
 });

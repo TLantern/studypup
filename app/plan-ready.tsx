@@ -3,32 +3,24 @@ import { router } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { OnboardingView } from '@/components/OnboardingView';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
-import { OnboardingView } from '@/components/OnboardingView';
-
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
-};
+import { hapticContinue } from '@/lib/haptics';
+import { DEEP_BLACK, ACCENT_BLUE, SUBTITLE_GRAY, MUTED_TEXT, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 
 export default function PlanReadyScreen() {
   const insets = useSafeAreaInsets();
   const lottieRef = useRef<LottieView>(null);
 
   useEffect(() => {
-    trackPageViewed('onboarding_plan_ready');
+    trackPageViewed('ob_student_plan_ready');
     lottieRef.current?.play();
   }, []);
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(32) }]}>
         <View style={styles.middle}>
           <View style={styles.lottieWrap}>
             <LottieView
@@ -40,32 +32,29 @@ export default function PlanReadyScreen() {
           </View>
 
           <Text style={styles.title}>Your Personalized Study Plan Is Ready</Text>
-
-          <Text style={styles.body}>
-          Answer 3 quick questions to see where you stand.
-          </Text>
-
+          <Text style={styles.body}>Answer 3 quick questions to see where you stand.</Text>
           <Text style={styles.hint}>Most students overestimate readiness by 20–30%.</Text>
         </View>
 
         <View style={styles.ctaWrap}>
-          <Pressable style={styles.btn} onPress={() => router.replace('/micro-quiz')}>
-            <Text style={styles.btnText}>Start My Assessment</Text>
+          <Pressable
+            style={({ pressed }) => [styles.continueBtn, pressed && styles.continueBtnPressed]}
+            onPress={() => { hapticContinue(); router.replace('/micro-quiz'); }}
+          >
+            <Text style={styles.continueBtnText}>Start My Assessment</Text>
           </Pressable>
         </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: RESPONSIVE.horizontalPadding,
     alignItems: 'center',
-    justifyContent: 'flex-start',
   },
   middle: {
     flex: 1,
@@ -80,37 +69,32 @@ const styles = StyleSheet.create({
   },
   lottie: { width: '100%', height: '100%' },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: scaleFont(32),
-    color: '#000',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(26),
+    fontWeight: '700',
+    color: DEEP_BLACK,
     textAlign: 'center',
-    marginBottom: scaleSize(24),
-    lineHeight: scaleFont(40),
+    letterSpacing: -0.5,
+    marginBottom: scaleSize(16),
+    lineHeight: scaleFont(34),
   },
   body: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(17),
-    color: 'rgba(0,0,0,0.65)',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(16),
+    color: SUBTITLE_GRAY,
     textAlign: 'center',
-    lineHeight: scaleFont(25),
-    marginBottom: scaleSize(14),
+    lineHeight: scaleFont(24),
+    marginBottom: scaleSize(10),
   },
   hint: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(13),
-    color: 'rgba(0,0,0,0.4)',
+    color: MUTED_TEXT,
     textAlign: 'center',
     marginBottom: scaleSize(48),
   },
-  ctaWrap: { width: '100%', marginTop: 'auto' },
-  btn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: RESPONSIVE.buttonRadius,
-    paddingVertical: RESPONSIVE.buttonPaddingVertical,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
-  },
-  btnText: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
+  ctaWrap: { width: '100%' },
+  continueBtn: sharedStyles.continueBtn,
+  continueBtnPressed: { opacity: 0.85 },
+  continueBtnText: sharedStyles.continueBtnText,
 });

@@ -1,38 +1,39 @@
-import { ProgressBar } from '@/components/ProgressBar';
-import { useAuth } from '@/lib/auth-store';
-import { updateOnboarding } from '@/lib/onboarding-storage';
-import { RESPONSIVE, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
-import { SuperwallAvailableContext } from '@/lib/superwall';
-import { trackPageViewed } from '@/lib/analytics';
-import { setItem as storageSetItem } from '@/lib/storage';
-import { ensureUserDoc } from '@/lib/user-profile';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
+import { getOnboarding, updateOnboarding } from '@/lib/onboarding-storage';
+import { setItem as storageSetItem } from '@/lib/storage';
+import { ensureUserDoc } from '@/lib/user-profile';
+import { useAuth } from '@/lib/auth-store';
+import { scaleSize, scaleFont } from '@/lib/responsive';
+import { SuperwallAvailableContext } from '@/lib/superwall';
+import { trackPageViewed } from '@/lib/analytics';
+import { hapticSelect, hapticContinue } from '@/lib/haptics';
+import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
 
-const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
-const IS_IPAD = SCREEN_WIDTH >= 768;
-
-const BUTTON_SHADOW = {
-  shadowColor: '#333333',
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.35,
-  shadowRadius: 6,
-  elevation: 6,
+const GPA_TINT: Record<string, string> = {
+  'below-2': '#FF3B30',
+  '2-2.5':   '#FF9500',
+  '2.5-3':   '#FFCC00',
+  '3-3.5':   '#34C759',
+  '3.5+':    '#30D158',
+  'unsure':  '#8E8E93',
 };
 
+const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
+
 const OPTIONS = [
-  { id: 'recording', label: 'Recording Lectures', icon: 'mic' as const },
-  { id: 'notes', label: 'Generating Notes', icon: 'document-text' as const },
-  { id: 'flashcards', label: 'Flashcards', icon: 'layers' as const },
-  { id: 'quizzes', label: 'Quizzes', icon: 'locate' as const },
-  { id: 'answers', label: 'Getting Instant Answers', icon: 'flash' as const },
-  { id: 'other', label: 'Other', icon: 'help-circle' as const },
+  { id: 'recording', label: 'Recording Lectures', subtext: 'Capture every word without the stress', emoji: '🎙️' },
+  { id: 'notes', label: 'Generating Notes', subtext: 'Turn recordings into clean, organized notes', emoji: '📝' },
+  { id: 'flashcards', label: 'Flashcards', subtext: 'Study smarter with auto-generated cards', emoji: '🃏' },
+  { id: 'quizzes', label: 'Quizzes', subtext: 'Test yourself and lock in what you learned', emoji: '🧠' },
+  { id: 'answers', label: 'Getting Instant Answers', subtext: 'Ask questions about your material anytime', emoji: '⚡' },
+  { id: 'other', label: 'Other', subtext: 'Something else entirely', emoji: '✨' },
 ];
 
 export default function PlanUsageScreen() {
@@ -40,94 +41,125 @@ export default function PlanUsageScreen() {
   const { user } = useAuth();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
+  const [tintColor, setTintColor] = useState<string>('#8E8E93');
 
   useEffect(() => {
-    trackPageViewed('onboarding_plan_usage');
+    trackPageViewed('ob_student_plan_frequency');
+    getOnboarding().then((data) => {
+      if (data.current_gpa && GPA_TINT[data.current_gpa]) {
+        setTintColor(GPA_TINT[data.current_gpa]);
+      }
+    });
   }, []);
+
+  const toggleSelect = (id: string) => {
+    hapticSelect();
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleContinue = async () => {
+    if (selected.length === 0) return;
+    hapticContinue();
+    await updateOnboarding({ plan_usage: selected });
+    await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
+    if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
+    router.push('/creating-plan');
+  };
+
+  const activeTint = selected.length === 0 ? '#FF3B30' : tintColor;
+  const tintRgba = `${activeTint}26`;
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
-      <View style={[styles.container, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.progressWrap}><ProgressBar progress={80} /></View>
-        </View>
-        <Text style={[styles.title, { marginTop: 24 }]}>How do you plan on using Notario?</Text>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {OPTIONS.map((o) => (
-            <Pressable
-              key={o.id}
-              style={[styles.optionBtn, selected.includes(o.id) && styles.optionBtnSelected]}
-              onPress={() => setSelected(prev => prev.includes(o.id) ? prev.filter(id => id !== o.id) : [...prev, o.id])}
-            >
-              <Text style={styles.optionText}>{o.label}</Text>
-              <Ionicons name={o.icon} size={RESPONSIVE.iconSmall} color={selected.includes(o.id) ? '#7c3aed' : '#666'} />
-            </Pressable>
-          ))}
-        </ScrollView>
-        <View style={styles.bottomSection}>
-          <Image source={require('../assets/buttonpup.png')} style={styles.puppy} contentFit="contain" />
-          <Pressable onPress={() => router.replace(superwallAvailable ? '/paywall' : '/create-account')}>
-            <Text style={styles.skipText}>Skip</Text>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+        <LinearGradient
+          colors={['transparent', tintRgba]}
+          locations={[0, 1]}
+          style={styles.bottomTint}
+          pointerEvents="none"
+        />
+        <View style={styles.progressRow}>
+          <Pressable style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
           </Pressable>
-          <Pressable
-          style={[styles.continueBtn, selected.length === 0 && styles.continueBtnDisabled]}
-          onPress={async () => {
-            if (selected.length === 0) return;
-            await updateOnboarding({ plan_usage: selected });
-            await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
-            if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
-            router.push('/creating-plan');
-          }}
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '92%' }]} />
+          </View>
+        </View>
+
+        <Text style={styles.title}>How do you plan on using Notario?</Text>
+        <Text style={styles.subtitle}>Select all that apply</Text>
+
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {OPTIONS.map((o) => {
+            const isSelected = selected.includes(o.id);
+            return (
+              <Pressable
+                key={o.id}
+                style={({ pressed }) => [
+                  styles.card,
+                  isSelected && styles.cardSelected,
+                  pressed && styles.cardPressed,
+                ]}
+                onPress={() => toggleSelect(o.id)}
+              >
+                <View style={styles.cardContent}>
+                  <Text style={[styles.cardText, isSelected && styles.cardTextSelected]}>{o.label}</Text>
+                  <Text style={[styles.cardSubtext, isSelected && styles.cardSubtextSelected]}>{o.subtext}</Text>
+                </View>
+                <Text style={styles.cardEmoji}>{o.emoji}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <Pressable
+          style={[sharedStyles.continueBtn, selected.length === 0 && sharedStyles.continueBtnDisabled]}
+          onPress={handleContinue}
           disabled={selected.length === 0}
         >
-          <Text style={styles.continueBtnText}>Continue</Text>
+          <Text style={sharedStyles.continueBtnText}>Continue</Text>
         </Pressable>
-        </View>
       </View>
-      </LinearGradient>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(12) },
-  progressWrap: { flex: 1 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
+  container: sharedStyles.container,
+  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
+  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
+  title: sharedStyles.title,
+  subtitle: sharedStyles.subtitle,
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: scaleSize(16) },
-  optionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 10 : 12),
-    paddingVertical: scaleSize(IS_IPAD ? 12 : 14),
-    paddingHorizontal: scaleSize(IS_IPAD ? 14 : 16),
-    marginBottom: scaleSize(IS_IPAD ? 8 : 10),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    ...BUTTON_SHADOW,
+  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
+  card: sharedStyles.card,
+  cardSelected: sharedStyles.cardSelected,
+  cardPressed: sharedStyles.cardPressed,
+  cardText: sharedStyles.cardText,
+  cardTextSelected: sharedStyles.cardTextSelected,
+  cardEmoji: { fontSize: scaleFont(20) },
+  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
+  backBtn: { padding: scaleSize(4) },
+  bottomTint: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '33%',
+    zIndex: 0,
   },
-  optionBtnSelected: { borderColor: '#7c3aed', borderWidth: 2 },
-  optionText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.body, color: '#000' },
-  bottomSection: { marginTop: 'auto', paddingTop: 6, marginBottom: -34, position: 'relative', alignItems: 'center', gap: 12 },
-  puppy: { position: 'absolute', bottom: IS_IPAD ? 42 : 52, width: 128, height: 110, zIndex: 1 },
-  continueBtn: {
-    marginTop: IS_IPAD ? 52 : 68,
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
-    paddingHorizontal: 32,
-    width: '100%',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    ...BUTTON_SHADOW,
+  cardContent: { flex: 1, gap: scaleSize(2) },
+  cardSubtext: {
+    fontFamily: 'SF Pro Text',
+    fontSize: scaleFont(12),
+    color: '#888',
+    fontWeight: '400',
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
-  continueBtnDisabled: { opacity: 0.6 },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleSize(16), color: '#555', textAlign: 'center', textDecorationLine: 'underline' },
+  cardSubtextSelected: {
+    color: ACCENT_BLUE,
+    opacity: 0.8,
+  },
 });

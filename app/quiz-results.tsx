@@ -1,14 +1,42 @@
 import { useContext, useEffect, useRef, useMemo } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SuperwallAvailableContext } from '@/lib/superwall';
-import { scaleFont, scaleSize, RESPONSIVE, SCREEN_WIDTH } from '@/lib/responsive';
+import { scaleFont, scaleSize } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
+import { hapticContinue } from '@/lib/haptics';
 import { OnboardingView } from '@/components/OnboardingView';
+import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, MUTED_TEXT, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 
-const IS_IPAD = SCREEN_WIDTH >= 768;
+const MAX_BAR_HEIGHT = scaleSize(180);
+
+const COLOR_GREEN = '#4CD964';
+const COLOR_GOLD  = '#FFD700';
+const COLOR_RED   = '#FF5F5F';
+const COLOR_AMBER = '#FFBB33';
+
+function currentBarColor(score: number): string {
+  if (score === 100) return COLOR_GREEN;
+  if (score >= 60)   return COLOR_AMBER;
+  return COLOR_RED;
+}
+
+function structuredBarColor(score: number): string {
+  return score === 100 ? COLOR_GOLD : COLOR_GREEN;
+}
+
+function badgeColor(score: number): string {
+  return score === 100 ? COLOR_GOLD : COLOR_GREEN;
+}
+
+function bgTint(score: number): string {
+  if (score === 100) return '#FFE680';
+  if (score >= 80) return '#A8E5B5';
+  if (score >= 60) return '#FFD27A';
+  return '#FF9F9F';
+}
 
 function letterGrade(score: number): string {
   if (score >= 90) return 'A';
@@ -23,15 +51,13 @@ function higherGrade(letter: string): string {
   return map[letter] ?? 'A';
 }
 
-const MAX_BAR_HEIGHT = IS_IPAD ? 150 : 180;
-
 export default function QuizResultsScreen() {
   const insets = useSafeAreaInsets();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const { score: scoreParam, weak } = useLocalSearchParams<{ score: string; weak: string }>();
 
   useEffect(() => {
-    trackPageViewed('onboarding_quiz_results');
+    trackPageViewed('ob_student_quiz_results');
   }, []);
 
   const mastery = parseInt(scoreParam ?? '0', 10);
@@ -61,59 +87,58 @@ export default function QuizResultsScreen() {
 
   const leftH = (mastery / 100) * MAX_BAR_HEIGHT;
   const rightH = (projected_score / 100) * MAX_BAR_HEIGHT;
-  const leftScale = leftAnim;
-  const rightScale = rightAnim;
   const leftTranslateY = leftAnim.interpolate({ inputRange: [0, 1], outputRange: [leftH / 2, 0] });
   const rightTranslateY = rightAnim.interpolate({ inputRange: [0, 1], outputRange: [rightH / 2, 0] });
 
-  const handleUnlock = () => {
-    router.replace(superwallAvailable ? '/paywall' : '/create-account');
-  };
+  const leftColor = currentBarColor(mastery);
+  const rightColor = structuredBarColor(mastery);
+  const badgeBg = badgeColor(mastery);
 
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+      <View style={styles.bg}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={['rgba(255,255,255,0)', bgTint(mastery)]}
+          locations={[0, 1]}
+          style={styles.gradient}
+        />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 }]}
+        contentContainerStyle={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(32) }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.headline}>Your Current Mastery: {mastery}%</Text>
 
-        {/* Bar Chart */}
-        <View style={styles.chartCard}>
+        <View style={styles.card}>
           <View style={styles.chartWrap}>
-            {/* Left bar */}
             <View style={styles.barGroup}>
               <View style={[styles.barTrack, { height: MAX_BAR_HEIGHT }]}>
-                <Animated.View style={[styles.barFill, styles.barLeft, { height: leftH, transform: [{ scaleY: leftScale }, { translateY: leftTranslateY }] }]} />
+                <Animated.View style={[styles.barFill, { backgroundColor: leftColor, height: leftH, transform: [{ scaleY: leftAnim }, { translateY: leftTranslateY }] }]} />
               </View>
               <Text style={styles.barLabel}>Your Current{'\n'}Level</Text>
             </View>
 
             <View style={styles.barDivider} />
 
-            {/* Right bar */}
             <View style={styles.barGroup}>
               <View style={{ alignItems: 'center' }}>
-                <View style={styles.improvementBadge}>
-                  <Text style={styles.improvementBadgeText}>+{projected_score - mastery}% Potential</Text>
+                <View style={[styles.badge, { backgroundColor: badgeBg }]}>
+                  <Text style={styles.badgeText}>+{projected_score - mastery}% Potential</Text>
                 </View>
                 <View style={[styles.barTrack, { height: MAX_BAR_HEIGHT }]}>
-                  <Animated.View style={[styles.barFill, styles.barRight, { height: rightH, transform: [{ scaleY: rightScale }, { translateY: rightTranslateY }] }]} />
+                  <Animated.View style={[styles.barFill, { backgroundColor: rightColor, height: rightH, transform: [{ scaleY: rightAnim }, { translateY: rightTranslateY }] }]} />
                 </View>
               </View>
               <Text style={styles.barLabel}>With AI-Structured{'\n'}Review</Text>
             </View>
           </View>
 
-          {/* Score labels */}
           <View style={styles.scoreRow}>
             <Text style={styles.scoreNum}>{mastery}%</Text>
             <Text style={styles.scoreNum}>{projected_score}%</Text>
           </View>
         </View>
 
-        {/* Insight card */}
         <View style={styles.insightCard}>
           {currentLetter === 'A' ? (
             <>
@@ -121,7 +146,7 @@ export default function QuizResultsScreen() {
                 You're already on the right track — seriously, <Text style={styles.bold}>nice work</Text>.
               </Text>
               <Text style={styles.insightText}>
-                The goal now is keeping it there. Consistent review is what separates a <Text style={styles.bold}>one-time A</Text> from always getting one.
+                Consistent review is what separates a <Text style={styles.bold}>one-time A</Text> from always getting one.
               </Text>
             </>
           ) : (
@@ -139,37 +164,43 @@ export default function QuizResultsScreen() {
           )}
         </View>
 
-        <View style={styles.ctaWrap}>
-          <Pressable style={styles.btn} onPress={handleUnlock}>
-            <Text style={styles.btnText}>Increase My Score</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.ctaBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => { hapticContinue(); router.replace(superwallAvailable ? '/paywall' : '/create-account'); }}
+        >
+          <Text style={styles.ctaBtnText}>Increase My Score</Text>
+        </Pressable>
       </ScrollView>
-      </LinearGradient>
+      </View>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
-  container: { flexGrow: 1, paddingHorizontal: 24 },
-  headline: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: IS_IPAD ? 34 : scaleFont(26),
-    color: '#000',
-    textAlign: 'center',
-    marginBottom: scaleSize(28),
+  bg: { flex: 1, backgroundColor: '#FFFFFF' },
+  gradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '60%',
   },
-  chartCard: {
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 16 : 20),
-    padding: scaleSize(IS_IPAD ? 16 : 20),
+  container: { paddingHorizontal: scaleSize(24) },
+  headline: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(24),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: scaleSize(24),
+  },
+  card: {
+    backgroundColor: OFF_WHITE,
+    borderRadius: scaleSize(8),
+    padding: scaleSize(20),
     marginBottom: scaleSize(16),
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...CARD_SHADOW,
   },
   chartWrap: {
     flexDirection: 'row',
@@ -180,79 +211,63 @@ const styles = StyleSheet.create({
   },
   barGroup: { alignItems: 'center', gap: scaleSize(10) },
   barTrack: {
-    width: scaleSize(IS_IPAD ? 64 : 80),
+    width: scaleSize(80),
     backgroundColor: 'rgba(0,0,0,0.08)',
-    borderRadius: scaleSize(10),
+    borderRadius: scaleSize(6),
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  barFill: { width: '100%', borderRadius: scaleSize(10) },
-  barLeft: { backgroundColor: '#AADDDD' },
-  barRight: { backgroundColor: '#FD8A8A' },
-  barDivider: { width: 1, height: MAX_BAR_HEIGHT, backgroundColor: 'transparent' },
+  barFill: { width: '100%', borderRadius: scaleSize(6) },
+  barDivider: { width: 1, height: MAX_BAR_HEIGHT },
   barLabel: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(IS_IPAD ? 12 : 13),
-    color: '#444',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(12),
+    fontWeight: '500',
+    color: SUBTITLE_GRAY,
     textAlign: 'center',
-    lineHeight: scaleFont(IS_IPAD ? 16 : 18),
+    lineHeight: scaleFont(18),
   },
-  improvementBadge: {
-    backgroundColor: '#F5A623',
+  badge: {
     borderRadius: scaleSize(20),
-    paddingHorizontal: scaleSize(IS_IPAD ? 10 : 12),
+    paddingHorizontal: scaleSize(12),
     paddingVertical: scaleSize(5),
     marginBottom: scaleSize(6),
-    alignSelf: 'center',
   },
-  improvementBadgeText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(IS_IPAD ? 11 : 12),
-    color: '#fff',
+  badgeText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(11),
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   scoreRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 0,
     paddingHorizontal: scaleSize(20),
   },
   scoreNum: {
-    fontFamily: 'FredokaOne_400Regular',
-    fontSize: scaleFont(IS_IPAD ? 18 : 20),
-    color: '#333',
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(20),
+    fontWeight: '700',
+    color: DEEP_BLACK,
   },
   insightCard: {
-    backgroundColor: '#fff',
-    borderRadius: scaleSize(IS_IPAD ? 14 : 16),
-    padding: scaleSize(IS_IPAD ? 16 : 20),
-    marginBottom: scaleSize(IS_IPAD ? 20 : 28),
+    backgroundColor: OFF_WHITE,
+    borderRadius: scaleSize(8),
+    padding: scaleSize(20),
+    marginBottom: scaleSize(28),
     gap: scaleSize(10),
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...CARD_SHADOW,
   },
   insightText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: scaleFont(IS_IPAD ? 14 : 16),
-    color: '#333',
-    lineHeight: scaleFont(IS_IPAD ? 20 : 22),
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: SUBTITLE_GRAY,
+    lineHeight: scaleFont(23),
   },
-  bold: { fontFamily: 'FredokaOne_400Regular', color: '#111' },
-  ctaWrap: { marginBottom: -34 },
-  btn: {
-    backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : RESPONSIVE.buttonPaddingVertical,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#CA6E6E',
-    shadowColor: '#FD8A8A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 18,
-    elevation: 10,
+  bold: {
+    fontWeight: '700',
+    color: DEEP_BLACK,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : RESPONSIVE.button, color: '#fff' },
+  ctaBtn: { ...sharedStyles.continueBtn, backgroundColor: DEEP_BLACK },
+  ctaBtnText: sharedStyles.continueBtnText,
 });
