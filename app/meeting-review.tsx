@@ -32,10 +32,14 @@ export default function MeetingReviewScreen() {
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.reviewerRole}>Operations Manager</Text>
+            <Text style={styles.reviewerRole}>Great app</Text>
+            <View style={styles.reviewMeta}>
+              <Text style={styles.reviewAuthor}>G Kipling</Text>
+              <Text style={styles.reviewDate}>1 month ago</Text>
+            </View>
           </View>
           <Text style={styles.reviewText}>
-            "I used to spend 30 minutes after every meeting rewriting my notes. Now I just hit record and Notario hands me a clean summary before I'm back at my desk. Absolute game changer."
+            It's a really good app and has accurate responses unlike some other apps. 100% recommend subscribing!!
           </Text>
           <Text style={styles.stars}>★★★★★</Text>
         </View>
@@ -92,7 +96,24 @@ const styles = StyleSheet.create({
     ...CARD_SHADOW,
   },
   cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: scaleSize(12),
+  },
+  reviewMeta: {
+    alignItems: 'flex-end',
+  },
+  reviewAuthor: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(13),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+  },
+  reviewDate: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(12),
+    color: SUBTITLE_GRAY,
   },
   reviewerRole: {
     fontFamily: SF_PRO,

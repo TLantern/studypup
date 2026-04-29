@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import LottieView from 'lottie-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
@@ -12,11 +13,12 @@ import { hapticContinue } from '@/lib/haptics';
 const BULLETS = [
   { emoji: '🔒', text: 'Audio recordings are private by default' },
   { emoji: '🗑️', text: 'Delete any note, any time' },
-  { emoji: '😊', text: 'Trusted by 1.5 million+' },
+  { emoji: '😊', text: 'Trusted by professionals' },
 ];
 
 export default function PrivacyTrustScreen() {
   const insets = useSafeAreaInsets();
+  const lockAnim = useRef<LottieView>(null);
 
   useEffect(() => {
     trackPageViewed('ob_pro_privacy');
@@ -36,6 +38,14 @@ export default function PrivacyTrustScreen() {
 
         <View style={styles.body}>
           <Text style={styles.title}>Your privacy and security are our top priority.</Text>
+
+          <LottieView
+            ref={lockAnim}
+            source={require('../lock animation.json')}
+            autoPlay
+            loop={false}
+            style={styles.lockAnimation}
+          />
 
           <View style={styles.bullets}>
             {BULLETS.map((b) => (
@@ -83,6 +93,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: scaleSize(40),
   },
+  lockAnimation: {
+    width: scaleSize(120),
+    height: scaleSize(120),
+    alignSelf: 'center',
+    marginBottom: scaleSize(24),
+  },
   title: {
     fontFamily: SF_PRO,
     fontSize: scaleFont(26),
@@ -91,7 +107,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: 'center',
     lineHeight: scaleFont(34),
-    marginBottom: scaleSize(40),
+    marginBottom: scaleSize(16),
   },
   bullets: {
     gap: scaleSize(20),

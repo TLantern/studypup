@@ -65,7 +65,7 @@ export default function GetReadyScreen() {
 
           <Text style={styles.title}>
             Get ready to join{'\n'}
-            <Text style={styles.titleAccent}>1M+ </Text>
+            <Text style={styles.titleAccent}>10,000+ </Text>
             professionals{'\n'}
             currently using{' '}
             <Text style={styles.titleAccent}>Notario</Text>
@@ -73,7 +73,7 @@ export default function GetReadyScreen() {
         </View>
 
         <View style={styles.footer}>
-          <Pressable style={styles.continueBtn} onPress={() => { hapticContinue(); router.push('/paywall'); }}>
+          <Pressable style={styles.continueBtn} onPress={() => { hapticContinue(); router.push('/pro-offer'); }}>
             <Text style={styles.continueBtnText}>Continue</Text>
           </Pressable>
         </View>
