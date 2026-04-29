@@ -6,7 +6,6 @@ import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { setItem } from '@/lib/storage';
 import { scaleSize } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
@@ -23,7 +22,6 @@ const OPTIONS = [
 export default function TargetGpaScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
-  const [tapped, setTapped] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     trackPageViewed('ob_student_target_gpa');
@@ -32,11 +30,6 @@ export default function TargetGpaScreen() {
   const handleSelect = async (id: string) => {
     hapticSelect();
     setSelected(id);
-    setTapped((prev) => {
-      const next = new Set(prev).add(id);
-      if (next.size === OPTIONS.length) setItem('dev:reviewer', 'true');
-      return next;
-    });
     await updateOnboarding({ target_gpa: id });
     router.push('/plan-usage');
   };

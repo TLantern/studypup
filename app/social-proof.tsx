@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { OnboardingView } from '@/components/OnboardingView';
 import { getOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 
@@ -105,7 +105,7 @@ export default function StudentsStatsScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(40), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(isSmallDevice ? 16 : 40), paddingBottom: insets.bottom + scaleVertical(24) }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleSize(36),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
     gap: scaleSize(8),
   },
   progressTrack: {
@@ -179,11 +179,11 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
     lineHeight: scaleFont(26),
-    marginBottom: scaleSize(36),
-    minHeight: scaleSize(80),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
+    minHeight: scaleVertical(isSmallDevice ? 60 : 80),
   },
   bulletsWrap: {
-    gap: scaleSize(20),
+    gap: scaleVertical(isSmallDevice ? 12 : 20),
   },
   bullet: {
     flexDirection: 'row',

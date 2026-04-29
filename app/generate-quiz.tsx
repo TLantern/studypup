@@ -23,9 +23,10 @@ import { ActivityIndicator, Alert, Animated, Dimensions, Modal, Pressable, Scrol
 import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
-
-const SALMON = '#FD8A8A';
-const PURPLE = '#7c3aed';
+import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY, GRAPHITE_GRAY, METALLIC_SILVER } from '@/lib/onboarding-theme';
+// Legacy aliases — point to Notario palette so existing styling reads from new tokens.
+const SALMON = ACCENT_BLUE;
+const PURPLE = ACCENT_BLUE;
 
 const ALL_TABS: { id: string; label: string; icon?: ReturnType<typeof require>; iconText?: string }[] = [
   { id: 'notes', label: 'Notes', icon: require('../assets/icons/notesicon.png') },
@@ -517,7 +518,7 @@ export default function GenerateQuizScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingCenter, { backgroundColor: '#f8fafc' }]}>
+      <View style={[styles.container, styles.loadingCenter, { backgroundColor: DEEP_BLACK }]}>
         {isResume ? (
           <ActivityIndicator size="large" color="#FD8A8A" />
         ) : (
@@ -799,11 +800,11 @@ export default function GenerateQuizScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={28} color="#333" />
+          <Ionicons name="chevron-back" size={28} color={OFF_WHITE} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
         <Pressable onPress={() => router.replace('/(tabs)')} style={styles.closeBtn} hitSlop={12}>
-          <Ionicons name="close" size={28} color="#333" />
+          <Ionicons name="close" size={28} color={OFF_WHITE} />
         </Pressable>
       </View>
       <ScrollView
@@ -1142,18 +1143,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: 'center',
     width: '85%',
-    shadowColor: '#FD8A8A',
+    shadowColor: ACCENT_BLUE,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
     elevation: 16,
   },
-  streakPopupNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 64, color: '#FD8A8A' },
-  streakPopupLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 22, color: '#FD8A8A', marginBottom: 20 },
+  streakPopupNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 64, color: ACCENT_BLUE },
+  streakPopupLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 22, color: ACCENT_BLUE, marginBottom: 20 },
   streakPopupMsg: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#ccc', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
-  streakPopupBtn: { backgroundColor: '#FD8A8A', borderRadius: 20, paddingVertical: 14, paddingHorizontal: 40 },
+  streakPopupBtn: { backgroundColor: ACCENT_BLUE, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 40 },
   streakPopupBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
-  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: DEEP_BLACK, paddingHorizontal: 24 },
   loadingCenter: { justifyContent: 'center', alignItems: 'center' },
   generatingText: {
     fontFamily: 'Fredoka_400Regular',
@@ -1173,14 +1174,14 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4, marginLeft: 'auto', marginRight: -25 },
   title: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: 'FredokaOne_400Regular',
     fontSize: 22,
-    color: '#333',
+    color: OFF_WHITE,
     textAlign: 'center',
     marginLeft: 10,  
   },
   tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16, marginHorizontal: -24 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#ccc', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#3A3A3A', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
   },
   tabsContent: { gap: 8, paddingHorizontal: 24 },
   tab: {
@@ -1190,28 +1191,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 18,
     marginRight: 10,
-    backgroundColor: '#fff',
+    backgroundColor: GRAPHITE_GRAY,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    shadowColor: '#333',
+    borderColor: '#3A3A3A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
   },
   tabActive: {
-    borderColor: PURPLE,
+    borderColor: ACCENT_BLUE,
     borderWidth: 2,
   },
   tabIcon: { width: 20, height: 20 },
-  tabIconText: { fontSize: 14, fontFamily: 'Fredoka_400Regular', color: '#333', textDecorationLine: 'underline', width: 20, textAlign: 'center' },
+  tabIconText: { fontSize: 14, fontFamily: 'Fredoka_400Regular', color: OFF_WHITE, textDecorationLine: 'underline', width: 20, textAlign: 'center' },
   tabLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
-    color: '#666',
+    color: METALLIC_SILVER,
   },
-  tabLabelActive: { color: '#333' },
+  tabLabelActive: { color: OFF_WHITE },
   notesTabWrap: { flex: 1 },
   editNoteBtn: {
     flexDirection: 'row',
@@ -1291,7 +1292,7 @@ const styles = StyleSheet.create({
   question: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 18,
-    color: '#333',
+    color: OFF_WHITE,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -1346,7 +1347,7 @@ const styles = StyleSheet.create({
   answerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: GRAPHITE_GRAY,
     borderRadius: 12,
     paddingVertical: 11,
     paddingHorizontal: 16,
@@ -1400,11 +1401,11 @@ const styles = StyleSheet.create({
   answerText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
-    color: '#333',
+    color: OFF_WHITE,
   },
   masteryBarBg: {
     height: 10,
-    backgroundColor: '#E8D8D8',
+    backgroundColor: GRAPHITE_GRAY,
     borderRadius: 5,
     overflow: 'hidden',
     marginBottom: 12,
@@ -1416,7 +1417,7 @@ const styles = StyleSheet.create({
   },
   quizDivider: {
     height: 1,
-    backgroundColor: '#ddd',
+    backgroundColor: GRAPHITE_GRAY,
     marginHorizontal: -24,
     marginTop: 16,
     marginBottom: 0,
@@ -1438,7 +1439,7 @@ const styles = StyleSheet.create({
   quizNavCounter: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 18,
-    color: '#333',
+    color: OFF_WHITE,
   },
   explainBtn: {
     flexDirection: 'row',
@@ -1523,7 +1524,7 @@ const styles = StyleSheet.create({
   },
   explainSuggestionBtn: {
     alignSelf: 'center',
-    backgroundColor: '#F2E4E4',
+    backgroundColor: ACCENT_BLUE_TINT,
     borderRadius: 24,
     paddingVertical: 10,
     paddingHorizontal: 20,

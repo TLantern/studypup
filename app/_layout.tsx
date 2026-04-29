@@ -93,6 +93,8 @@ export default function RootLayout() {
               'flashcards',
               'instantanswers',
               'quizzes',
+              'professional-home',
+              'professional-note-detail',
             ].map((name) => (
               <Stack.Screen key={name} name={name} options={{ animation: 'none' }} />
             ))}

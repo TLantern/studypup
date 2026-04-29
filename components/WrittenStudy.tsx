@@ -5,10 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { callOpenAI, callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
 
-const SALMON = '#FD8A8A';
+const SALMON = '#7FA8FF';
 const GREEN = '#BCFFC0';
 const RED = '#EA898B';
-const PURPLE = '#7c3aed';
+const PURPLE = '#7FA8FF';
 
 type Item = { id: string; question: string; expectedAnswer?: string };
 
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   explainBubbleTextUser: { color: '#fff' },
   explainSuggestionBtn: {
     alignSelf: 'center',
-    backgroundColor: '#F2E4E4',
+    backgroundColor: '#EEF3FF',
     borderRadius: 24,
     paddingVertical: 10,
     paddingHorizontal: 20,

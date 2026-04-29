@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, SUBTITLE_GRAY, OFF_WHITE, CARD_SHADOW, sharedStyles } from '@/lib/onboarding-theme';
-import { scaleSize, scaleFont } from '@/lib/responsive';
+import { scaleSize, scaleFont, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 
@@ -26,7 +26,7 @@ export default function PrivacyTrustScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(24), paddingBottom: insets.bottom + scaleVertical(24) }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleSize(36),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
     gap: scaleSize(8),
   },
   backBtn: { padding: scaleSize(4) },
@@ -91,13 +91,13 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: scaleSize(40),
+    paddingBottom: scaleVertical(isSmallDevice ? 16 : 40),
   },
   lockAnimation: {
-    width: scaleSize(120),
-    height: scaleSize(120),
+    width: scaleSize(isSmallDevice ? 90 : 120),
+    height: scaleSize(isSmallDevice ? 90 : 120),
     alignSelf: 'center',
-    marginBottom: scaleSize(24),
+    marginBottom: scaleVertical(isSmallDevice ? 16 : 24),
   },
   title: {
     fontFamily: SF_PRO,
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(16),
   },
   bullets: {
-    gap: scaleSize(20),
+    gap: scaleVertical(isSmallDevice ? 12 : 20),
   },
   bulletRow: {
     flexDirection: 'row',
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     gap: scaleSize(16),
     backgroundColor: OFF_WHITE,
     borderRadius: scaleSize(12),
-    paddingVertical: scaleSize(16),
+    paddingVertical: scaleVertical(isSmallDevice ? 12 : 16),
     paddingHorizontal: scaleSize(18),
     ...CARD_SHADOW,
   },

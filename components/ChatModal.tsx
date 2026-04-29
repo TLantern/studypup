@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const PURPLE = '#7c3aed';
+const PURPLE = '#7FA8FF';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 

@@ -18,7 +18,7 @@ import {
   Keyboard,
 } from 'react-native';
 
-const SALMON = '#FD8A8A';
+const SALMON = '#7FA8FF';
 
 type Props = { notes?: string };
 
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 12,
     paddingBottom: 24,
-    backgroundColor: '#F2E4E4',
+    backgroundColor: '#EEF3FF',
     gap: 8,
   },
   input: {

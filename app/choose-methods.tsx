@@ -1,29 +1,20 @@
 import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
-import { getItem, setItem } from '@/lib/storage';
+import { getItem } from '@/lib/storage';
 import { getPendingContent, type ContentItem } from '@/lib/content-store';
 import { updateMaterials } from '@/lib/study-materials-storage';
-import { PaywallTriggerContext, PLACEMENT_GENERATE, SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
-
-// Import useUser for entitlement checking
-let useUser: typeof import('expo-superwall').useUser | null = null;
-try {
-  const sw = require('expo-superwall');
-  useUser = sw.useUser;
-} catch (err) {
-  console.warn('[choose-methods] useUser not available:', err);
-}
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
+import { DEEP_BLACK, GRAPHITE_GRAY, OFF_WHITE, METALLIC_SILVER, ACCENT_BLUE } from '@/lib/onboarding-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const PURPLE = '#7c3aed';
+const PURPLE = ACCENT_BLUE;
 
 const METHODS = [
   { id: 'notes', label: 'Notes', icon: require('../assets/icons/notesicon.png') },
@@ -34,31 +25,17 @@ const METHODS = [
   { id: 'avatar', label: 'AI Avatar', subtitle: 'Your personal tutor', customIcon: '✦', isAvatar: true },
 ];
 
-const SALMON = '#FD8A8A';
-
-const FREE_GENERATION_USED_KEY = 'free_generation_used';
+const SALMON = ACCENT_BLUE;
 
 const SOURCE_EMOJI: Record<string, string> = { audio: '🎤', image: '📷', file: '📄', notes: '📝' };
 
 export default function ChooseMethodsScreen() {
   const insets = useSafeAreaInsets();
-  const { showPaywall } = useContext(PaywallTriggerContext);
-  const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAvatarMode, setIsAvatarMode] = useState(false);
   const [materialTitle, setMaterialTitle] = useState<string | null>(null);
-
-  // Check subscription status for pro entitlement
-  let subscriptionStatus = null;
-  if (useUser) {
-    try {
-      ({ subscriptionStatus } = useUser());
-    } catch (error) {
-      console.warn('[choose-methods] useUser error:', error);
-    }
-  }
 
   useEffect(() => {
     getPendingContent().then((items) => {
@@ -78,21 +55,6 @@ export default function ChooseMethodsScreen() {
 
   const handleStartAvatar = async () => {
     if (!canStartAvatar) return;
-    const hasProEntitlement = __DEV__ ||
-      (subscriptionStatus?.status === 'ACTIVE' &&
-      (subscriptionStatus as any)?.entitlements?.some((e: any) => e.id === 'pro'));
-
-    if (!hasProEntitlement && !__DEV__) {
-      const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
-      if (freeUsed === 'true') {
-        if (superwallAvailable) {
-          try { await showPaywall(PLACEMENT_GENERATE); } catch {}
-        } else {
-          router.push('/create-account');
-        }
-        return;
-      }
-    }
 
     setIsAvatarMode(true);
     setIsGenerating(true);
@@ -108,7 +70,6 @@ export default function ChooseMethodsScreen() {
         setMaterialTitle(materials.title);
         await new Promise((r) => setTimeout(r, 1800));
       }
-      if (!hasProEntitlement) await setItem(FREE_GENERATION_USED_KEY, 'true');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       router.push({ pathname: '/avatar-tutor' as any, params: { materialId: materials.id } });
     } catch (err: any) {
@@ -123,33 +84,6 @@ export default function ChooseMethodsScreen() {
     if (!canGenerate) {
       if (__DEV__) console.log('[Studypup] Generate button pressed but disabled:', { selectedCount: selected.length, contentCount: contentItems.length, isGenerating });
       return;
-    }
-    // Check if user has pro entitlement (bypass free generation limit)
-    const hasProEntitlement = __DEV__ ||
-      (subscriptionStatus?.status === 'ACTIVE' && 
-      (subscriptionStatus as any)?.entitlements?.some((entitlement: any) => entitlement.id === 'pro'));
-
-    if (__DEV__) console.log('[Studypup] Subscription check:', { 
-      status: subscriptionStatus?.status, 
-      hasProEntitlement, 
-      entitlements: (subscriptionStatus as any)?.entitlements?.map((e: any) => e.id) 
-    });
-
-    if (!hasProEntitlement && !__DEV__) {
-      const freeUsed = await getItem(FREE_GENERATION_USED_KEY);
-      if (freeUsed === 'true') {
-        if (superwallAvailable) {
-          try {
-            trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GENERATE });
-            await showPaywall(PLACEMENT_GENERATE);
-          } catch (error) {
-            console.error('[Studypup] showPaywall error:', error);
-          }
-        } else {
-          router.push('/create-account');
-        }
-        return;
-      }
     }
     setIsGenerating(true);
     try {
@@ -167,14 +101,6 @@ export default function ChooseMethodsScreen() {
       if (materials.title) {
         setMaterialTitle(materials.title);
         await new Promise((r) => setTimeout(r, 2200));
-      }
-      
-      // Only set free generation used flag for non-pro users
-      if (!hasProEntitlement) {
-        await setItem(FREE_GENERATION_USED_KEY, 'true');
-        console.log('[Studypup] Set free generation used flag');
-      } else {
-        console.log('[Studypup] Pro user - not setting free generation used flag');
       }
       
       const sources = contentItems.map((c) => ({
@@ -209,7 +135,7 @@ export default function ChooseMethodsScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={28} color="#333" />
+          <Ionicons name="chevron-back" size={28} color={OFF_WHITE} />
         </Pressable>
         <Text style={styles.title}>Choose Methods</Text>
       </View>
@@ -264,8 +190,8 @@ export default function ChooseMethodsScreen() {
 }
 
 const styles = StyleSheet.create({
-  generatingWrap: { flex: 1, backgroundColor: '#f8fafc' },
-  container: { flex: 1, backgroundColor: '#F2E4E4', paddingHorizontal: RESPONSIVE.containerPadding },
+  generatingWrap: { flex: 1, backgroundColor: DEEP_BLACK },
+  container: { flex: 1, backgroundColor: DEEP_BLACK, paddingHorizontal: RESPONSIVE.containerPadding },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -275,9 +201,9 @@ const styles = StyleSheet.create({
   backBtn: { padding: scaleSize(4) },
   title: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: 'FredokaOne_400Regular',
     fontSize: scaleFont(22),
-    color: '#333',
+    color: OFF_WHITE,
     textAlign: 'center',
   },
   contentRow: {
@@ -292,35 +218,35 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
-    color: '#333',
+    color: OFF_WHITE,
   },
   addBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: GRAPHITE_GRAY,
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(10),
     paddingHorizontal: scaleSize(16),
     marginRight: scaleSize(120),
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#3A3A3A',
   },
   addBtnText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.body,
-    color: '#333',
+    color: OFF_WHITE,
   },
   list: { flex: 1 },
   listContent: { paddingBottom: scaleSize(24) },
   methodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: GRAPHITE_GRAY,
     borderRadius: scaleSize(16),
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(20),
     marginBottom: scaleSize(12),
-    shadowColor: '#333',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
     gap: scaleSize(16),
@@ -330,16 +256,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#3A3A3A',
   },
-  methodBtnSelected: { borderColor: PURPLE, borderWidth: 2 },
-  methodBtnAvatar: { borderColor: '#ede9fe', borderWidth: 1.5 },
+  methodBtnSelected: { borderColor: ACCENT_BLUE, borderWidth: 2 },
+  methodBtnAvatar: { borderColor: ACCENT_BLUE, borderWidth: 1.5, opacity: 0.85 },
   methodIcon: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium },
   methodIconWrap: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium, justifyContent: 'center', alignItems: 'center' },
   methodCustomIcon: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.titleSmall,
-    color: '#333',
+    color: OFF_WHITE,
   },
   methodCustomIconGold: {
     fontFamily: 'Fredoka_400Regular',
@@ -349,17 +275,17 @@ const styles = StyleSheet.create({
   methodLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
-    color: '#333',
+    color: OFF_WHITE,
   },
   methodLabelAvatar: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
-    color: '#7c3aed',
+    color: ACCENT_BLUE,
   },
   methodSubtitle: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: scaleFont(12),
-    color: '#999',
+    color: METALLIC_SILVER,
     marginTop: 2,
   },
   avatarSection: { marginBottom: scaleSize(12) },
@@ -409,9 +335,9 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(22),
     color: '#7c3aed',
   },
-  generateBtnDisabled: { opacity: 0.5 },
+  generateBtnDisabled: { opacity: 0.4 },
   generateBtn: {
-    backgroundColor: SALMON,
+    backgroundColor: ACCENT_BLUE,
     borderRadius: scaleSize(16),
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(20),

@@ -10,8 +10,18 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  DEEP_BLACK,
+  OFF_WHITE,
+  ACCENT_BLUE,
+  ACCENT_BLUE_PRESSED,
+  ACCENT_BLUE_TINT,
+  SUBTITLE_GRAY,
+  HAIRLINE,
+} from '@/lib/onboarding-theme';
 
-const PURPLE = '#7c3aed';
+// Legacy alias — points to new accent so existing usages light up correctly.
+const PURPLE = ACCENT_BLUE;
 
 const METHODS = [
   { id: 'notes', label: 'Edit note', icon: require('../../assets/icons/notesicon.png') },
@@ -211,12 +221,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FFC3C3',
+    backgroundColor: ACCENT_BLUE_TINT,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
   },
-  shareBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#333' },
+  shareBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: DEEP_BLACK },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
   title: {
@@ -237,29 +247,29 @@ const styles = StyleSheet.create({
   methodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: OFF_WHITE,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: HAIRLINE,
     minWidth: '47%',
   },
   methodIcon: { width: 24, height: 24, marginRight: 10 },
-  methodLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: PURPLE },
+  methodLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: DEEP_BLACK },
   methodBtnAvatar: {
     borderWidth: 1.5,
-    borderColor: '#ede9fe',
-    backgroundColor: '#fff',
-    shadowColor: '#7c3aed',
+    borderColor: ACCENT_BLUE,
+    backgroundColor: ACCENT_BLUE_TINT,
+    shadowColor: ACCENT_BLUE,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.18,
     shadowRadius: 4,
     elevation: 4,
   },
-  avatarIcon: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#F5A623', marginRight: 10 },
-  avatarLabel: { color: PURPLE },
-  avatarSubtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: '#999', marginTop: 1 },
+  avatarIcon: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: ACCENT_BLUE, marginRight: 10 },
+  avatarLabel: { color: ACCENT_BLUE },
+  avatarSubtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: SUBTITLE_GRAY, marginTop: 1 },
   notesActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -276,7 +286,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   notesActionIcon: { width: 24, height: 24 },
-  notesActionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
+  notesActionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: ACCENT_BLUE },
   notesCard: { marginTop: 24, marginBottom: 0 },
   emptyNotes: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#888' },
   stickyBar: {
@@ -311,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FD8A8A',
+    backgroundColor: ACCENT_BLUE,
     borderRadius: 16,
     paddingVertical: 15,
     marginTop: 12,

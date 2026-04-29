@@ -9,6 +9,7 @@ import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
+import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY } from '@/lib/onboarding-theme';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -26,7 +27,7 @@ export default function FlashcardsScreen() {
   }, []);
   return (
     <OnboardingView>
-      <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+      <LinearGradient colors={[ACCENT_BLUE_TINT, OFF_WHITE]} locations={[0, 0.63]} style={styles.gradient}>
       <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
         <Image source={require('../assets/images/progresspill2.png')} style={styles.progress} contentFit="contain" />
         <Text style={styles.heading}>Turn Notes into Flashcards in Seconds!</Text>
@@ -49,8 +50,8 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: 24 },
+  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: DEEP_BLACK, textAlign: 'center', marginBottom: scaleSize(8) },
+  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: SUBTITLE_GRAY, textAlign: 'center', marginBottom: 24 },
   heroWrap: { flex: 1, width: '100%', maxHeight: 360, alignSelf: 'center', marginBottom: 24 },
   hero: { width: '100%', height: '100%' },
   buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
@@ -60,8 +61,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: 'center',
     borderWidth: 2,
-    backgroundColor: '#FD8A8A',
-    borderColor: '#CA6E6E',
+    backgroundColor: ACCENT_BLUE,
+    borderColor: ACCENT_BLUE_PRESSED,
     ...BUTTON_SHADOW,
   },
   btnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24 },

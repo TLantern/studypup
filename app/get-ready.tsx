@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { OnboardingView } from '@/components/OnboardingView';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, SUBTITLE_GRAY, sharedStyles } from '@/lib/onboarding-theme';
-import { scaleSize, scaleFont } from '@/lib/responsive';
+import { scaleSize, scaleFont, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 
@@ -50,7 +50,7 @@ export default function GetReadyScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(24), paddingBottom: insets.bottom + scaleVertical(24) }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleSize(36),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
     gap: scaleSize(8),
   },
   backBtn: { padding: scaleSize(4) },
@@ -107,33 +107,33 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: scaleSize(36),
-    paddingBottom: scaleSize(40),
+    gap: scaleVertical(isSmallDevice ? 24 : 36),
+    paddingBottom: scaleVertical(isSmallDevice ? 20 : 40),
   },
   micWrap: {
-    width: scaleSize(120),
-    height: scaleSize(120),
+    width: scaleSize(isSmallDevice ? 90 : 120),
+    height: scaleSize(isSmallDevice ? 90 : 120),
     alignItems: 'center',
     justifyContent: 'center',
   },
   micRingOuter: {
     position: 'absolute',
-    width: scaleSize(120),
-    height: scaleSize(120),
-    borderRadius: scaleSize(60),
+    width: scaleSize(isSmallDevice ? 90 : 120),
+    height: scaleSize(isSmallDevice ? 90 : 120),
+    borderRadius: scaleSize(isSmallDevice ? 45 : 60),
     backgroundColor: ACCENT_BLUE,
   },
   micRingInner: {
     position: 'absolute',
-    width: scaleSize(88),
-    height: scaleSize(88),
-    borderRadius: scaleSize(44),
+    width: scaleSize(isSmallDevice ? 66 : 88),
+    height: scaleSize(isSmallDevice ? 66 : 88),
+    borderRadius: scaleSize(isSmallDevice ? 33 : 44),
     backgroundColor: `${ACCENT_BLUE}30`,
   },
   micCircle: {
-    width: scaleSize(64),
-    height: scaleSize(64),
-    borderRadius: scaleSize(32),
+    width: scaleSize(isSmallDevice ? 48 : 64),
+    height: scaleSize(isSmallDevice ? 48 : 64),
+    borderRadius: scaleSize(isSmallDevice ? 24 : 32),
     backgroundColor: ACCENT_BLUE,
     alignItems: 'center',
     justifyContent: 'center',

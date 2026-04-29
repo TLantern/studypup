@@ -8,7 +8,7 @@ import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-store';
-import { scaleFont, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH, isSmallDevice } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import LottieView from 'lottie-react-native';
 import { welcomeIconRef } from '@/lib/welcomeIconRef';
@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(130) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(isSmallDevice ? 60 : 130) }]}>
         <Animated.View entering={FadeIn.duration(600)} style={styles.headerBlock}>
           <Text style={styles.title}>
             <Text style={styles.titleAccent}>Capture</Text>
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: scaleSize(100),
+    bottom: scaleVertical(isSmallDevice ? 60 : 100),
     height: WAVE_HEIGHT,
     width: SCREEN_WIDTH,
     overflow: 'hidden',

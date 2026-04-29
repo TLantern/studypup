@@ -1,11 +1,23 @@
 import { Platform } from 'react-native';
-import { scaleSize, scaleFont } from '@/lib/responsive';
+import { scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
 
+// Notario palette — see /references/color-palette.json
 export const DEEP_BLACK = '#0D0D0F';
+export const GRAPHITE_GRAY = '#1E1E22';
 export const OFF_WHITE = '#F7F7F5';
-export const ACCENT_BLUE = '#7FA8FF';
+export const METALLIC_SILVER = '#C9CCD1';
+export const ACCENT_BLUE = '#7FA8FF'; // DEEP_PASTEL_BLUE — primary accent
+export const ACCENT_BLUE_PRESSED = '#6A95EE';
+export const ACCENT_BLUE_TINT = '#EEF3FF';
+export const MUTED_EMERALD = '#5F76AE';
 export const SUBTITLE_GRAY = '#6B7280';
 export const MUTED_TEXT = 'rgba(0,0,0,0.4)';
+export const HAIRLINE = 'rgba(0,0,0,0.08)';
+// Semantic mastery colors (kept distinct since they convey state, not brand)
+export const MASTERY_LOW = '#E07070';
+export const MASTERY_MID = '#E8C547';
+export const MASTERY_HIGH = ACCENT_BLUE;
+export const MASTERY_DONE = '#5BB071';
 
 export const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
@@ -77,7 +89,7 @@ export const sharedStyles = {
   continueBtn: {
     backgroundColor: ACCENT_BLUE,
     borderRadius: scaleSize(16),
-    paddingVertical: scaleSize(18),
+    paddingVertical: scaleVertical(18),
     alignItems: 'center' as const,
     ...CARD_SHADOW,
   },

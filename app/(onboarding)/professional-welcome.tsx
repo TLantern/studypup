@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 
@@ -47,7 +47,7 @@ export default function ProfessionalWorkScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(24), paddingBottom: insets.bottom + scaleVertical(24) }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(15),
     color: SUBTITLE_GRAY,
     fontWeight: '400',
-    marginBottom: scaleSize(28),
+    marginBottom: scaleVertical(isSmallDevice ? 16 : 28),
   },
   scroll: {
     flex: 1,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleSize(36),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
     gap: scaleSize(8),
   },
   backBtn: {

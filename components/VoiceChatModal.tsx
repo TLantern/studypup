@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const PURPLE = '#7c3aed';
+const PURPLE = '#7FA8FF';
 
 const SPEECH_THRESHOLD = -25;   // dB — above = speech detected
 const SILENCE_DURATION = 1500;  // ms of silence before stopping

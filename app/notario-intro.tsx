@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { OnboardingView } from '@/components/OnboardingView';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
-import { scaleSize, scaleFont } from '@/lib/responsive';
+import { scaleSize, scaleFont, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 
@@ -71,7 +71,7 @@ export default function NotarioIntroScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(24), paddingBottom: insets.bottom + scaleVertical(24) }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: scaleSize(36),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 36),
     gap: scaleSize(8),
   },
   backBtn: { padding: scaleSize(4) },
@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   strikeSection: {
-    gap: scaleSize(20),
-    marginBottom: scaleSize(32),
+    gap: scaleVertical(isSmallDevice ? 14 : 20),
+    marginBottom: scaleVertical(isSmallDevice ? 20 : 32),
   },
   strikeRow: {
     flexDirection: 'row',
@@ -166,15 +166,15 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: ACCENT_BLUE,
     borderRadius: 2,
-    marginBottom: scaleSize(28),
+    marginBottom: scaleVertical(isSmallDevice ? 16 : 28),
   },
   copyText: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(38),
+    fontSize: scaleFont(isSmallDevice ? 30 : 38),
     fontWeight: '800',
     color: DEEP_BLACK,
     letterSpacing: -1,
-    lineHeight: scaleFont(46),
+    lineHeight: scaleFont(isSmallDevice ? 38 : 46),
   },
   copyAccent: {
     color: ACCENT_BLUE,

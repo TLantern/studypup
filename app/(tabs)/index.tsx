@@ -27,9 +27,9 @@ import { listAllMaterials, deleteAllLocalMaterials } from '@/lib/study-materials
 import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { getStreak, recordMasteryAchieved } from '@/lib/streak';
+import { getOnboarding } from '@/lib/onboarding-storage';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
-import { PaywallTriggerContext, PLACEMENT_APP_OPEN, PLACEMENT_GET_UNLIMITED, SuperwallAvailableContext, useSubscriptionStatus } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PaymentWarningModal } from '@/components/PaymentWarningModal';
@@ -40,11 +40,22 @@ import { getItem, setItem } from '@/lib/storage';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
 import LottieView from 'lottie-react-native';
 import { InAppOnboardingModal } from '@/components/InAppOnboardingModal';
+import {
+  DEEP_BLACK,
+  GRAPHITE_GRAY,
+  OFF_WHITE,
+  ACCENT_BLUE,
+  ACCENT_BLUE_PRESSED,
+  ACCENT_BLUE_TINT,
+  METALLIC_SILVER,
+  SUBTITLE_GRAY,
+} from '@/lib/onboarding-theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const SALMON = '#FD8A8A';
-const SALMON_DARK = '#CA6E6E';
+// Brand accent — kept as alias for legacy naming throughout this file.
+const SALMON = ACCENT_BLUE;
+const SALMON_DARK = ACCENT_BLUE_PRESSED;
 
 const MENU_ITEMS = [
   { id: 'record', label: 'Record', icon: require('../../assets/u_microphone.png') },
@@ -125,9 +136,6 @@ export default function HomeScreen() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPaymentWarning, setShowPaymentWarning] = useState(false);
   const { signOut, deleteUser, user } = useAuth();
-  const { showPaywall } = useContext(PaywallTriggerContext);
-  const superwallAvailable = useContext(SuperwallAvailableContext);
-  const subscriptionStatus = useSubscriptionStatus();
 
   useBillingRetryCheck(() => setShowPaymentWarning(true));
   const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
@@ -154,22 +162,24 @@ export default function HomeScreen() {
   const [savedRecordings, setSavedRecordings] = useState<{ uri: string; name: string; duration: number }[]>([]);
   const [showSavedRecordingsModal, setShowSavedRecordingsModal] = useState(false);
   const emptyArrowLottieRef = useRef<LottieView>(null);
-  const [isDevReviewer, setIsDevReviewer] = useState(false);
-  const [devReviewerLoaded, setDevReviewerLoaded] = useState(false);
   const [showInAppOnboarding, setShowInAppOnboarding] = useState(false);
-
-  useEffect(() => {
-    getItem('dev:reviewer').then((v) => {
-      if (v) setIsDevReviewer(true);
-      setDevReviewerLoaded(true);
-    });
-  }, []);
 
   useEffect(() => {
 
     getItem('in_app_onboarding:step1').then((v) => {
       if (!v) setShowInAppOnboarding(true);
     });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    getOnboarding().then((data) => {
+      if (cancelled) return;
+      if (data.user_tag === 'working-class') {
+        router.replace('/professional-home');
+      }
+    });
+    return () => { cancelled = true; };
   }, []);
 
   useFocusEffect(
@@ -188,11 +198,7 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
-      if (devReviewerLoaded && superwallAvailable && subscriptionStatus != null && subscriptionStatus !== 'active' && !isDevReviewer && !__DEV__) {
-        trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_APP_OPEN });
-        showPaywall(PLACEMENT_APP_OPEN);
-      }
-    }, [showPaywall, superwallAvailable, subscriptionStatus, isDevReviewer, devReviewerLoaded])
+    }, [])
   );
 
 
@@ -815,7 +821,6 @@ export default function HomeScreen() {
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <View style={styles.headerLeft}>
-          <Image source={require('../../assets/puppy.png')} style={styles.avatar} />
           <Pressable onPress={() => setShowSearchBar((v) => !v)} style={{ marginLeft: 10 }}>
             <Image source={require('../../assets/search.png')} style={styles.headerIcon} />
           </Pressable>
@@ -866,14 +871,8 @@ export default function HomeScreen() {
                   <Text style={[styles.cardDesc, { fontSize: isTablet ? 20 : 16 }]}>
                     Transform your study materials into methods that actually work.
                   </Text>
-              <Pressable style={styles.continueBtnWrap} onPress={openMenu}>
-                <LinearGradient
-                  colors={['#C4C4C4', '#AADDDD']}
-                  locations={[0.41, 0.77]}
-                  style={styles.continueBtn}
-                >
+              <Pressable style={[styles.continueBtnWrap, styles.continueBtn, { backgroundColor: '#0D0D0F' }]} onPress={openMenu}>
                   <Text style={styles.continueBtnText}>Continue</Text>
-                </LinearGradient>
               </Pressable>
             </View>
             <View style={styles.emptyArrowWrap}>
@@ -1024,12 +1023,7 @@ export default function HomeScreen() {
         pointerEvents={isMenuOpen ? 'auto' : 'none'}
       >
         {isMenuOpen && (
-          <LinearGradient
-            colors={['rgba(0,0,0,0.45)', '#FFEDED']}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={StyleSheet.absoluteFill}
-          />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.52)' }]} />
         )}
         <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
       </Animated.View>
@@ -1093,7 +1087,7 @@ export default function HomeScreen() {
           >
             <View style={styles.recordModalInner}>
               <LinearGradient
-                colors={['#C4C4C4', '#AADDDD']}
+                colors={[ACCENT_BLUE_TINT, OFF_WHITE]}
                 locations={[0, 0.63]}
                 style={[styles.recordModalGradient, { paddingBottom: 24 + insets.bottom }]}
               >
@@ -1159,7 +1153,7 @@ export default function HomeScreen() {
           >
             <View style={styles.recordModalInner}>
               <LinearGradient
-                colors={['#C4C4C4', '#AADDDD']}
+                colors={[ACCENT_BLUE_TINT, OFF_WHITE]}
                 locations={[0, 0.63]}
                 style={[styles.recordModalGradient, { paddingBottom: 24 + insets.bottom }]}
               >
@@ -1217,7 +1211,7 @@ export default function HomeScreen() {
             maxWidth: isLargeTablet ? 600 : undefined
           }]}>
             <LinearGradient
-              colors={['#AADDDD', '#C4C4C4']}
+              colors={[OFF_WHITE, ACCENT_BLUE_TINT]}
               locations={[0, 0.43]}
               style={[styles.notesCardGradient, { paddingBottom: 24 + insets.bottom }]}
             >
@@ -1415,11 +1409,7 @@ export default function HomeScreen() {
               onPressOut={() => { unlimitedScale.value = withSpring(1); }}
               onPress={() => {
                 setShowSettingsModal(false);
-                if (superwallAvailable && !isDevReviewer) {
-                  trackPageViewed('superwall_placement_trigger', { placement: PLACEMENT_GET_UNLIMITED });
-                  showPaywall(PLACEMENT_GET_UNLIMITED);
-                }
-                else router.push('/create-account');
+                router.push('/create-account');
               }}
             >
               <Animated.View style={[styles.unlimitedBtnInner, unlimitedBtnAnimatedStyle]}>
@@ -1751,7 +1741,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#AADDDD' },
+  container: { flex: 1, backgroundColor: OFF_WHITE },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 8 },
   avatar: { width: 48, height: 48, borderRadius: 24 },
@@ -1761,7 +1751,7 @@ const styles = StyleSheet.create({
   streakNum: { fontFamily: 'Fredoka_400Regular', fontSize: 20, marginLeft: 4, marginTop: 4 },
   headerRight: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto', gap: 16 },
   headerIcon: { width: 24, height: 24 },
-  searchBarRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8, backgroundColor: '#AADDDD' },
+  searchBarRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8, backgroundColor: OFF_WHITE },
   searchInput: { flex: 1, height: 40, backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, fontSize: 16 },
   searchCloseBtn: { paddingVertical: 8, paddingHorizontal: 12 },
   searchCloseText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333' },
@@ -1772,7 +1762,7 @@ const styles = StyleSheet.create({
   emptyArrowLottie: { width: 80, height: 80 },
   notesContainer: { paddingTop: 12, paddingBottom: 140, flexDirection: 'column' },
   weekCard: {
-    backgroundColor: '#1c1c1e',
+    backgroundColor: DEEP_BLACK,
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
@@ -1802,22 +1792,22 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2c2c2e',
+    backgroundColor: GRAPHITE_GRAY,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  weekDayStudied: { backgroundColor: '#E8917A' },
-  weekDayToday: { backgroundColor: '#E8917A', borderWidth: 2, borderColor: '#E8917A' },
+  weekDayStudied: { backgroundColor: ACCENT_BLUE },
+  weekDayToday: { backgroundColor: ACCENT_BLUE, borderWidth: 2, borderColor: ACCENT_BLUE },
   weekCheckmark: { color: '#fff', fontSize: 16, fontWeight: '700' },
   weekMissedX: { color: '#e07070', fontSize: 14, fontWeight: '700' },
   weekTodayDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' },
-  weekDivider: { height: 1, backgroundColor: '#2c2c2e', marginBottom: 14 },
+  weekDivider: { height: 1, backgroundColor: GRAPHITE_GRAY, marginBottom: 14 },
   weekStatsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
   weekStat: { alignItems: 'center', flex: 1 },
   weekStatNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#fff' },
   weekStatNumBold: { fontFamily: 'FredokaOne_400Regular' },
   weekStatLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#888', marginTop: 2 },
-  weekStatDivider: { width: 1, height: 32, backgroundColor: '#2c2c2e' },
+  weekStatDivider: { width: 1, height: 32, backgroundColor: GRAPHITE_GRAY },
   myNotesTitle: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 28,
@@ -1907,7 +1897,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   card: {
-    backgroundColor: '#FD8A8A',
+    backgroundColor: ACCENT_BLUE,
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
@@ -1917,7 +1907,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
     borderWidth: 2,
-    borderColor: '#CA6E6E',
+    borderColor: ACCENT_BLUE_PRESSED,
   },
   cardTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 20, color: '#fff', marginBottom: 12, alignSelf: 'center' },
   cardDesc: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: 'rgba(255,255,255,0.9)', marginBottom: 24, alignSelf: 'center', textAlign: 'center' },
@@ -2047,7 +2037,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#FD8A8A',
+    backgroundColor: ACCENT_BLUE,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2461,7 +2451,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: 'center',
     width: '85%',
-    shadowColor: '#FD8A8A',
+    shadowColor: ACCENT_BLUE,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 24,
@@ -2471,12 +2461,12 @@ const styles = StyleSheet.create({
   streakPopupNum: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 64,
-    color: '#FD8A8A',
+    color: ACCENT_BLUE,
   },
   streakPopupLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 22,
-    color: '#FD8A8A',
+    color: ACCENT_BLUE,
     marginBottom: 20,
   },
   streakPopupMsg: {
@@ -2488,7 +2478,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   streakPopupBtn: {
-    backgroundColor: '#FD8A8A',
+    backgroundColor: ACCENT_BLUE,
     borderRadius: 20,
     paddingVertical: 14,
     paddingHorizontal: 40,

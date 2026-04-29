@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { callOpenAI, callOpenAIText } from '@/lib/openai-service';
 
-const SALMON = '#FD8A8A';
+const SALMON = '#7FA8FF';
 const GREEN = '#BCFFC0';
 const RED = '#EA898B';
 

@@ -1,46 +1,55 @@
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 
-// Get screen dimensions for responsive sizing
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Base width for scaling calculations (iPhone X)
-const BASE_WIDTH = 375;
+const BASE_WIDTH = 375;   // iPhone X/11/12/13/14 standard width
+const BASE_HEIGHT = 812;  // iPhone X/11/12/13/14 standard height
 
-// Responsive scaling functions
-export const scaleFont = (size: number): number => {
-  const ratio = SCREEN_WIDTH / BASE_WIDTH;
-  return Math.round(size * ratio);
-};
+// Device type flags
+export const isTablet = SCREEN_WIDTH >= 768;
+export const isSmallDevice = SCREEN_HEIGHT < 700; // iPhone SE and similar
+export const isTallDevice = SCREEN_HEIGHT > 900;  // Pro Max, etc.
 
-export const scaleSize = (size: number): number => {
-  const ratio = SCREEN_WIDTH / BASE_WIDTH;
-  return Math.round(size * ratio);
-};
+// Width ratio — capped at 1.2x for phones, 1.0x for tablets (prevent runaway scaling)
+const widthRatio = isTablet
+  ? Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.0)
+  : Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.2);
 
-// Screen dimensions
+// Height ratio — capped at 1.15x to avoid excessive vertical spacing on tall phones
+const heightRatio = Math.min(SCREEN_HEIGHT / BASE_HEIGHT, 1.15);
+
+// Use the smaller of width/height ratio so nothing overflows on unusual aspect ratios
+const safeRatio = Math.min(widthRatio, heightRatio);
+
+export const scaleFont = (size: number): number => Math.round(size * widthRatio);
+
+export const scaleSize = (size: number): number => Math.round(size * widthRatio);
+
+/** Use for vertical padding/margins so they adapt to screen HEIGHT, not width */
+export const scaleVertical = (size: number): number => Math.round(size * heightRatio);
+
+/** Constrain a value to [min, max] */
+export const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
 export { SCREEN_WIDTH, SCREEN_HEIGHT };
 
-// Common responsive values
 export const RESPONSIVE = {
-  // Padding
-  containerPadding: SCREEN_WIDTH * 0.06,
-  horizontalPadding: 24,
-  
-  // Button dimensions
+  containerPadding: isTablet ? 48 : Math.round(SCREEN_WIDTH * 0.06),
+  horizontalPadding: isTablet ? 48 : 24,
+
   buttonRadius: scaleSize(35),
-  buttonPaddingVertical: scaleSize(18),
+  buttonPaddingVertical: scaleVertical(18),
   buttonPaddingHorizontal: scaleSize(32),
-  buttonMinHeight: scaleSize(56),
-  
-  // Common font sizes
+  buttonMinHeight: scaleVertical(56),
+
   titleLarge: scaleFont(32),
   titleMedium: scaleFont(28),
   titleSmall: scaleFont(24),
   subtitle: scaleFont(18),
   body: scaleFont(16),
   button: scaleFont(24),
-  
-  // Icon sizes
+
   iconSmall: scaleSize(24),
   iconMedium: scaleSize(28),
   iconLarge: scaleSize(32),

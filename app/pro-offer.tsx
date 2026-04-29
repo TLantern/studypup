@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useContext, useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,11 +8,9 @@ import Animated, {
   withSequence,
   withDelay,
 } from 'react-native-reanimated';
-import { SuperwallAvailableContext, usePlacementHook, useSubscriptionStatus } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 
-const PLACEMENT = 'professionals_onboarding';
 const FADE_IN = 600;
 const HOLD = 1500;
 const FADE_OUT = 600;
@@ -53,42 +51,11 @@ function Interstitial({ onDone }: { onDone: () => void }) {
   );
 }
 
-function ProOfferWithSuperwall() {
-  const usePlacement = usePlacementHook!;
-  const subscriptionStatus = useSubscriptionStatus();
-  const didRegister = useRef(false);
-
-  const { registerPlacement } = usePlacement({
-    onDismiss: navigateToMain,
-    onSkip: navigateToMain,
-    onError: navigateToMain,
-  });
-
-  const triggerPlacement = useCallback(() => {
-    if (didRegister.current) return;
-    didRegister.current = true;
-    trackPageViewed('professionals_onboarding_placement');
-    registerPlacement({ placement: PLACEMENT, feature: navigateToMain }).catch(navigateToMain);
-  }, [registerPlacement]);
-
-  useEffect(() => {
-    trackPageViewed('pro_offer_interstitial');
-    if (subscriptionStatus === 'active') { navigateToMain(); }
-  }, []);
-
-  return <Interstitial onDone={triggerPlacement} />;
-}
-
-function ProOfferWithoutSuperwall() {
+export default function ProOfferScreen() {
   useEffect(() => {
     trackPageViewed('pro_offer_interstitial');
   }, []);
   return <Interstitial onDone={navigateToMain} />;
-}
-
-export default function ProOfferScreen() {
-  const superwallAvailable = useContext(SuperwallAvailableContext);
-  return superwallAvailable ? <ProOfferWithSuperwall /> : <ProOfferWithoutSuperwall />;
 }
 
 const styles = StyleSheet.create({

@@ -4,7 +4,7 @@ import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
-const SALMON = '#FD8A8A';
+const SALMON = '#7FA8FF';
 const THUMB_DOWN_BG = '#E06C78';
 const THUMB_UP_BG = '#8CE69C';
 
