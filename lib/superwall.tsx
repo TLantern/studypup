@@ -1,5 +1,5 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, logAppsFlyerEvent } from '@/lib/analytics';
 import { ttTrackPurchase, ttTrackStartTrial, ttTrackSubscribe } from '@/lib/tiktok-analytics';
 import { isPaywallBypassed } from '@/lib/dev-bypass';
 
@@ -189,7 +189,7 @@ function TransactionAbandonWatcher() {
       const triggeredBy = (ev as any).paywallInfo?.presentedByEventWithName;
       console.log('[TransacAbandon] transactionAbandon fired — triggeredBy:', triggeredBy,
         '| hasSeenOffer:', hasSeenTransacAbandon.current);
-      if (!hasSeenTransacAbandon.current && triggeredBy !== PLACEMENT_VALUE_SCREEN) {
+      if (!hasSeenTransacAbandon.current && triggeredBy !== PLACEMENT_VALUE_SCREEN && triggeredBy !== 'professionals_onboarding') {
         console.log('[TransacAbandon] proceeding → dismiss + show transac_abandon');
         transacAbandonPendingRef.current = true;
         _superwallModule?.dismiss()
@@ -235,6 +235,41 @@ function TikTokPurchaseTracker() {
   return null;
 }
 
+const YEARLY_PRODUCT_ID = 'com.teniold.notario.pro.yearly.3';
+
+function AppsFlyerPurchaseTracker() {
+  const useSuperwallEvents = useSuperwallEventsHook!;
+  useSuperwallEvents({
+    onSuperwallEvent: (eventInfo) => {
+      const ev = eventInfo.event;
+      const productId = ev.product?.productIdentifier ?? ev.product?.id ?? '';
+      const currency = ev.product?.currencyCode ?? 'USD';
+      const price = ev.product?.price ?? 0;
+
+      console.log('[Superwall][AF] event fired', JSON.stringify({ type: ev.type, event: ev.event, productId }));
+
+      if (ev.type === 'freeTrialStart') {
+        logAppsFlyerEvent('af_start_trial', {
+          af_currency: currency,
+          af_content_id: productId,
+        });
+      } else if (ev.type === 'subscriptionStart') {
+        logAppsFlyerEvent('af_subscribe', {
+          af_revenue: price || (productId === YEARLY_PRODUCT_ID ? 79.99 : price),
+          af_currency: currency,
+          af_content_id: productId,
+        });
+        logAppsFlyerEvent('af_purchase', {
+          af_revenue: price || (productId === YEARLY_PRODUCT_ID ? 79.99 : price),
+          af_currency: currency,
+          af_content_id: productId,
+        });
+      }
+    },
+  });
+  return null;
+}
+
 export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [pendingPlacement, setPendingPlacement] = useState<string | null>(null);
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
@@ -263,6 +298,7 @@ export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = (
         <>
           <TransactionAbandonWatcher />
           <TikTokPurchaseTracker />
+          <AppsFlyerPurchaseTracker />
         </>
       )}
       {usePlacementHook != null && (

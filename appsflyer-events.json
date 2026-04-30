@@ -1,0 +1,41 @@
+[
+  {
+    "eventName": "af_start_trial",
+    "eventValue": {
+      "af_currency": "USD",
+      "af_content_id": "com.teniola.notario.pro.weekly"
+    }
+  },
+  {
+    "eventName": "af_subscribe",
+    "eventValue": {
+      "af_revenue": 7.99,
+      "af_currency": "USD",
+      "af_content_id": "com.teniola.notario.pro.weekly"
+    }
+  },
+  {
+    "eventName": "af_purchase",
+    "eventValue": {
+      "af_revenue": 7.99,
+      "af_currency": "USD",
+      "af_content_id": "com.teniola.notario.pro.weekly"
+    }
+  },
+  {
+    "eventName": "af_subscribe",
+    "eventValue": {
+      "af_revenue": 79.99,
+      "af_currency": "USD",
+      "af_content_id": "com.teniold.notario.pro.yearly.3"
+    }
+  },
+  {
+    "eventName": "af_purchase",
+    "eventValue": {
+      "af_revenue": 79.99,
+      "af_currency": "USD",
+      "af_content_id": "com.teniold.notario.pro.yearly.3"
+    }
+  }
+]
