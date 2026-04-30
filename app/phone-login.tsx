@@ -1,5 +1,3 @@
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +17,9 @@ const BUTTON_SHADOW = {
   shadowRadius: 6,
   elevation: 6,
 };
+
+const OFF_WHITE = '#F7F7F5';
+const ACCENT_BLUE = '#7FA8FF';
 
 const COUNTRIES = [
   { label: '🇺🇸 United States', dial: '+1' },
@@ -185,7 +186,7 @@ export default function PhoneLoginScreen() {
   };
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <View style={styles.screen}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
@@ -292,12 +293,12 @@ export default function PhoneLoginScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  screen: { flex: 1, backgroundColor: OFF_WHITE },
   container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06 },
   backBtn: { marginBottom: scaleSize(16) },
   backBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(17), color: '#333' },
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
   resendBtnDisabled: { opacity: 0.5 },
   resendBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#333', textDecorationLine: 'underline' },
   continueBtn: {
-    backgroundColor: '#FD8A8A',
+    backgroundColor: ACCENT_BLUE,
     borderRadius: scaleSize(12),
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(20),
@@ -384,6 +385,6 @@ const styles = StyleSheet.create({
   noAccountCard: { backgroundColor: '#fff', borderRadius: scaleSize(20), padding: scaleSize(28), width: '100%', alignItems: 'center' },
   noAccountTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
   noAccountBody: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
-  noAccountBtn: { backgroundColor: '#FD8A8A', borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
+  noAccountBtn: { backgroundColor: ACCENT_BLUE, borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
   noAccountBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#fff' },
 });

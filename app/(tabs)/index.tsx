@@ -9,10 +9,8 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withTiming,
-  withDelay,
   withRepeat,
   Easing,
-  ReduceMotion,
   runOnJS,
 } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
@@ -26,7 +24,7 @@ import { Note, getMasteryColor, noteFromStudyMaterialSet } from '@/lib/notes';
 import { listAllMaterials, deleteAllLocalMaterials } from '@/lib/study-materials-storage';
 import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { getStreak, recordMasteryAchieved } from '@/lib/streak';
+import { getStreak, recordMasteryAchieved, bumpStreak, addExtraStudyDays, getExtraStudyDays } from '@/lib/streak';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
@@ -49,6 +47,7 @@ import {
   ACCENT_BLUE_TINT,
   METALLIC_SILVER,
   SUBTITLE_GRAY,
+  SF_PRO,
 } from '@/lib/onboarding-theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -57,82 +56,28 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const SALMON = ACCENT_BLUE;
 const SALMON_DARK = ACCENT_BLUE_PRESSED;
 
-const MENU_ITEMS = [
-  { id: 'record', label: 'Record', icon: require('../../assets/u_microphone.png') },
-  { id: 'camera', label: 'Camera', icon: require('../../assets/fi_camera.png') },
-  { id: 'photos', label: 'Photos', icon: require('../../assets/u_image-v.png') },
-  { id: 'upload', label: 'File Upload', icon: require('../../assets/u_file-upload-alt.png') },
-  { id: 'notes', label: 'Notes', icon: require('../../assets/fi_link.png') },
+const SHEET_OPTIONS = [
+  { id: 'record',  label: 'Record',      emoji: '🎙️', bg: '#EDE7F6' },
+  { id: 'camera',  label: 'Camera',      emoji: '📷', bg: '#FFF3E0' },
+  { id: 'photos',  label: 'Photos',      emoji: '🖼️', bg: '#E3F2FD' },
+  { id: 'upload',  label: 'File Upload', emoji: '📄', bg: '#E0F2F1' },
+  { id: 'notes',   label: 'Notes',       emoji: '🔗', bg: '#F3E5F5' },
 ];
-
-const SPRING_CONFIG = {
-  stiffness: 900,
-  damping: 90,
-  mass: 4,
-  overshootClamping: undefined,
-  energyThreshold: 6e-9,
-  velocity: 0,
-  reduceMotion: ReduceMotion.Never,
-};
-
-const OFFSET = 72;
-
-const MenuItem = ({
-  item,
-  isExpanded,
-  index,
-  onPress,
-  isTablet,
-}: {
-  item: typeof MENU_ITEMS[0];
-  isExpanded: any;
-  index: number;
-  onPress?: (itemId: string) => void;
-  isTablet?: boolean;
-}) => {
-  const offset = isTablet ? 90 : OFFSET;
-  const animatedStyle = useAnimatedStyle(() => {
-    const moveValue = isExpanded.value ? offset * index : 0;
-    const translateValue = withSpring(-moveValue, SPRING_CONFIG);
-    const delay = index * 100;
-    const scaleValue = isExpanded.value ? 1 : 0;
-
-    return {
-      transform: [
-        { translateY: translateValue },
-        { scale: withDelay(delay, withTiming(scaleValue)) },
-      ],
-    };
-  });
-
-  return (
-    <AnimatedPressable
-      style={[animatedStyle, styles.menuItem]}
-      onPress={() => onPress?.(item.id)}
-    >
-      <View style={styles.menuIconWrapper}>
-        <Image source={item.icon} style={styles.menuIcon} />
-      </View>
-      <Text style={styles.menuLabel}>{item.label}</Text>
-    </AnimatedPressable>
-  );
-};
-
-const OVERLAY_ANIM_DURATION = 450;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isTablet = screenWidth > 600;
   const isLargeTablet = screenWidth > 900;
-  const isExpanded = useSharedValue(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const [materials, setMaterials] = useState<StudyMaterialSet[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
 
   const [streakCount, setStreakCount] = useState(0);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
+  const [extraStudyDays, setExtraStudyDays] = useState<string[]>([]);
+  const devBumpDoneRef = useRef(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPaymentWarning, setShowPaymentWarning] = useState(false);
   const { signOut, deleteUser, user } = useAuth();
@@ -198,8 +143,19 @@ export default function HomeScreen() {
         }
       });
       getStreak().then((s) => setStreakCount(s.count));
+      getExtraStudyDays().then(setExtraStudyDays);
     }, [])
   );
+
+  useEffect(() => {
+    if (!__DEV__ || devBumpDoneRef.current) return;
+    devBumpDoneRef.current = true;
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const dayBefore = new Date(); dayBefore.setDate(dayBefore.getDate() - 2);
+    const dates = [yesterday.toISOString().slice(0, 10), dayBefore.toISOString().slice(0, 10)];
+    bumpStreak(2).then(() => getStreak().then((s) => setStreakCount(s.count)));
+    addExtraStudyDays(dates).then(() => setExtraStudyDays(dates));
+  }, []);
 
 
   useEffect(() => {
@@ -218,16 +174,17 @@ export default function HomeScreen() {
     const dow = today.getDay();
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - dow);
-    const studiedDates = new Set(
-      materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean)
-    );
+    const studiedDates = new Set([
+      ...materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean) as string[],
+      ...extraStudyDays,
+    ]);
     return ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, i) => {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dStr = d.toISOString().slice(0, 10);
       return { label, isToday: dStr === todayStr, isFuture: dStr > todayStr, studied: studiedDates.has(dStr) };
     });
-  }, [materials]);
+  }, [materials, extraStudyDays]);
 
   const daysStudied = useMemo(() =>
     new Set(materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean)).size,
@@ -281,8 +238,6 @@ export default function HomeScreen() {
   const [playDuration, setPlayDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const overlayWidth = screenWidth;
-  const overlayHeight = screenHeight;
   const fabSize = isTablet ? 120 : 96;
   const fabIconSize = isTablet ? 64 : 52;
   const contentPadding = isTablet ? 40 : 20;
@@ -310,28 +265,9 @@ export default function HomeScreen() {
     transform: [{ translateX: unlimitedShimmer.value * (screenWidth + 120) - 120 }],
   }));
 
-  const toggleMenu = () => {
-    isExpanded.value = !isExpanded.value;
-    setIsMenuOpen((prev) => !prev);
-  };
-
-  const closeMenu = () => {
-    if (isMenuOpen) {
-      isExpanded.value = false;
-      setIsMenuOpen(false);
-    }
-  };
-
-  const openMenu = () => {
-    if (!isMenuOpen) {
-      isExpanded.value = true;
-      setIsMenuOpen(true);
-    }
-  };
-
   const handleMenuItemPress = async (itemId: string) => {
+    setShowAddSheet(false);
     if (itemId === 'record') {
-      closeMenu();
       pendingRecordRef.current = true;
       setShowRecordModal(true);
       requestAnimationFrame(() => {
@@ -342,7 +278,6 @@ export default function HomeScreen() {
       });
     }
     if (itemId === 'notes') {
-      closeMenu();
       setShowNotesModal(true);
       requestAnimationFrame(() => {
         notesModalOffset.value = withTiming(1, {
@@ -352,15 +287,12 @@ export default function HomeScreen() {
       });
     }
     if (itemId === 'camera') {
-      closeMenu();
       openCameraAndSave();
     }
     if (itemId === 'photos') {
-      closeMenu();
       openPhotoLibrary();
     }
     if (itemId === 'upload') {
-      closeMenu();
       setShowUploadModal(true);
       requestAnimationFrame(() => {
         uploadModalOffset.value = withTiming(1, {
@@ -622,11 +554,10 @@ export default function HomeScreen() {
     ]);
   };
 
-  const recordModalHeight = Math.max(screenHeight / (isTablet ? 5 : 4), isTablet ? 300 : 240);
   const playbackModalHeight = Math.max(screenHeight / (isTablet ? 4 : 3), isTablet ? 350 : 280);
   const notesModalHeight = Math.min(screenHeight * (isTablet ? 0.5 : 0.6), isTablet ? 600 : 480);
   const recordModalStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: recordModalHeight * recordModalOffset.value }],
+    transform: [{ translateY: recordModalOffset.value * screenHeight }],
   }));
   const playbackModalStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: playbackModalHeight * playbackModalOffset.value }],
@@ -781,40 +712,6 @@ export default function HomeScreen() {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const fabRotationStyle = useAnimatedStyle(() => {
-    const rotateValue = isExpanded.value ? '-360deg' : '0deg';
-    return {
-      transform: [{ rotate: withTiming(rotateValue, { duration: 400 }) }],
-    };
-  });
-
-  const fabTranslateStyle = useAnimatedStyle(() => {
-    const translateValue = isExpanded.value ? 150 : 0;
-    return {
-      transform: [{ translateX: withTiming(translateValue, { duration: 400 }) }],
-    };
-  });
-
-  const overlayStyle = useAnimatedStyle(() => {
-    const scale = isExpanded.value ? 1 : 0;
-    const opacity = isExpanded.value ? 1 : 0;
-    const timingConfig = {
-      duration: OVERLAY_ANIM_DURATION,
-      easing: Easing.out(Easing.cubic),
-    };
-    const scaleVal = withTiming(scale, timingConfig);
-    const translateX = withTiming(isExpanded.value ? 0 : overlayWidth / 2, timingConfig);
-    const translateY = withTiming(isExpanded.value ? 0 : overlayHeight / 2, timingConfig);
-
-    return {
-      opacity: withTiming(opacity, timingConfig),
-      transform: [
-        { translateX },
-        { translateY },
-        { scale: scaleVal },
-      ],
-    };
-  });
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -871,7 +768,7 @@ export default function HomeScreen() {
                   <Text style={[styles.cardDesc, { fontSize: isTablet ? 20 : 16 }]}>
                     Transform your study materials into methods that actually work.
                   </Text>
-              <Pressable style={[styles.continueBtnWrap, styles.continueBtn, { backgroundColor: '#0D0D0F' }]} onPress={openMenu}>
+              <Pressable style={[styles.continueBtnWrap, styles.continueBtn, { backgroundColor: '#0D0D0F' }]} onPress={() => setShowAddSheet(true)}>
                   <Text style={styles.continueBtnText}>Continue</Text>
               </Pressable>
             </View>
@@ -951,24 +848,6 @@ export default function HomeScreen() {
                 ]}
                 onPress={() => router.push(`/study-set/${note.id}`)}
               >
-                {/* Paw texture */}
-                <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {[...Array(isTablet ? 216 : 60)].map((_, i) => {
-                    const pawCols = isTablet ? 18 : 12;
-                    const stepX = isTablet ? 42 : 34;
-                    const stepY = isTablet ? 26 : 34;
-                    return (
-                    <Text key={i} style={{
-                      position: 'absolute',
-                      fontSize: isTablet ? 22 : 18,
-                      opacity: 0.065,
-                      left: (i % pawCols) * stepX - 8,
-                      top: Math.floor(i / pawCols) * stepY - 4,
-                      transform: [{ rotate: `${(i * 43) % 50 - 25}deg` }],
-                    }}>🐾</Text>
-                    );
-                  })}
-                </View>
                 <View style={[styles.noteCardInner, isTablet && { padding: 28 }]}>
                   <View style={[styles.noteEmojiContainer, isTablet && { width: 100, height: 100, borderRadius: 24, marginRight: 24 }]}>
                     <Text style={[styles.noteEmoji, isTablet && { fontSize: 52 }]}>{note.emoji}</Text>
@@ -1008,126 +887,94 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      <Animated.View
-        style={[
-          styles.overlay,
-          overlayStyle,
-          {
-            position: 'absolute',
-            right: -10,
-            bottom: 0,
-            width: overlayWidth + 50,
-            height: overlayHeight + 50,
-          },
-        ]}
-        pointerEvents={isMenuOpen ? 'auto' : 'none'}
-      >
-        {isMenuOpen && (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.52)' }]} />
-        )}
-        <Pressable style={StyleSheet.absoluteFill} onPress={closeMenu} />
-      </Animated.View>
-
-      <View style={[styles.fabMenuContainer, { 
-        bottom: isTablet ? 120 : 80, 
-        right: isTablet ? 120 : 80 
-      }]}>
-        {MENU_ITEMS.map((item, index) => (
-          <MenuItem
-            key={item.id}
-            item={item}
-            isExpanded={isExpanded}
-            index={index + 1}
-            onPress={handleMenuItemPress}
-            isTablet={isTablet}
-          />
-        ))}
-      </View>
-
       {!showRecordModal && !showPlaybackModal && !showNotesModal && !showUploadModal && !showContentConfirmModal && (
-        <View style={[styles.fabContainer, { 
-          bottom: 24 + insets.bottom, 
-          right: isTablet ? 40 : 24 
+        <View style={[styles.fabContainer, {
+          bottom: 24 + insets.bottom,
+          right: isTablet ? 40 : 24
         }]}>
-          <Animated.View style={[fabRotationStyle, fabTranslateStyle]}>
-            <AnimatedPressable onPress={toggleMenu} style={[styles.fab, {
-              width: fabSize,
-              height: fabSize,
-              borderRadius: fabSize / 2
-            }]}>
-              <Image source={require('../../assets/plus-circle.png')} style={[styles.fabIcon, {
-                width: fabIconSize,
-                height: fabIconSize
-              }]} />
-            </AnimatedPressable>
-          </Animated.View>
+          <Pressable onPress={() => setShowAddSheet(true)} style={[styles.fab, {
+            width: fabSize,
+            height: fabSize,
+            borderRadius: fabSize / 2
+          }]}>
+            <Image source={require('../../assets/plus-circle.png')} style={[styles.fabIcon, {
+              width: fabIconSize,
+              height: fabIconSize
+            }]} />
+          </Pressable>
         </View>
       )}
 
-      {showRecordModal && (
-        <>
-          <Pressable
-            style={[
-              styles.modalBackdrop,
-              {
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: recordModalHeight + insets.bottom - 30,
-              },
-            ]}
-            onPress={closeRecordModal}
-          />
-          <Animated.View
-            style={[
-              styles.recordModal,
-              { height: recordModalHeight, bottom: insets.bottom },
-              recordModalStyle,
-            ]}
-          >
-            <View style={styles.recordModalInner}>
-              <LinearGradient
-                colors={[ACCENT_BLUE_TINT, OFF_WHITE]}
-                locations={[0, 0.63]}
-                style={[styles.recordModalGradient, { paddingBottom: 24 + insets.bottom }]}
-              >
-              <View style={styles.recordModalHandle} />
-              <View style={styles.recordModalRow}>
-                <Image
-                  source={require('../../assets/singingpup.png')}
-                  style={styles.recordModalPup}
-                />
-                <View style={styles.recordModalControls}>
-                  <View style={styles.recordModalWaveform}>
-                    {Array.from({ length: 20 }, (_, i) => {
-                      const normalized = recordingMetering != null
-                        ? Math.max(0, Math.min(1, (recordingMetering + 160) / 160))
-                        : 0.12;
-                      const wave = 0.35 + 0.65 * (Math.sin(i * 0.45) * 0.5 + 0.5);
-                      const h = Math.max(4, Math.round(normalized * wave * 36));
-                      return <View key={i} style={[styles.recordModalWaveformBar, { height: h }]} />;
-                    })}
-                  </View>
-                  <View style={styles.recordModalButtonsRow}>
-                    <Pressable
-                      style={[styles.recordModalBtn, styles.recordModalBtnPlay]}
-                      onPress={isPaused ? resumeRecording : pauseRecording}
-                    >
-                      <Ionicons name={isPaused ? 'play' : 'pause'} size={22} color="#333" />
-                      <Text style={styles.recordModalBtnLabel}>{isPaused ? 'Play' : 'Pause'}</Text>
-                    </Pressable>
-                    <Pressable style={[styles.recordModalBtn, styles.recordModalBtnStop]} onPress={stopRecording}>
-                      <Ionicons name="stop" size={22} color="#333" />
-                      <Text style={styles.recordModalBtnLabel}>Stop</Text>
-                    </Pressable>
-                  </View>
-                  <Text style={styles.recordModalTimer}>{formatTime(recordingDuration)}</Text>
-                </View>
-              </View>
-            </LinearGradient>
+      {/* ── Add Content sheet ── */}
+      <Modal visible={showAddSheet} transparent animationType="slide" onRequestClose={() => setShowAddSheet(false)}>
+        <Pressable style={styles.sheetBackdrop} onPress={() => setShowAddSheet(false)}>
+          <Pressable style={[styles.addSheet, { paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Upload Content</Text>
+              <Pressable style={styles.sheetClose} hitSlop={12} onPress={() => setShowAddSheet(false)}>
+                <Text style={{ fontSize: 15, color: DEEP_BLACK }}>✕</Text>
+              </Pressable>
             </View>
-          </Animated.View>
-        </>
+            {SHEET_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.id}
+                style={({ pressed }) => [styles.sheetOption, pressed && { opacity: 0.75 }]}
+                onPress={() => handleMenuItemPress(opt.id)}
+              >
+                <View style={[styles.sheetIconCircle, { backgroundColor: opt.bg }]}>
+                  <Text style={{ fontSize: 20 }}>{opt.emoji}</Text>
+                </View>
+                <Text style={styles.sheetOptionText}>{opt.label}</Text>
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {showRecordModal && (
+        <Animated.View style={[styles.recordScreen, { paddingTop: insets.top, paddingBottom: insets.bottom + 20 }, recordModalStyle]}>
+          {/* Waveform */}
+          <View style={styles.recordWaveWrap}>
+            {Array.from({ length: 40 }, (_, i) => {
+              const norm = recordingMetering != null
+                ? Math.max(0, Math.min(1, (recordingMetering + 160) / 160))
+                : 0.15;
+              const wave = 0.3 + 0.7 * (Math.sin(i * 0.45) * 0.5 + 0.5);
+              const h = Math.max(4, Math.round(norm * wave * 60));
+              return <View key={i} style={[styles.recordWaveBar, { height: h, opacity: isPaused ? 0.4 : 1 }]} />;
+            })}
+          </View>
+
+          {/* Status + timer */}
+          <View style={styles.recordStatusWrap}>
+            <View style={styles.recordDot} />
+            <Text style={styles.recordStatusText}>RECORDING</Text>
+          </View>
+          <Text style={styles.recordTimer}>{formatTime(recordingDuration)}</Text>
+
+          {/* Controls */}
+          <View style={styles.recordControlsRow}>
+            <Pressable style={styles.recordCtrlBtn} onPress={closeRecordModal}>
+              <View style={styles.recordCtrlCircle}>
+                <Text style={{ fontSize: 18 }}>✕</Text>
+              </View>
+              <Text style={styles.recordCtrlLabel}>Cancel</Text>
+            </Pressable>
+
+            <Pressable style={styles.recordStopBtn} onPress={stopRecording}>
+              <View style={styles.recordStopCircle}>
+                <View style={styles.recordStopSquare} />
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.recordCtrlBtn} onPress={isPaused ? resumeRecording : pauseRecording}>
+              <View style={styles.recordCtrlCircle}>
+                <Text style={{ fontSize: 18 }}>{isPaused ? '▶' : '⏸'}</Text>
+              </View>
+              <Text style={styles.recordCtrlLabel}>{isPaused ? 'Resume' : 'Pause'}</Text>
+            </Pressable>
+          </View>
+        </Animated.View>
       )}
 
       {showPlaybackModal && (
@@ -1427,7 +1274,7 @@ export default function HomeScreen() {
                     style={StyleSheet.absoluteFill}
                   />
                 </Animated.View>
-                <Text style={styles.unlimitedBtnText}>Get Unlimited Notes</Text>
+                <Text style={styles.unlimitedBtnText}>Get Unlimited</Text>
               </Animated.View>
             </Pressable>
             <Text style={styles.settingsSectionTitle}>For You</Text>
@@ -1769,10 +1616,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
   },
   weekCardTop: {
     flexDirection: 'row',
@@ -1818,12 +1665,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     marginBottom: 16,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.20)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   noteCardInner: {
     flexDirection: 'row',
@@ -1987,23 +1835,6 @@ const styles = StyleSheet.create({
     color: '#000',
     marginTop: -8,
   },
-  overlay: {
-    position: 'absolute',
-    overflow: 'hidden',
-    pointerEvents: 'box-none',
-    borderRadius: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  fabMenuContainer: {
-    position: 'absolute',
-    flexDirection: 'column',
-    alignItems: 'center',
-    overflow: 'visible',
-  },
   fabContainer: {
     position: 'absolute',
     alignItems: 'center',
@@ -2017,44 +1848,151 @@ const styles = StyleSheet.create({
     marginRight: -20,
   },
   fabIcon: {},
-  menuItem: {
-    position: 'absolute',
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+  addSheet: {
+    backgroundColor: OFF_WHITE,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 12,
-    minHeight: 64,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sheetTitle: {
+    fontFamily: SF_PRO,
+    fontSize: 22,
+    fontWeight: '700' as const,
+    color: DEEP_BLACK,
+  },
+  sheetClose: {
+    width: 32,
+    height: 32,
     borderRadius: 16,
-    shadowColor: '#333',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-    zIndex: 0,
-  },
-  menuIconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: ACCENT_BLUE,
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  menuIcon: {
-    width: 20,
-    height: 20,
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
-  menuLabel: {
-    fontFamily: 'Fredoka_400Regular',
+  sheetIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetOptionText: {
+    fontFamily: SF_PRO,
     fontSize: 16,
-    color: 'black',
+    fontWeight: '600' as const,
+    color: DEEP_BLACK,
   },
   modalBackdrop: {
     position: 'absolute',
     backgroundColor: 'rgba(0,0,0,0.35)',
     zIndex: 9,
   },
+  recordScreen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    zIndex: 10,
+  },
+  recordWaveWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    height: 80,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+  },
+  recordWaveBar: {
+    flex: 1,
+    backgroundColor: ACCENT_BLUE,
+    borderRadius: 2,
+  },
+  recordStatusWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  recordDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+  },
+  recordStatusText: {
+    fontFamily: SF_PRO,
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#EF4444',
+    letterSpacing: 1,
+  },
+  recordTimer: {
+    fontFamily: SF_PRO,
+    fontSize: 52,
+    fontWeight: '700' as const,
+    color: DEEP_BLACK,
+    letterSpacing: -1,
+    marginBottom: 48,
+  },
+  recordControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 40,
+    marginBottom: 20,
+  },
+  recordCtrlBtn: { alignItems: 'center', gap: 8 },
+  recordCtrlCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F2F2F4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordCtrlLabel: {
+    fontFamily: SF_PRO,
+    fontSize: 13,
+    color: DEEP_BLACK,
+  },
+  recordStopBtn: { alignItems: 'center' },
+  recordStopCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordStopSquare: {
+    width: 26,
+    height: 26,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+  },
+  // ── Playback modal (reuses recordModal* names) ──
   recordModal: {
     position: 'absolute',
     left: 0,
@@ -2063,109 +2001,19 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     zIndex: 10,
   },
-  recordModalInner: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  recordModalGradient: {
-    flex: 1,
-    paddingTop: 12,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  recordModalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    alignSelf: 'center',
-  },
-  recordModalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  recordModalPup: {
-    width: 120,
-    height: 120,
-    left: -20,
-    top: 50,
-  },
-  recordModalControls: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    top: 50,
-  },
-  recordModalWaveform: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    height: 40,
-    gap: 3,
-    marginBottom: -2,
-  },
-  recordModalWaveformBar: {
-    width: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    minHeight: 4,
-  },
-  recordModalButtonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    top: 50,
-    gap: 20,
-  },
-  recordModalButtonsStack: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    justifyContent: 'center',
-    gap: 16,
-    minWidth: 140,
-    paddingTop: 40,
-  },
-  recordModalBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    minWidth: 120,
-  },
-  recordModalBtnDelete: {
-    backgroundColor: '#FF9B9B',
-  },
-  recordModalBtnPlay: {
-    backgroundColor: '#9CA3AF',
-  },
-  recordModalBtnConfirm: {
-    backgroundColor: '#86EFAC',
-  },
-  recordModalBtnStop: {
-    backgroundColor: '#E57373',
-  },
-  recordModalBtnIcon: {
-    width: 56,
-    height: 56,
-  },
-  recordModalBtnLabel: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 14,
-    color: '#333',
-  },
-  recordModalTimer: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 18,
-    color: '#333',
-    marginTop: 8,
-    textAlign: 'center',
-    top: 50,
-  },
+  recordModalInner: { flex: 1, borderRadius: 24, overflow: 'hidden' },
+  recordModalGradient: { flex: 1, paddingTop: 12, paddingHorizontal: 24, paddingBottom: 24 },
+  recordModalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.2)', alignSelf: 'center' },
+  recordModalTimer: { fontFamily: SF_PRO, fontSize: 18, color: '#333', marginTop: 8, textAlign: 'center' },
+  recordModalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24 },
+  recordModalPup: { width: 120, height: 120, left: -20, top: 50 },
+  recordModalControls: { alignItems: 'center', justifyContent: 'center', top: 50 },
+  recordModalButtonsStack: { flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center', gap: 16, minWidth: 140, paddingTop: 40 },
+  recordModalBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 6, paddingHorizontal: 20, borderRadius: 16, minWidth: 120 },
+  recordModalBtnDelete: { backgroundColor: '#FF9B9B' },
+  recordModalBtnPlay: { backgroundColor: '#9CA3AF' },
+  recordModalBtnConfirm: { backgroundColor: '#86EFAC' },
+  recordModalBtnLabel: { fontFamily: SF_PRO, fontSize: 14, color: '#333' },
   notesCard: {
     width: '100%',
     borderRadius: 24,
@@ -2228,16 +2076,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   notesGenerateBtn: {
-    backgroundColor: SALMON,
-    borderRadius: 12,
-    paddingVertical: 14,
+    backgroundColor: ACCENT_BLUE,
+    borderRadius: 16,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   notesGenerateBtnText: {
-    fontFamily: 'Fredoka_400Regular',
-    fontSize: 18,
+    fontFamily: SF_PRO,
+    fontWeight: '600' as const,
+    fontSize: 17,
     color: '#fff',
+    letterSpacing: -0.2,
   },
   notesGenerateBtnDisabled: {
     opacity: 0.6,
@@ -2331,11 +2186,11 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#FDF0F0',
-    shadowColor: '#333',
+    backgroundColor: OFF_WHITE,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     elevation: 8,
   },
   contentConfirmInner: {
@@ -2343,16 +2198,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentConfirmTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700' as const,
     fontSize: 20,
-    color: '#333',
+    color: DEEP_BLACK,
     textAlign: 'center',
     marginBottom: 8,
+    letterSpacing: -0.5,
   },
   contentConfirmSubtitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
-    color: '#666',
+    color: SUBTITLE_GRAY,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -2361,12 +2218,12 @@ const styles = StyleSheet.create({
   contentConfirmRowInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
+    borderColor: 'rgba(0,0,0,0.10)',
   },
   contentConfirmThumb: {
     width: 44,
@@ -2377,8 +2234,8 @@ const styles = StyleSheet.create({
   contentConfirmIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: '#E0E8EA',
+    borderRadius: 10,
+    backgroundColor: ACCENT_BLUE_TINT,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -2386,9 +2243,9 @@ const styles = StyleSheet.create({
   contentConfirmIcon: { width: 24, height: 24, opacity: 0.7 },
   contentConfirmNameSize: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
-    color: '#333',
+    color: DEEP_BLACK,
     minWidth: 0,
   },
   contentConfirmCheck: {
@@ -2401,25 +2258,25 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     marginRight: 16,
   },
-  contentConfirmCheckText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  contentConfirmCheckText: { color: '#fff', fontSize: 16, fontWeight: '600' as const },
   contentConfirmReplace: {
     textAlign: 'center',
     marginRight: 56,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 12,
-    color: '#999',
-    marginTop: 10,
+    color: SUBTITLE_GRAY,
+    marginTop: 8,
     marginLeft: 56,
   },
   contentConfirmAddRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'rgba(0,0,0,0.15)',
     borderStyle: 'dashed',
   },
   contentConfirmAddIconWrap: {
@@ -2427,16 +2284,17 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#999',
+    borderColor: 'rgba(0,0,0,0.20)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  contentConfirmAddIcon: { fontSize: 22, color: '#666' },
+  contentConfirmAddIcon: { fontSize: 22, color: DEEP_BLACK },
   contentConfirmAddText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '600' as const,
     fontSize: 16,
-    color: '#333',
+    color: DEEP_BLACK,
   },
   streakOverlay: {
     flex: 1,

@@ -77,7 +77,7 @@ export function GeneratingContentScreen({ contentName, materialTitle, isAvatarTu
           ref={lottieRef}
           source={isAvatarTutor
             ? require('../assets/icons/Sparkles Loop Loader ai.json')
-            : require('../Astronaut_Dog.json')}
+            : require('../Loading 40 _ Paperplane (1).json')}
           style={styles.lottie}
           loop
         />

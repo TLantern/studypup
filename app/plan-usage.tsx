@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
-import { getOnboarding, updateOnboarding } from '@/lib/onboarding-storage';
+import { updateOnboarding } from '@/lib/onboarding-storage';
 import { setItem as storageSetItem } from '@/lib/storage';
 import { ensureUserDoc } from '@/lib/user-profile';
 import { useAuth } from '@/lib/auth-store';
@@ -15,15 +14,6 @@ import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect, hapticContinue } from '@/lib/haptics';
 import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
-
-const GPA_TINT: Record<string, string> = {
-  'below-2': '#FF3B30',
-  '2-2.5':   '#FF9500',
-  '2.5-3':   '#FFCC00',
-  '3-3.5':   '#34C759',
-  '3.5+':    '#30D158',
-  'unsure':  '#8E8E93',
-};
 
 const ONBOARDING_COMPLETE_KEY = 'onboardingComplete';
 
@@ -41,15 +31,9 @@ export default function PlanUsageScreen() {
   const { user } = useAuth();
   const superwallAvailable = useContext(SuperwallAvailableContext);
   const [selected, setSelected] = useState<string[]>([]);
-  const [tintColor, setTintColor] = useState<string>('#8E8E93');
 
   useEffect(() => {
     trackPageViewed('ob_student_plan_frequency');
-    getOnboarding().then((data) => {
-      if (data.current_gpa && GPA_TINT[data.current_gpa]) {
-        setTintColor(GPA_TINT[data.current_gpa]);
-      }
-    });
   }, []);
 
   const toggleSelect = (id: string) => {
@@ -68,18 +52,9 @@ export default function PlanUsageScreen() {
     router.push('/creating-plan');
   };
 
-  const activeTint = selected.length === 0 ? '#FF3B30' : tintColor;
-  const tintRgba = `${activeTint}26`;
-
   return (
     <OnboardingView>
       <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
-        <LinearGradient
-          colors={['transparent', tintRgba]}
-          locations={[0, 1]}
-          style={styles.bottomTint}
-          pointerEvents="none"
-        />
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -143,14 +118,6 @@ const styles = StyleSheet.create({
   cardEmoji: { fontSize: scaleFont(20) },
   progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
   backBtn: { padding: scaleSize(4) },
-  bottomTint: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '33%',
-    zIndex: 0,
-  },
   cardContent: { flex: 1, gap: scaleSize(2) },
   cardSubtext: {
     fontFamily: 'SF Pro Text',

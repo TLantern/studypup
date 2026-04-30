@@ -12,7 +12,6 @@ import * as StoreReview from 'expo-store-review';
 import { scaleFont, scaleSize, SCREEN_WIDTH } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { ttTrackRegistration, ttIdentify } from '@/lib/tiktok-analytics';
-import ReAnimated, { SlideInRight, SlideOutLeft, useSharedValue, useAnimatedStyle, withTiming, Easing as ReEasing } from 'react-native-reanimated';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -22,48 +21,7 @@ const BUTTON_SHADOW = {
   elevation: 6,
 };
 
-function Stars({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  const frac = rating - full;
-  const sz = scaleFont(15);
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      {[...Array(full)].map((_, i) => <Text key={i} style={{ fontSize: sz, color: '#FFA500' }}>★</Text>)}
-      <View style={{ position: 'relative', width: sz }}>
-        <Text style={{ fontSize: sz, color: '#DDD' }}>★</Text>
-        <View style={{ position: 'absolute', top: 0, left: 0, width: sz * frac, overflow: 'hidden' }}>
-          <Text style={{ fontSize: sz, color: '#FFA500' }}>★</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-const CAROUSEL_ITEMS = [
-  '📸 Snap your notes and get instant flashcards',
-  '🧠 AI quizzes tailored to you',
-  '⚡ Study smarter, not longer',
-];
-const CAROUSEL_INTERVAL = 3600;
-
-function useCarousel() {
-  const [carouselIndex, setCarouselIndex] = useState(0);
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    progress.value = 0;
-    progress.value = withTiming(1, { duration: CAROUSEL_INTERVAL, easing: ReEasing.linear });
-    const id = setInterval(() => {
-      setCarouselIndex(i => (i + 1) % CAROUSEL_ITEMS.length);
-      progress.value = 0;
-      progress.value = withTiming(1, { duration: CAROUSEL_INTERVAL, easing: ReEasing.linear });
-    }, CAROUSEL_INTERVAL);
-    return () => clearInterval(id);
-  }, []);
-
-  const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` as any }));
-  return { carouselIndex, progressStyle };
-}
+const OFF_WHITE = '#F7F7F5';
 
 function ShineButton({
   label,
@@ -128,7 +86,6 @@ export default function CreateAccountScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [noAccountModal, setNoAccountModal] = useState(false);
-  const { carouselIndex, progressStyle } = useCarousel();
 
   useEffect(() => {
     trackPageViewed('create_account');
@@ -206,7 +163,7 @@ export default function CreateAccountScreen() {
   };
 
   return (
-    <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>
+    <View style={styles.screen}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
           <Text style={styles.title}>Create an Account</Text>
@@ -215,29 +172,6 @@ export default function CreateAccountScreen() {
           </Text>
 
           <View style={styles.centeredBlock}>
-          <View style={styles.socialProof}>
-            <Text style={styles.socialProofText}>Join 3,500+ students studying smarter</Text>
-            <View style={styles.starsRow}>
-              <Stars rating={4.7} />
-              <Text style={styles.starsRating}>4.7</Text>
-            </View>
-          </View>
-          <View style={styles.carouselCard}>
-            <View style={styles.carousel}>
-              <ReAnimated.Text
-                key={carouselIndex}
-                entering={SlideInRight.duration(380)}
-                exiting={SlideOutLeft.duration(300)}
-                style={[styles.carouselText, { position: 'absolute' }]}
-              >
-                {CAROUSEL_ITEMS[carouselIndex]}
-              </ReAnimated.Text>
-            </View>
-            <View style={styles.progressTrack}>
-              <ReAnimated.View style={[styles.progressBar, progressStyle]} />
-            </View>
-          </View>
-
           <ShineButton
             label="Continue with Google"
             icon={<Image source={require('@/assets/icons/google.png')} style={styles.socialIcon} contentFit="contain" />}
@@ -290,45 +224,16 @@ export default function CreateAccountScreen() {
           </View>
         </View>
       </Modal>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  screen: { flex: 1, backgroundColor: OFF_WHITE },
   container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06, justifyContent: 'space-between' },
   centeredBlock: { flex: 1, justifyContent: 'center' },
   title: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
   subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(16) },
-  socialProof: { alignItems: 'center', alignSelf: 'center', marginBottom: scaleSize(10), gap: scaleSize(4) },
-  socialProofText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#444', textAlign: 'center' },
-  starsRow: { flexDirection: 'row', alignItems: 'center', gap: scaleSize(4) },
-  starsRating: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(15), color: '#333' },
-  carouselCard: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: scaleSize(16),
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.07)',
-    paddingHorizontal: scaleSize(20),
-    paddingVertical: scaleSize(14),
-    marginBottom: scaleSize(20),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  carousel: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: scaleSize(40),
-    overflow: 'hidden',
-    width: '100%',
-    marginBottom: scaleSize(8),
-  },
-  carouselText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#222', textAlign: 'center' },
-  progressTrack: { height: scaleSize(4), backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: scaleSize(4), overflow: 'hidden' },
-  progressBar: { height: '100%', backgroundColor: '#FD8A8A', borderRadius: scaleSize(4) },
   socialBtn: {
     flexDirection: 'row',
     alignItems: 'center',

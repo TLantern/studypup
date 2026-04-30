@@ -518,7 +518,7 @@ export default function GenerateQuizScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingCenter, { backgroundColor: DEEP_BLACK }]}>
+      <View style={[styles.container, styles.loadingCenter]}>
         {isResume ? (
           <ActivityIndicator size="large" color="#FD8A8A" />
         ) : (
@@ -800,11 +800,11 @@ export default function GenerateQuizScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={28} color={OFF_WHITE} />
+          <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
         <Pressable onPress={() => router.replace('/(tabs)')} style={styles.closeBtn} hitSlop={12}>
-          <Ionicons name="close" size={28} color={OFF_WHITE} />
+          <Ionicons name="close" size={28} color={DEEP_BLACK} />
         </Pressable>
       </View>
       <ScrollView
@@ -988,7 +988,7 @@ export default function GenerateQuizScreen() {
                 onPress={() => handleSelectAnswer(i)}
                 disabled={quizLocked}
               >
-                <View style={[styles.answerNum, quizLocked && i === correctIndex && styles.answerNumCorrect]}>
+                <View style={[styles.answerNum, quizLocked && i === correctIndex && styles.answerNumCorrect, quizLocked && i === selectedAnswer && i !== correctIndex && styles.answerNumWrong]}>
                   <Text style={styles.answerNumText}>{i + 1}</Text>
                 </View>
                 <View style={styles.answerTextWrap}>
@@ -1019,11 +1019,11 @@ export default function GenerateQuizScreen() {
           {!quizInlineExplain && <View style={styles.quizDivider} />}
           <View style={styles.quizNav}>
             <Pressable onPress={goPrev} style={styles.quizNavBtn} disabled={questionIndex === 0}>
-              <Ionicons name="chevron-back" size={24} color={questionIndex === 0 ? '#999' : '#fff'} />
+              <Ionicons name="chevron-back" size={24} color={questionIndex === 0 ? '#999' : DEEP_BLACK} />
             </Pressable>
             <Text style={styles.quizNavCounter}>{displayIndex}/{displayTotal}</Text>
             <Pressable onPress={goNext} style={styles.quizNavBtn} disabled={questionIndex === totalQuestions - 1}>
-              <Ionicons name="chevron-forward" size={24} color={questionIndex === totalQuestions - 1 ? '#999' : '#fff'} />
+              <Ionicons name="chevron-forward" size={24} color={questionIndex === totalQuestions - 1 ? '#999' : DEEP_BLACK} />
             </Pressable>
           </View>
         </>
@@ -1154,7 +1154,7 @@ const styles = StyleSheet.create({
   streakPopupMsg: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#ccc', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   streakPopupBtn: { backgroundColor: ACCENT_BLUE, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 40 },
   streakPopupBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
-  container: { flex: 1, backgroundColor: DEEP_BLACK, paddingHorizontal: 24 },
+  container: { flex: 1, backgroundColor: OFF_WHITE, paddingHorizontal: 24 },
   loadingCenter: { justifyContent: 'center', alignItems: 'center' },
   generatingText: {
     fontFamily: 'Fredoka_400Regular',
@@ -1176,14 +1176,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 22,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
     textAlign: 'center',
-    marginLeft: 10,  
+    marginLeft: 10,
   },
-  tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 16, marginHorizontal: -24 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: '#3A3A3A', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
+  tabs: { flexGrow: 0, flexShrink: 0, marginBottom: 18, marginHorizontal: -24 },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.1)', marginBottom: 16, marginHorizontal: -24, alignSelf: 'stretch',
   },
-  tabsContent: { gap: 8, paddingHorizontal: 24 },
+  tabsContent: { gap: 8, paddingHorizontal: 24, paddingBottom: 10 },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1191,14 +1191,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 18,
     marginRight: 10,
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderColor: 'rgba(0,0,0,0.1)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
     elevation: 4,
   },
   tabActive: {
@@ -1206,13 +1206,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   tabIcon: { width: 20, height: 20 },
-  tabIconText: { fontSize: 14, fontFamily: 'Fredoka_400Regular', color: OFF_WHITE, textDecorationLine: 'underline', width: 20, textAlign: 'center' },
+  tabIconText: { fontSize: 14, fontFamily: 'Fredoka_400Regular', color: DEEP_BLACK, textDecorationLine: 'underline', width: 20, textAlign: 'center' },
   tabLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
     color: METALLIC_SILVER,
   },
-  tabLabelActive: { color: OFF_WHITE },
+  tabLabelActive: { color: DEEP_BLACK },
   notesTabWrap: { flex: 1 },
   editNoteBtn: {
     flexDirection: 'row',
@@ -1347,14 +1347,16 @@ const styles = StyleSheet.create({
   answerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.20)',
     paddingVertical: 11,
     paddingHorizontal: 16,
     marginBottom: 8,
-    shadowColor: '#333',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 4,
     gap: 12,
@@ -1393,6 +1395,9 @@ const styles = StyleSheet.create({
   answerNumCorrect: {
     backgroundColor: '#81FF88',
   },
+  answerNumWrong: {
+    backgroundColor: '#F5686A',
+  },
   answerNumText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
@@ -1401,11 +1406,11 @@ const styles = StyleSheet.create({
   answerText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 16,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   masteryBarBg: {
     height: 10,
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: 'rgba(0,0,0,0.1)',
     borderRadius: 5,
     overflow: 'hidden',
     marginBottom: 12,
@@ -1417,7 +1422,7 @@ const styles = StyleSheet.create({
   },
   quizDivider: {
     height: 1,
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: 'rgba(0,0,0,0.1)',
     marginHorizontal: -24,
     marginTop: 16,
     marginBottom: 0,
@@ -1432,14 +1437,19 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: SALMON,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
   },
   quizNavCounter: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: 18,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   explainBtn: {
     flexDirection: 'row',

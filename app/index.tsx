@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { SuperwallAvailableContext } from '@/lib/superwall';
@@ -12,6 +12,7 @@ import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH, isSmallDevice } from
 import { OnboardingView } from '@/components/OnboardingView';
 import LottieView from 'lottie-react-native';
 import { welcomeIconRef } from '@/lib/welcomeIconRef';
+import { isPaywallBypassed, togglePaywallBypassed } from '@/lib/dev-bypass';
 
 const DEEP_BLACK = '#0D0D0F';
 const OFF_WHITE = '#F7F7F5';
@@ -34,6 +35,22 @@ export default function WelcomeScreen() {
   const lottieRef = useRef<LottieView>(null);
   const [speed, setSpeed] = useState(4);
   const phase = useRef<'fast' | 'slow'>('fast');
+
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleTitleTap = useCallback(() => {
+    tapCountRef.current += 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => { tapCountRef.current = 0; }, 1500);
+    if (tapCountRef.current >= 7) {
+      tapCountRef.current = 0;
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      togglePaywallBypassed().then(() => {
+        const on = isPaywallBypassed();
+        Alert.alert('Dev mode', `Paywall bypass ${on ? 'ON' : 'OFF'}`);
+      });
+    }
+  }, []);
 
   useEffect(() => {
     console.log('[Wave] mount effect — lottieRef:', !!lottieRef.current);
@@ -74,10 +91,12 @@ export default function WelcomeScreen() {
     <OnboardingView>
       <View style={[styles.container, { paddingTop: insets.top + scaleVertical(isSmallDevice ? 60 : 130) }]}>
         <Animated.View entering={FadeIn.duration(600)} style={styles.headerBlock}>
-          <Text style={styles.title}>
-            <Text style={styles.titleAccent}>Capture</Text>
-            <Text style={styles.titleRest}> what matters</Text>
-          </Text>
+          <Pressable onPress={handleTitleTap}>
+            <Text style={styles.title}>
+              <Text style={styles.titleAccent}>Capture</Text>
+              <Text style={styles.titleRest}> what matters</Text>
+            </Text>
+          </Pressable>
         </Animated.View>
 
         <View

@@ -7,10 +7,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { savePendingContent, type ContentItem } from '@/lib/content-store';
 import { fetchYouTubeTranscript, extractVideoId } from '@/lib/youtube-transcript';
+import { ACCENT_BLUE, DEEP_BLACK, OFF_WHITE, SUBTITLE_GRAY, SF_PRO, CARD_SHADOW } from '@/lib/onboarding-theme';
 
-const MINT = '#B5EAE4';
 const TILE_BG = '#FFFFFF';
-const SALMON = '#FD8A8A';
 
 type OptionId = 'audio' | 'youtube' | 'file' | 'photo' | 'text';
 
@@ -179,7 +178,7 @@ export function InAppOnboardingModal({ visible, onContinue }: { visible: boolean
               <View>
                 <View style={s.step2Header}>
                   <Pressable onPress={handleBack} hitSlop={12} style={s.backBtn}>
-                    <Ionicons name="chevron-back" size={isTablet ? 32 : 22} color="#1A1A2E" />
+                    <Ionicons name="chevron-back" size={isTablet ? 32 : 22} color={DEEP_BLACK} />
                   </Pressable>
                 </View>
 
@@ -304,31 +303,31 @@ function getStyles(t: boolean) {
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
     scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: t ? 48 : 20, paddingTop: t ? 80 : 48, paddingBottom: t ? 40 : 20 },
-    card: { backgroundColor: MINT, borderRadius: sc(24), padding: sc(16), width: '100%', maxWidth: t ? 760 : 420, alignSelf: 'center', marginTop: t ? -40 : 0 },
-    title: { fontFamily: 'FredokaOne_400Regular', fontSize: sc(28), color: '#1A1A2E', marginTop: sc(12), marginBottom: sc(4), textAlign: 'center' },
-    subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#444', textAlign: 'center', marginBottom: sc(12), lineHeight: sc(18) },
+    card: { backgroundColor: OFF_WHITE, borderRadius: sc(24), padding: sc(16), width: '100%', maxWidth: t ? 760 : 420, alignSelf: 'center', marginTop: t ? -40 : 0, ...CARD_SHADOW },
+    title: { fontFamily: SF_PRO, fontWeight: '700' as const, fontSize: sc(22), color: DEEP_BLACK, marginTop: sc(12), marginBottom: sc(4), textAlign: 'center', letterSpacing: -0.5 },
+    subtitle: { fontFamily: SF_PRO, fontSize: sc(13), color: SUBTITLE_GRAY, textAlign: 'center', marginBottom: sc(12), lineHeight: sc(18) },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: sc(8), marginBottom: sc(8) },
     tile: { backgroundColor: TILE_BG, borderRadius: sc(14), padding: sc(10), width: '48%' },
     tileWide: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: sc(10), marginBottom: sc(10) },
     iconWrap: { width: sc(32), height: sc(32), borderRadius: sc(9), justifyContent: 'center', alignItems: 'center', marginBottom: sc(6) },
-    tileLabel: { fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: 1 },
-    tileSub: { fontFamily: 'Fredoka_400Regular', fontSize: sc(11), color: '#666', lineHeight: sc(14) },
-    dropZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.18)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(16), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
-    photoPickerZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.18)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(20), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
+    tileLabel: { fontFamily: SF_PRO, fontWeight: '600' as const, fontSize: sc(14), color: DEEP_BLACK, marginBottom: 1 },
+    tileSub: { fontFamily: SF_PRO, fontSize: sc(11), color: SUBTITLE_GRAY, lineHeight: sc(14) },
+    dropZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(16), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
+    photoPickerZone: { borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.12)', borderStyle: 'dashed', borderRadius: sc(14), paddingVertical: sc(20), alignItems: 'center', marginBottom: sc(12), backgroundColor: TILE_BG },
     dropIconWrap: { width: sc(44), height: sc(44), borderRadius: sc(13), backgroundColor: '#EDE7F6', justifyContent: 'center', alignItems: 'center', marginBottom: sc(8) },
-    dropTitle: { fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: 3 },
-    dropBrowse: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#0D9488', marginBottom: 3 },
-    dropHint: { fontFamily: 'Fredoka_400Regular', fontSize: sc(11), color: '#666' },
+    dropTitle: { fontFamily: SF_PRO, fontWeight: '600' as const, fontSize: sc(14), color: DEEP_BLACK, marginBottom: 3 },
+    dropBrowse: { fontFamily: SF_PRO, fontSize: sc(13), color: ACCENT_BLUE, marginBottom: 3 },
+    dropHint: { fontFamily: SF_PRO, fontSize: sc(11), color: SUBTITLE_GRAY },
     step2Header: { flexDirection: 'row', alignItems: 'center' },
     backBtn: { width: sc(32), height: sc(32), borderRadius: sc(9), backgroundColor: 'rgba(0,0,0,0.08)', justifyContent: 'center', alignItems: 'center' },
-    urlInput: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: sc(12) },
-    textArea: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: 'Fredoka_400Regular', fontSize: sc(14), color: '#1A1A2E', marginBottom: sc(12), minHeight: sc(130) },
+    urlInput: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: SF_PRO, fontSize: sc(14), color: DEEP_BLACK, marginBottom: sc(12) },
+    textArea: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(14), paddingVertical: sc(13), fontFamily: SF_PRO, fontSize: sc(14), color: DEEP_BLACK, marginBottom: sc(12), minHeight: sc(130) },
     fileList: { backgroundColor: TILE_BG, borderRadius: sc(14), paddingHorizontal: sc(12), paddingTop: sc(8), paddingBottom: sc(4), marginBottom: sc(12) },
     fileRow: { flexDirection: 'row', alignItems: 'center', gap: sc(10), paddingVertical: sc(8), borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-    fileName: { flex: 1, fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#1A1A2E' },
+    fileName: { flex: 1, fontFamily: SF_PRO, fontSize: sc(13), color: DEEP_BLACK },
     addAnotherBtn: { flexDirection: 'row', alignItems: 'center', gap: sc(6), paddingVertical: sc(10) },
-    addAnotherText: { fontFamily: 'Fredoka_400Regular', fontSize: sc(13), color: '#0D9488' },
-    continueBtn: { backgroundColor: SALMON, borderRadius: sc(32), paddingVertical: sc(13), alignItems: 'center' },
-    continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: sc(17), color: '#fff' },
+    addAnotherText: { fontFamily: SF_PRO, fontSize: sc(13), color: ACCENT_BLUE },
+    continueBtn: { backgroundColor: ACCENT_BLUE, borderRadius: sc(32), paddingVertical: sc(13), alignItems: 'center', ...CARD_SHADOW },
+    continueBtnText: { fontFamily: SF_PRO, fontWeight: '600' as const, fontSize: sc(17), color: '#fff', letterSpacing: -0.2 },
   });
 }

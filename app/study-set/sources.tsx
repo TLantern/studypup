@@ -155,7 +155,7 @@ export default function SourcesScreen() {
     router.push({ pathname: '/choose-methods' });
   };
 
-  const addSources = async (newSources: Array<{ name: string; type: string; emoji: string }>) => {
+  const addSources = async (newSources: Array<{ name: string; type: 'notes' | 'audio' | 'image' | 'file'; emoji: string }>) => {
     if (!material || !materialId) return;
     const merged = [...(material.sources ?? []), ...newSources];
     await updateMaterials(materialId, { sources: merged });

@@ -27,6 +27,19 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
+import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
+import { callOpenAI } from '@/lib/openai-service';
+import {
+  addProNote,
+  createFolder,
+  getAllFolders,
+  getAllProNotes,
+  getNotesInFolder,
+  hydrateProNotes,
+  subscribeProNotes,
+  type ProNote,
+} from '@/lib/pro-note-store';
+import { transcribeAudio } from '@/lib/transcription';
 
 const BG = '#F2F2F4';
 const CARD = '#FFFFFF';
@@ -63,10 +76,31 @@ export default function ProfessionalHomeScreen() {
   const [filter, setFilter] = useState<FilterTab>('all');
   const [search, setSearch] = useState('');
   const [showNewNote, setShowNewNote] = useState(false);
+  const [savedNotes, setSavedNotes] = useState<ReturnType<typeof getAllProNotes>>(getAllProNotes());
+  const [folders, setFolders] = useState(getAllFolders());
+
+  // Folder creation
+  const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [folderName, setFolderName] = useState('');
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeProNotes(() => {
+      setSavedNotes(getAllProNotes());
+      setFolders(getAllFolders());
+    });
+    hydrateProNotes().then(() => {
+      setSavedNotes(getAllProNotes());
+      setFolders(getAllFolders());
+    });
+    return () => { unsub(); };
+  }, []);
 
   // YouTube sheet
   const [showYouTube, setShowYouTube] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [ytStatus, setYtStatus] = useState<string | null>(null);
+  const [ytError, setYtError] = useState<string | null>(null);
 
   // Recording
   const [showRecord, setShowRecord] = useState(false);
@@ -128,6 +162,48 @@ export default function ProfessionalHomeScreen() {
     timerRef.current = setInterval(() => setRecordingDuration((p) => p + 1), 1000);
   }, [recording, isPaused]);
 
+  // Recording-save state
+  const [savingRecording, setSavingRecording] = useState(false);
+  const [savingMessage, setSavingMessage] = useState<string | null>(null);
+
+  const generateNoteFromTranscript = useCallback(
+    async (transcript: string, extras: Partial<ProNote> = {}): Promise<string> => {
+      const structured = await callOpenAI<{
+        title: string;
+        subtitle: string;
+        overview: Array<{ bold?: string; text: string }>;
+        keyTopics: Array<{ bold?: string; text: string }>;
+        actionItems: string[];
+        finalReflection: string;
+      }>(
+        'You are an expert professional note-taker. Return only valid JSON — no markdown, no code fences.',
+        `Analyze this transcript and return a JSON object with this exact shape:
+{
+  "title": "Main topic in 3-6 words",
+  "subtitle": "One sentence describing the content",
+  "overview": [
+    { "bold": "Main Focus", "text": "what this is primarily about" },
+    { "bold": "Core Problem Addressed", "text": "the key challenge or question" }
+  ],
+  "keyTopics": [
+    { "bold": "Topic Name", "text": "brief explanation" }
+  ],
+  "actionItems": [
+    "Concrete next step 1",
+    "Concrete next step 2",
+    "Concrete next step 3"
+  ],
+  "finalReflection": "A 2-3 sentence reflection on the practical value or takeaway."
+}
+
+Transcript:
+${transcript.slice(0, 12000)}`
+      );
+      return addProNote({ ...structured, transcript, ...extras });
+    },
+    []
+  );
+
   const cancelRecord = useCallback(() => {
     if (recording) {
       recording.stopAndUnloadAsync();
@@ -147,15 +223,54 @@ export default function ProfessionalHomeScreen() {
     if (!recording) return;
     if (timerRef.current) clearInterval(timerRef.current);
     deactivateKeepAwake();
-    await recording.stopAndUnloadAsync();
+    setSavingRecording(true);
+    setSavingMessage('Stopping recording…');
+    let uri: string | null = null;
+    try {
+      await recording.stopAndUnloadAsync();
+      uri = recording.getURI();
+    } catch (e) {
+      console.error('stopRecording failed', e);
+    }
     setRecording(null);
     setIsPaused(false);
     setRecordingDuration(0);
     setRecordingMetering(null);
-    recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
-      runOnJS(setShowRecord)(false)
-    );
-  }, [recording]);
+
+    if (!uri) {
+      setSavingRecording(false);
+      setSavingMessage(null);
+      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
+        runOnJS(setShowRecord)(false)
+      );
+      Alert.alert('Recording failed', 'No audio captured.');
+      return;
+    }
+
+    try {
+      setSavingMessage('Transcribing audio…');
+      const transcript = await transcribeAudio(uri);
+      if (!transcript.trim()) throw new Error('Transcription returned no text.');
+      setSavingMessage('Generating notes…');
+      const noteId = await generateNoteFromTranscript(transcript, { audioUri: uri });
+      setSavingRecording(false);
+      setSavingMessage(null);
+      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
+        runOnJS(setShowRecord)(false)
+      );
+      router.push({
+        pathname: '/professional-note-detail',
+        params: { generated: '1', noteId },
+      });
+    } catch (e: any) {
+      setSavingRecording(false);
+      setSavingMessage(null);
+      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
+        runOnJS(setShowRecord)(false)
+      );
+      Alert.alert('Could not save recording', e?.message ?? 'Please try again.');
+    }
+  }, [recording, generateNoteFromTranscript]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -188,55 +303,182 @@ export default function ProfessionalHomeScreen() {
       });
       if (result.canceled || !result.assets?.length) return;
       const file = result.assets[0];
-      Alert.alert('Voice memo selected', file.name ?? 'audio file');
+      setSavingRecording(true);
+      setSavingMessage('Transcribing audio…');
+      try {
+        const transcript = await transcribeAudio(file.uri);
+        if (!transcript.trim()) throw new Error('Transcription returned no text.');
+        setSavingMessage('Generating notes…');
+        const noteId = await generateNoteFromTranscript(transcript, { audioUri: file.uri });
+        setSavingRecording(false);
+        setSavingMessage(null);
+        router.push({
+          pathname: '/professional-note-detail',
+          params: { generated: '1', noteId },
+        });
+      } catch (e: any) {
+        setSavingRecording(false);
+        setSavingMessage(null);
+        Alert.alert('Could not process audio', e?.message ?? 'Please try again.');
+      }
     } catch (e) {
       console.error('Audio picker failed', e);
     }
   };
 
-  const handleYouTubeSubmit = () => {
-    if (!youtubeUrl.trim()) return;
-    setShowYouTube(false);
-    // process URL — hook into existing youtube-transcript flow when ready
+  const handleYouTubeSubmit = async () => {
+    const url = youtubeUrl.trim();
+    if (!url) return;
+    if (!isYouTubeUrl(url)) {
+      setYtError('Please enter a valid YouTube URL.');
+      return;
+    }
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      setYtError('Could not extract video ID from URL.');
+      return;
+    }
+
+    setYtError(null);
+    setYtStatus('Fetching transcript…');
+
+    const result = await fetchYouTubeTranscript(videoId, (msg) => setYtStatus(msg));
+    if (result.error || !result.text) {
+      setYtStatus(null);
+      setYtError(result.error ?? 'Failed to fetch transcript.');
+      return;
+    }
+
+    setYtStatus('Generating notes…');
+
+    try {
+      const id = await generateNoteFromTranscript(result.text, { sourceUrl: url });
+      setShowYouTube(false);
+      setYoutubeUrl('');
+      setYtStatus(null);
+      setYtError(null);
+      router.push({
+        pathname: '/professional-note-detail',
+        params: { generated: '1', noteId: id },
+      });
+    } catch (e: any) {
+      setYtStatus(null);
+      setYtError(e?.message ?? 'Failed to generate notes. Please try again.');
+    }
+  };
+
+  const handleCreateFolder = () => {
+    const name = folderName.trim();
+    if (!name) return;
+    hapticSelect();
+    createFolder(name);
+    setFolderName('');
+    setShowCreateFolder(false);
   };
 
   // ─── Content ─────────────────────────────────────────────────────────────
   const renderContent = () => {
     if (filter === 'folders') {
+      if (folders.length === 0) {
+        return (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.folderEmoji}>📁</Text>
+            <Text style={styles.emptyTitle}>Create Your First Folder</Text>
+            <Text style={styles.emptySubtitle}>
+              Organize notes into folders{'\n'}for easy access
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
+              onPress={() => { hapticSelect(); setShowCreateFolder(true); }}
+            >
+              <Text style={styles.emptyCtaText}>Create Folder</Text>
+            </Pressable>
+          </View>
+        );
+      }
       return (
-        <View style={styles.emptyWrap}>
-          <Text style={styles.folderEmoji}>📁</Text>
-          <Text style={styles.emptyTitle}>Create Your First Folder</Text>
-          <Text style={styles.emptySubtitle}>
-            Organize notes into folders{'\n'}for easy access
-          </Text>
+        <View style={{ paddingHorizontal: scaleSize(20), paddingTop: scaleSize(8) }}>
           <Pressable
-            style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
-            onPress={() => hapticSelect()}
+            style={({ pressed }) => [styles.newFolderRow, pressed && { opacity: 0.85 }]}
+            onPress={() => { hapticSelect(); setShowCreateFolder(true); }}
           >
-            <Text style={styles.emptyCtaText}>Create Folder</Text>
+            <Ionicons name="add-circle-outline" size={22} color={DEEP_BLACK} />
+            <Text style={styles.newFolderText}>New folder</Text>
           </Pressable>
+          {folders.map((f) => {
+            const count = getNotesInFolder(f.id).length;
+            return (
+              <Pressable
+                key={f.id}
+                style={({ pressed }) => [styles.noteCard, pressed && { opacity: 0.85 }]}
+                onPress={() => { hapticSelect(); setFilter('all'); setActiveFolderId(f.id); }}
+              >
+                <View style={styles.noteIconWrap}>
+                  <Text style={{ fontSize: scaleFont(20) }}>📁</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.noteTitle}>{f.name}</Text>
+                  <Text style={styles.noteSubtitle}>{count} {count === 1 ? 'note' : 'notes'}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={DEEP_BLACK} />
+              </Pressable>
+            );
+          })}
         </View>
       );
     }
 
+    const folderFilter = activeFolderId
+      ? savedNotes.filter((n) => n.folderId === activeFolderId)
+      : savedNotes;
+    const activeFolder = activeFolderId ? folders.find((f) => f.id === activeFolderId) : null;
+
+    const allNotes = [
+      ...(activeFolderId ? [] : SAMPLE_NOTES.map((n) => ({ ...n, generated: false }))),
+      ...folderFilter.map((n) => ({ id: n.id, title: n.title, subtitle: n.subtitle, unread: false, generated: true })),
+    ];
+
+    const filtered = search.trim()
+      ? allNotes.filter(
+          (n) =>
+            n.title.toLowerCase().includes(search.toLowerCase()) ||
+            n.subtitle.toLowerCase().includes(search.toLowerCase())
+        )
+      : allNotes;
+
     return (
       <View style={{ paddingHorizontal: scaleSize(20), paddingTop: scaleSize(8) }}>
-        <Text style={styles.sectionLabel}>Today</Text>
-        {SAMPLE_NOTES.map((note) => (
+        {activeFolder ? (
+          <Pressable
+            style={styles.folderBreadcrumb}
+            onPress={() => { hapticSelect(); setActiveFolderId(null); setFilter('folders'); }}
+          >
+            <Ionicons name="chevron-back" size={18} color={DEEP_BLACK} />
+            <Text style={styles.folderBreadcrumbText}>{activeFolder.name}</Text>
+          </Pressable>
+        ) : null}
+        <Text style={styles.sectionLabel}>{activeFolder ? 'In this folder' : 'Today'}</Text>
+        {filtered.map((note) => (
           <Pressable
             key={note.id}
             style={({ pressed }) => [styles.noteCard, pressed && { opacity: 0.85 }]}
             onPress={() => {
               hapticSelect();
-              router.push({
-                pathname: '/professional-note-detail',
-                params: { id: note.id, title: note.title, subtitle: note.subtitle },
-              });
+              if (note.generated) {
+                router.push({
+                  pathname: '/professional-note-detail',
+                  params: { title: note.title, subtitle: note.subtitle, generated: '1', noteId: note.id },
+                });
+              } else {
+                router.push({
+                  pathname: '/professional-note-detail',
+                  params: { id: note.id, title: note.title, subtitle: note.subtitle },
+                });
+              }
             }}
           >
             <View style={styles.noteIconWrap}>
-              <Text style={{ fontSize: scaleFont(20) }}>⭐</Text>
+              <Text style={{ fontSize: scaleFont(20) }}>{note.generated ? '📝' : '⭐'}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.noteTitle}>{note.title}</Text>
@@ -254,7 +496,10 @@ export default function ProfessionalHomeScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }} />
-        <Pressable hitSlop={12} onPress={() => hapticSelect()}>
+        <Pressable
+          hitSlop={12}
+          onPress={() => { hapticSelect(); router.push('/settings'); }}
+        >
           <Ionicons name="settings-outline" size={26} color={DEEP_BLACK} />
         </Pressable>
       </View>
@@ -377,11 +622,19 @@ export default function ProfessionalHomeScreen() {
               <Text style={styles.ytHint}>Unlisted videos aren't supported</Text>
             </View>
 
+            {ytStatus ? (
+              <Text style={styles.ytStatus}>{ytStatus}</Text>
+            ) : null}
+            {ytError ? (
+              <Text style={styles.ytError}>{ytError}</Text>
+            ) : null}
+
             <Pressable
-              style={({ pressed }) => [styles.ytSubmit, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [styles.ytSubmit, !!ytStatus && styles.ytSubmitDisabled, pressed && !ytStatus && { opacity: 0.85 }]}
               onPress={handleYouTubeSubmit}
+              disabled={!!ytStatus}
             >
-              <Text style={styles.ytSubmitText}>Submit</Text>
+              <Text style={styles.ytSubmitText}>{ytStatus ? 'Processing…' : 'Submit'}</Text>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -441,11 +694,161 @@ export default function ProfessionalHomeScreen() {
           </View>
         </Animated.View>
       )}
+
+      {/* ── Create folder modal ── */}
+      <Modal visible={showCreateFolder} transparent animationType="fade" onRequestClose={() => setShowCreateFolder(false)}>
+        <Pressable style={styles.dimBackdrop} onPress={() => setShowCreateFolder(false)}>
+          <Pressable style={styles.dialog} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.dialogTitle}>New folder</Text>
+            <TextInput
+              value={folderName}
+              onChangeText={setFolderName}
+              placeholder="Folder name"
+              placeholderTextColor={SUBTITLE_GRAY}
+              style={styles.dialogInput}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleCreateFolder}
+            />
+            <View style={styles.dialogBtnRow}>
+              <Pressable
+                style={[styles.dialogBtn, styles.dialogBtnGhost]}
+                onPress={() => { setFolderName(''); setShowCreateFolder(false); }}
+              >
+                <Text style={styles.dialogBtnGhostText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.dialogBtn, styles.dialogBtnPrimary, !folderName.trim() && { opacity: 0.5 }]}
+                onPress={handleCreateFolder}
+                disabled={!folderName.trim()}
+              >
+                <Text style={styles.dialogBtnPrimaryText}>Create</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Saving overlay (transcription / generation) ── */}
+      {savingRecording && (
+        <View style={styles.savingOverlay} pointerEvents="auto">
+          <View style={styles.savingCard}>
+            <Text style={styles.savingTitle}>Saving recording</Text>
+            <Text style={styles.savingMessage}>{savingMessage ?? 'Working…'}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  folderBreadcrumb: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(4),
+    paddingVertical: scaleSize(8),
+    marginBottom: scaleSize(4),
+  },
+  folderBreadcrumbText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+  },
+  newFolderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(10),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(14),
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(16),
+    marginBottom: scaleSize(10),
+  },
+  newFolderText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+  },
+  dimBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleSize(24),
+  },
+  dialog: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
+  },
+  dialogTitle: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(18),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    marginBottom: scaleSize(14),
+  },
+  dialogInput: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: DEEP_BLACK,
+    backgroundColor: '#F2F2F4',
+    borderRadius: scaleSize(10),
+    paddingHorizontal: scaleSize(12),
+    paddingVertical: scaleSize(12),
+    marginBottom: scaleSize(16),
+  },
+  dialogBtnRow: { flexDirection: 'row', gap: scaleSize(10) },
+  dialogBtn: {
+    flex: 1,
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(12),
+    alignItems: 'center',
+  },
+  dialogBtnGhost: { backgroundColor: '#F2F2F4' },
+  dialogBtnGhostText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: DEEP_BLACK,
+  },
+  dialogBtnPrimary: { backgroundColor: DEEP_BLACK },
+  dialogBtnPrimaryText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  savingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: scaleSize(40),
+  },
+  savingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(16),
+    padding: scaleSize(24),
+    width: '100%',
+    alignItems: 'center',
+  },
+  savingTitle: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(17),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    marginBottom: scaleSize(8),
+  },
+  savingMessage: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: SUBTITLE_GRAY,
+  },
   root: { flex: 1, backgroundColor: BG },
   headerRow: {
     flexDirection: 'row',
@@ -708,6 +1111,23 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(17),
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  ytSubmitDisabled: {
+    opacity: 0.55,
+  },
+  ytStatus: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: SUBTITLE_GRAY,
+    textAlign: 'center',
+    marginBottom: scaleSize(10),
+  },
+  ytError: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: scaleSize(10),
   },
   // Recording screen
   recordScreen: {

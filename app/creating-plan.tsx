@@ -11,7 +11,7 @@ import { DEEP_BLACK, ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO } from '@/lib/onboarding
 
 const DURATION_MS = 2500;
 const GRADIENT_LOTTIE = require('../assets/Progress Bar - Gradient.json');
-const HERO_LOTTIE = require('../assets/connecting.json');
+const HERO_LOTTIE = require('../Loading 40 _ Paperplane (1).json');
 
 export default function CreatingPlanScreen() {
   const [elapsed, setElapsed] = useState(0);

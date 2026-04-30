@@ -198,7 +198,7 @@ export default function ReportScreen() {
         <Text style={styles.loadingText}>{displayed}</Text>
         <LottieView
           ref={lottieRef}
-          source={require('../Happy Dog.json')}
+          source={require('../Loading 40 _ Paperplane (1).json')}
           style={styles.lottie}
           loop
           autoPlay

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STREAK_KEY = 'studypup_streak';
+const EXTRA_STUDY_DAYS_KEY = 'studypup_extra_study_days';
 
 export interface StreakData {
   count: number;
@@ -21,6 +22,24 @@ export async function getStreak(): Promise<StreakData> {
 
 async function saveStreak(data: StreakData): Promise<void> {
   await AsyncStorage.setItem(STREAK_KEY, JSON.stringify(data));
+}
+
+export async function bumpStreak(n: number): Promise<void> {
+  const streak = await getStreak();
+  await saveStreak({ count: streak.count + n, lastDate: todayStr() });
+}
+
+export async function getExtraStudyDays(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(EXTRA_STUDY_DAYS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export async function addExtraStudyDays(dates: string[]): Promise<void> {
+  const existing = await getExtraStudyDays();
+  const merged = Array.from(new Set([...existing, ...dates]));
+  await AsyncStorage.setItem(EXTRA_STUDY_DAYS_KEY, JSON.stringify(merged));
 }
 
 /**

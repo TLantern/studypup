@@ -24,6 +24,7 @@ import { SplashTransition } from '@/components/SplashTransition';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
+import { hydratePaywallBypass } from '@/lib/dev-bypass';
 import { initAnalytics } from '@/lib/analytics';
 import React from 'react';
 import {
@@ -56,14 +57,8 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!fontsLoaded || !__DEV__) return;
-    try {
-      const sw = require('expo-superwall');
-      sw.SuperwallExpoModule?.reset?.().then(() => {
-        console.log('[DEV] Superwall reset() called — experiment assignments cleared');
-      }).catch((e: any) => console.warn('[DEV] Superwall reset() failed:', e));
-    } catch {}
-  }, [fontsLoaded]);
+    hydratePaywallBypass();
+  }, []);
 
   const content = (
     <AuthProvider>

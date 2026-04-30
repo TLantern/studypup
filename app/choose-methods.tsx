@@ -135,7 +135,7 @@ export default function ChooseMethodsScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
-          <Ionicons name="chevron-back" size={28} color={OFF_WHITE} />
+          <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
         </Pressable>
         <Text style={styles.title}>Choose Methods</Text>
       </View>
@@ -190,8 +190,8 @@ export default function ChooseMethodsScreen() {
 }
 
 const styles = StyleSheet.create({
-  generatingWrap: { flex: 1, backgroundColor: DEEP_BLACK },
-  container: { flex: 1, backgroundColor: DEEP_BLACK, paddingHorizontal: RESPONSIVE.containerPadding },
+  generatingWrap: { flex: 1, backgroundColor: OFF_WHITE },
+  container: { flex: 1, backgroundColor: OFF_WHITE, paddingHorizontal: RESPONSIVE.containerPadding },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'FredokaOne_400Regular',
     fontSize: scaleFont(22),
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
     textAlign: 'center',
   },
   contentRow: {
@@ -218,37 +218,37 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   addBtn: {
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: '#E8E8E6',
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(10),
     paddingHorizontal: scaleSize(16),
     marginRight: scaleSize(120),
     borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderColor: '#D0D0CE',
   },
   addBtnText: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.body,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   list: { flex: 1 },
   listContent: { paddingBottom: scaleSize(24) },
   methodBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: '#FFFFFF',
     borderRadius: scaleSize(16),
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(20),
     marginBottom: scaleSize(12),
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.08,
     shadowRadius: 4,
-    elevation: 4,
+    elevation: 2,
     gap: scaleSize(16),
     minHeight: scaleSize(60),
   },
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
     borderWidth: 1,
-    borderColor: '#3A3A3A',
+    borderColor: '#E0E0DE',
   },
   methodBtnSelected: { borderColor: ACCENT_BLUE, borderWidth: 2 },
   methodBtnAvatar: { borderColor: ACCENT_BLUE, borderWidth: 1.5, opacity: 0.85 },
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   methodCustomIcon: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.titleSmall,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   methodCustomIconGold: {
     fontFamily: 'Fredoka_400Regular',
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   methodLabel: {
     fontFamily: 'Fredoka_400Regular',
     fontSize: RESPONSIVE.subtitle,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
   },
   methodLabelAvatar: {
     fontFamily: 'Fredoka_400Regular',

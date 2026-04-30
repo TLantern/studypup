@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useMemo, useRef, useState } from 'react';
 import { trackPageViewed } from '@/lib/analytics';
 import { ttTrackPurchase, ttTrackStartTrial, ttTrackSubscribe } from '@/lib/tiktok-analytics';
+import { isPaywallBypassed } from '@/lib/dev-bypass';
 
 let SuperwallProvider: React.ComponentType<any> | null = null;
 let usePlacementHook: typeof import('expo-superwall').usePlacement | null = null;
@@ -239,6 +240,10 @@ export const PaywallTriggerProvider: React.FC<{ children: React.ReactNode }> = (
   const [placementToShow, setPlacementToShow] = useState<string | null>(null);
 
   const showPaywall = useMemo(() => (placement: string) => {
+    if (isPaywallBypassed()) {
+      console.log('[Superwall] BYPASSED via dev easter egg, placement:', placement);
+      return;
+    }
     setPendingPlacement(placement);
   }, []);
 

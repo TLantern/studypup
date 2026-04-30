@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { deleteUser, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getFirebase } from '@/lib/firebase';
-import { ensureUserDoc } from '@/lib/user-profile';
+import { ensureUserDoc, ensureProfessionalDoc } from '@/lib/user-profile';
+import { getOnboarding } from '@/lib/onboarding-storage';
 import { getItem, setItem } from '@/lib/storage';
 
 const STORED_USER_KEY = 'auth:user';
@@ -56,7 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(u);
       setLoading(false);
       saveUserData(u);
-      if (u) ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
+      if (u) {
+        getOnboarding().then((onboarding) => {
+          if (onboarding.user_tag === 'working-class') {
+            ensureProfessionalDoc(u).catch((e) => console.error('Failed to ensure professional doc:', e));
+          } else {
+            ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
+          }
+        }).catch((e) => console.error('Failed to read onboarding for doc routing:', e));
+      }
     });
 
     return () => {
