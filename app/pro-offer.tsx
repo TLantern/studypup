@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -10,14 +10,35 @@ import Animated, {
 } from 'react-native-reanimated';
 import { trackPageViewed } from '@/lib/analytics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
+import { SuperwallAvailableContext, usePlacementHook } from '@/lib/superwall';
+
+const PLACEMENT = 'professionals_onboarding';
 
 const FADE_IN = 600;
 const HOLD = 1500;
 const FADE_OUT = 600;
 const TOTAL = FADE_IN + HOLD + FADE_OUT;
 
-function navigateToMain() {
-  router.replace('/create-account');
+function ProfPaywallTrigger({ onDone }: { onDone: () => void }) {
+  const usePlacement = usePlacementHook!;
+  const didRegisterRef = useRef(false);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
+  const { registerPlacement } = usePlacement({
+    onDismiss: () => onDoneRef.current(),
+    onSkip: () => onDoneRef.current(),
+    onError: () => onDoneRef.current(),
+  });
+
+  useEffect(() => {
+    if (didRegisterRef.current) return;
+    didRegisterRef.current = true;
+    registerPlacement({ placement: PLACEMENT, feature: () => onDoneRef.current() })
+      .catch(() => onDoneRef.current());
+  }, []);
+
+  return null;
 }
 
 function Interstitial({ onDone }: { onDone: () => void }) {
@@ -52,10 +73,33 @@ function Interstitial({ onDone }: { onDone: () => void }) {
 }
 
 export default function ProOfferScreen() {
+  const superwallAvailable = useContext(SuperwallAvailableContext);
+  const [paywallActive, setPaywallActive] = useState(false);
+
   useEffect(() => {
     trackPageViewed('pro_offer_interstitial');
   }, []);
-  return <Interstitial onDone={navigateToMain} />;
+
+  const handleAnimDone = useCallback(() => {
+    if (superwallAvailable && usePlacementHook) {
+      setPaywallActive(true);
+    } else {
+      router.replace('/create-account');
+    }
+  }, [superwallAvailable]);
+
+  const handlePaywallDone = useCallback(() => {
+    router.replace('/create-account');
+  }, []);
+
+  return (
+    <>
+      <Interstitial onDone={handleAnimDone} />
+      {paywallActive && usePlacementHook && (
+        <ProfPaywallTrigger onDone={handlePaywallDone} />
+      )}
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
