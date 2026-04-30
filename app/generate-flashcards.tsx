@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { OFF_WHITE, DEEP_BLACK } from '@/lib/onboarding-theme';
+import { OFF_WHITE, DEEP_BLACK, SF_PRO } from '@/lib/onboarding-theme';
 
 export default function GenerateFlashcardsScreen() {
   return (
@@ -11,5 +11,5 @@ export default function GenerateFlashcardsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: OFF_WHITE },
-  title: { fontFamily: 'Fredoka_400Regular', fontSize: 24, color: DEEP_BLACK },
+  title: { fontFamily: SF_PRO, fontSize: 24, color: DEEP_BLACK },
 });

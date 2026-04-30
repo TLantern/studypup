@@ -129,7 +129,7 @@ export function NotarioChatModal({ visible, onClose, notes, title }: Props) {
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
+          keyboardVerticalOffset={70}
         >
           <FlatList
             ref={listRef}

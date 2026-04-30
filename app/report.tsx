@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getMaterials } from '@/lib/study-materials-storage';
 import { callOpenAI } from '@/lib/openai-service';
 import type { StudyMaterialSet } from '@/lib/knowledge-graph';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const TYPEWRITER_MS = 50;
 const HOLD_MS = 2000;
@@ -317,7 +318,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   loadingText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 22,
     color: '#333',
     textAlign: 'center',
@@ -334,7 +335,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   headerTitle: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700',
     fontSize: 22,
     color: '#333',
   },
@@ -351,19 +353,22 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   cardHeading: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700',
     fontSize: 18,
     color: '#222',
     marginBottom: 9,
   },
   methodLine: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '500',
     fontSize: 15,
     color: '#333',
     marginBottom: 2,
   },
   projectedLabel: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '600',
     fontSize: 17,
     color: '#222',
     marginTop: 12,
@@ -380,25 +385,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   circleText: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700',
     fontSize: 52,
   },
   quipText: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '600',
     fontSize: 18,
     textAlign: 'center',
     marginTop: 10,
     opacity: 0.85,
   },
   conceptsHeading: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '600',
     fontSize: 16,
     color: '#222',
     textAlign: 'center',
     marginBottom: 10,
   },
   conceptLine: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '500',
     fontSize: 15,
     color: '#333',
     marginBottom: 6,
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   practiceBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#fff',
   },

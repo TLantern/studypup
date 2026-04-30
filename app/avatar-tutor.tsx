@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 type Phase = 'loading' | 'connecting' | 'intro' | 'explaining' | 'listening' | 'thinking' | 'responding' | 'error';
 
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholderText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(16),
     color: '#aaa',
   },
@@ -303,13 +304,13 @@ const styles = StyleSheet.create({
     paddingVertical: scaleSize(12),
   },
   speakerLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(12),
     color: '#a78bfa',
     marginBottom: 4,
   },
   subtitleText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(15),
     color: '#fff',
     lineHeight: scaleFont(22),
@@ -321,18 +322,18 @@ const styles = StyleSheet.create({
     paddingVertical: scaleSize(10),
   },
   userLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(12),
     color: '#86efac',
     marginBottom: 2,
   },
   userText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(14),
     color: '#e5e7eb',
   },
   errorText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(14),
     color: '#ef4444',
     textAlign: 'center',
@@ -366,7 +367,7 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(20),
   },
   pttLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(15),
     color: '#111',
   },
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   endBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(15),
     color: '#111',
     fontWeight: '600',

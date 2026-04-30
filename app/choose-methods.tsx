@@ -6,7 +6,7 @@ import { trackPageViewed } from '@/lib/analytics';
 import { contentToText } from '@/lib/content-to-text';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
 import { scaleFont, scaleSize, RESPONSIVE } from '@/lib/responsive';
-import { DEEP_BLACK, GRAPHITE_GRAY, OFF_WHITE, METALLIC_SILVER, ACCENT_BLUE } from '@/lib/onboarding-theme';
+import { DEEP_BLACK, GRAPHITE_GRAY, OFF_WHITE, METALLIC_SILVER, ACCENT_BLUE, SF_PRO } from '@/lib/onboarding-theme';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -190,7 +190,7 @@ export default function ChooseMethodsScreen() {
 }
 
 const styles = StyleSheet.create({
-  generatingWrap: { flex: 1, backgroundColor: OFF_WHITE },
+  generatingWrap: { flex: 1, backgroundColor: '#FFFFFF' },
   container: { flex: 1, backgroundColor: OFF_WHITE, paddingHorizontal: RESPONSIVE.containerPadding },
   header: {
     flexDirection: 'row',
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: scaleSize(4) },
   title: {
     flex: 1,
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(22),
     color: DEEP_BLACK,
     textAlign: 'center',
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   contentLabel: {
     flex: 1,
     flexShrink: 0,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.subtitle,
     color: DEEP_BLACK,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     borderColor: '#D0D0CE',
   },
   addBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.body,
     color: DEEP_BLACK,
   },
@@ -263,27 +263,27 @@ const styles = StyleSheet.create({
   methodIcon: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium },
   methodIconWrap: { width: RESPONSIVE.iconMedium, height: RESPONSIVE.iconMedium, justifyContent: 'center', alignItems: 'center' },
   methodCustomIcon: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.titleSmall,
     color: DEEP_BLACK,
   },
   methodCustomIconGold: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.titleSmall,
     color: '#F5A623',
   },
   methodLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.subtitle,
     color: DEEP_BLACK,
   },
   methodLabelAvatar: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.subtitle,
     color: ACCENT_BLUE,
   },
   methodSubtitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(12),
     color: METALLIC_SILVER,
     marginTop: 2,
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   avatarDividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
   avatarDividerText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(13),
     color: '#999',
   },
@@ -320,18 +320,18 @@ const styles = StyleSheet.create({
   avatarEmoji: { fontSize: scaleFont(24) },
   avatarCardText: { flex: 1 },
   avatarTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.subtitle,
     color: '#7c3aed',
   },
   avatarSubtitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(12),
     color: '#999',
     marginTop: 2,
   },
   avatarChevron: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(22),
     color: '#7c3aed',
   },
@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     minHeight: RESPONSIVE.buttonMinHeight,
   },
   generateBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.subtitle,
     color: '#fff',
   },

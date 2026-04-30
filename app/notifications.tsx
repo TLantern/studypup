@@ -10,6 +10,7 @@ import {
   requestPermissions,
   saveNotifPrefs,
 } from '@/lib/notifications';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const ITEMS: { key: keyof NotifPrefs; label: string; sub: string }[] = [
   { key: 'dailyReminder', label: 'Daily Reminder', sub: 'Every day at 7:00 PM' },
@@ -96,10 +97,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: { width: 40, alignItems: 'flex-start' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#000' },
+  title: { fontFamily: SF_PRO, fontSize: 22, color: '#000' },
   scroll: { paddingHorizontal: 20, paddingBottom: 40 },
   sectionTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#666',
     marginTop: 24,
@@ -125,6 +126,6 @@ const styles = StyleSheet.create({
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   rowText: { flex: 1, marginRight: 12 },
-  rowLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
-  rowSub: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#999', marginTop: 2 },
+  rowLabel: { fontFamily: SF_PRO, fontSize: 16, color: '#000' },
+  rowSub: { fontFamily: SF_PRO, fontSize: 13, color: '#999', marginTop: 2 },
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 interface Props {
   visible: boolean;
@@ -92,14 +93,14 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(253,138,138,0.25)',
   },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 22,
     color: '#fff',
     textAlign: 'center',
     marginBottom: 12,
   },
   body: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: 'rgba(255,255,255,0.65)',
     textAlign: 'center',
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   pillText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
   },
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   renewText: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#fff',
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   dismissText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: 'rgba(255,255,255,0.4)',
   },

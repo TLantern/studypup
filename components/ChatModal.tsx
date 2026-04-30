@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const PURPLE = '#7FA8FF';
 
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
-  headerTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 20, color: '#000' },
+  headerTitle: { fontFamily: SF_PRO, fontSize: 20, color: '#000' },
   divider: { height: 1, backgroundColor: 'rgba(0,0,0,0.08)' },
   messageList: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8, gap: 14 },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 4 },
@@ -224,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: PURPLE,
     borderBottomRightRadius: 4,
   },
-  bubbleText: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#222', lineHeight: 21 },
+  bubbleText: { fontFamily: SF_PRO, fontSize: 15, color: '#222', lineHeight: 21 },
   bubbleTextUser: { color: '#fff' },
   loadingBubble: { paddingVertical: 14, paddingHorizontal: 20 },
   suggestionsWrap: { flexGrow: 0, flexShrink: 0 },
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(124,58,237,0.3)',
   },
-  chipText: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: PURPLE },
+  chipText: { fontFamily: SF_PRO, fontSize: 13, color: PURPLE },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#222',
     maxHeight: 120,

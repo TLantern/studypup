@@ -1,6 +1,8 @@
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const TYPEWRITER_MS = 45;
 const HOLD_MS = 1800;
@@ -32,6 +34,7 @@ function phase2Texts(materialTitle: string): string[] {
 }
 
 export function GeneratingContentScreen({ contentName, materialTitle, isAvatarTutor }: Props) {
+  const insets = useSafeAreaInsets();
   const [texts, setTexts] = useState<string[]>(() => phase1Texts(contentName));
   const [index, setIndex] = useState(0);
   const [displayed, setDisplayed] = useState('');
@@ -70,7 +73,7 @@ export function GeneratingContentScreen({ contentName, materialTitle, isAvatarTu
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <Text style={styles.text}>{displayed}</Text>
       <View style={styles.lottieWrap}>
         <LottieView
@@ -89,13 +92,13 @@ export function GeneratingContentScreen({ contentName, materialTitle, isAvatarTu
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   text: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 22,
     color: '#333',
     textAlign: 'center',

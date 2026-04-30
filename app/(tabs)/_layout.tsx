@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Image } from 'react-native';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 export default function TabsLayout() {
   return (
@@ -8,7 +9,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: '#fff',
         tabBarInactiveTintColor: 'rgba(0,0,0,0.6)',
-        tabBarLabelStyle: { fontFamily: 'Fredoka_400Regular', fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: SF_PRO, fontSize: 12 },
         tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
         tabBarStyle: { display: 'none' },
       }}

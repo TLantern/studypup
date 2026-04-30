@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { StudyMaterialSet, KnowledgeGraph } from '@/lib/knowledge-graph';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const PURPLE = '#7c3aed';
 const SALMON = '#FD8A8A';
@@ -297,13 +298,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#000' },
+  headerTitle: { fontFamily: SF_PRO, fontSize: 22, color: '#000' },
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.08)' },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 24 },
   emptyState: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { fontFamily: 'FredokaOne_400Regular', fontSize: 20, color: '#333', marginBottom: 8 },
-  emptySubtext: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#888', textAlign: 'center', lineHeight: 22 },
+  emptyText: { fontFamily: SF_PRO, fontSize: 20, color: '#333', marginBottom: 8 },
+  emptySubtext: { fontFamily: SF_PRO, fontSize: 15, color: '#888', textAlign: 'center', lineHeight: 22 },
   sourceCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -331,8 +332,8 @@ const styles = StyleSheet.create({
   },
   cardEmoji: { fontSize: 22 },
   cardLeft: { flex: 1, marginRight: 10 },
-  cardTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 17, color: '#111', marginBottom: 3 },
-  cardType: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#999' },
+  cardTitle: { fontFamily: SF_PRO, fontSize: 17, color: '#111', marginBottom: 3 },
+  cardType: { fontFamily: SF_PRO, fontSize: 13, color: '#999' },
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: PURPLE,
   },
-  addBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 17, color: PURPLE },
+  addBtnText: { fontFamily: SF_PRO, fontSize: 17, color: PURPLE },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255,255,255,0.7)',
@@ -370,8 +371,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  viewTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 20, color: '#000', flex: 1, textAlign: 'center' },
-  viewText: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#333', lineHeight: 24 },
+  viewTitle: { fontFamily: SF_PRO, fontSize: 20, color: '#000', flex: 1, textAlign: 'center' },
+  viewText: { fontFamily: SF_PRO, fontSize: 15, color: '#333', lineHeight: 24 },
   menuOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   menuSheet: {
     backgroundColor: '#fff',
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 16,
   },
-  menuTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 18, color: '#000', marginBottom: 16, textAlign: 'center' },
+  menuTitle: { fontFamily: SF_PRO, fontSize: 18, color: '#000', marginBottom: 16, textAlign: 'center' },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   },
   menuIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: SALMON, justifyContent: 'center', alignItems: 'center' },
   menuIcon: { width: 20, height: 20 },
-  menuLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', flex: 1 },
+  menuLabel: { fontFamily: SF_PRO, fontSize: 16, color: '#333', flex: 1 },
   notesSheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#333',
     marginBottom: 12,
@@ -421,5 +422,5 @@ const styles = StyleSheet.create({
   },
   notesTextArea: { height: 120, textAlignVertical: 'top' },
   generateBtn: { backgroundColor: SALMON, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  generateBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 17, color: '#fff' },
+  generateBtnText: { fontFamily: SF_PRO, fontSize: 17, color: '#fff' },
 });

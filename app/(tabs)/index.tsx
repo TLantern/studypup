@@ -24,7 +24,7 @@ import { Note, getMasteryColor, noteFromStudyMaterialSet } from '@/lib/notes';
 import { listAllMaterials, deleteAllLocalMaterials } from '@/lib/study-materials-storage';
 import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { getStreak, recordMasteryAchieved, bumpStreak, addExtraStudyDays, getExtraStudyDays } from '@/lib/streak';
+import { getStreak, recordMasteryAchieved, getExtraStudyDays } from '@/lib/streak';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
@@ -77,7 +77,6 @@ export default function HomeScreen() {
   const [streakCount, setStreakCount] = useState(0);
   const [streakPopup, setStreakPopup] = useState<number | null>(null);
   const [extraStudyDays, setExtraStudyDays] = useState<string[]>([]);
-  const devBumpDoneRef = useRef(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPaymentWarning, setShowPaymentWarning] = useState(false);
   const { signOut, deleteUser, user } = useAuth();
@@ -116,13 +115,16 @@ export default function HomeScreen() {
     });
   }, []);
 
+  const [userTagChecked, setUserTagChecked] = useState(false);
   useEffect(() => {
     let cancelled = false;
     getOnboarding().then((data) => {
       if (cancelled) return;
       if (data.user_tag === 'working-class') {
         router.replace('/professional-home');
+        return;
       }
+      setUserTagChecked(true);
     });
     return () => { cancelled = true; };
   }, []);
@@ -146,17 +148,6 @@ export default function HomeScreen() {
       getExtraStudyDays().then(setExtraStudyDays);
     }, [])
   );
-
-  useEffect(() => {
-    if (!__DEV__ || devBumpDoneRef.current) return;
-    devBumpDoneRef.current = true;
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-    const dayBefore = new Date(); dayBefore.setDate(dayBefore.getDate() - 2);
-    const dates = [yesterday.toISOString().slice(0, 10), dayBefore.toISOString().slice(0, 10)];
-    bumpStreak(2).then(() => getStreak().then((s) => setStreakCount(s.count)));
-    addExtraStudyDays(dates).then(() => setExtraStudyDays(dates));
-  }, []);
-
 
   useEffect(() => {
     if (materials.length === 0) emptyArrowLottieRef.current?.play();
@@ -349,7 +340,13 @@ export default function HomeScreen() {
   const startRecording = async () => {
     try {
       const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== 'granted') return;
+      if (permission.status !== 'granted') {
+        Alert.alert(
+          'Microphone access needed',
+          'Enable microphone access in Settings to record audio.'
+        );
+        return;
+      }
 
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -357,23 +354,28 @@ export default function HomeScreen() {
       });
 
       const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        {
+          ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+          isMeteringEnabled: true,
+        },
+        (status) => {
+          if (status.metering != null) setRecordingMetering(status.metering);
+        },
+        100
       );
       setRecording(newRecording);
       setRecordingDuration(0);
       setIsPaused(false);
       setRecordingMetering(null);
       activateKeepAwakeAsync();
-      newRecording.setOnRecordingStatusUpdate((status) => {
-        if (status.metering != null) setRecordingMetering(status.metering);
-      });
-      newRecording.setProgressUpdateInterval(100);
 
+      if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
     } catch (err) {
       console.error('Failed to start recording', err);
+      Alert.alert('Could not start recording', (err as Error)?.message ?? 'Please try again.');
     }
   };
 
@@ -712,6 +714,10 @@ export default function HomeScreen() {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+
+  if (!userTagChecked) {
+    return <View style={[styles.container, { paddingTop: insets.top + 8 }]} />;
+  }
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -1125,12 +1131,16 @@ export default function HomeScreen() {
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }]}
             onPress={closeUploadModal}
           />
-          <View style={[styles.uploadCard, { 
+          <View style={[styles.uploadCard, {
             maxHeight: uploadModalHeight,
             width: isTablet ? '70%' : '100%',
             maxWidth: isLargeTablet ? 600 : undefined
           }]}>
-            <View style={[styles.uploadCardInner, { paddingBottom: 24 + insets.bottom }]}>
+            <LinearGradient
+              colors={[OFF_WHITE, ACCENT_BLUE_TINT]}
+              locations={[0, 0.43]}
+              style={[styles.uploadCardInner, { paddingBottom: 24 + insets.bottom }]}
+            >
               <Text style={styles.uploadCardTitle}>Add files, photos, or documents</Text>
               <Pressable style={styles.uploadDropZone} onPress={addUploadFiles}>
                 <Text style={styles.uploadDropZoneText}>Tap to add files</Text>
@@ -1160,7 +1170,7 @@ export default function HomeScreen() {
               >
                 <Text style={styles.notesGenerateBtnText}>Next</Text>
               </Pressable>
-            </View>
+            </LinearGradient>
           </View>
         </Animated.View>
       )}
@@ -1582,6 +1592,7 @@ export default function HomeScreen() {
           setItem('in_app_onboarding:step1', 'shown');
         }}
       />
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -2118,7 +2129,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#F2E4E4',
     shadowColor: '#333',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -2130,7 +2140,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   uploadCardTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '600',
     fontSize: 18,
     color: '#333',
     textAlign: 'center',
@@ -2155,7 +2166,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   uploadDropZoneText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '500',
     fontSize: 16,
     color: '#555',
   },

@@ -111,7 +111,7 @@ export async function sendMagicLink(email: string) {
   // The domain of `url` must be in Firebase Console → Authentication → Settings → Authorized domains.
   // If you see auth/unauthorized-continue-uri, add this URL's host (e.g. studypup-b3973.firebaseapp.com) there.
   const actionCodeSettings = {
-    url: 'https://studypup-b3973.firebaseapp.com',
+    url: 'https://trynotario.firebaseapp.com',
     handleCodeInApp: true,
   };
   await (await import('firebase/auth')).sendSignInLinkToEmail(auth, email, actionCodeSettings as any);

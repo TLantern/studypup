@@ -9,6 +9,7 @@ import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackPageViewed } from '@/lib/analytics';
 import { OnboardingView } from '@/components/OnboardingView';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -49,8 +50,8 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.containerPadding },
   progress: { width: scaleSize(120), height: scaleSize(16), alignSelf: 'center', marginBottom: scaleSize(24) },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: 24 },
+  heading: { fontFamily: SF_PRO, fontSize: RESPONSIVE.titleLarge, color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtext: { fontFamily: SF_PRO, fontSize: RESPONSIVE.subtitle, color: '#333', textAlign: 'center', marginBottom: 24 },
   heroWrap: { flex: 1, width: '100%', maxHeight: SCREEN_HEIGHT * 0.54, alignSelf: 'center', marginBottom: 24 },
   hero: { width: '100%', height: '100%' },
   buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
@@ -64,6 +65,6 @@ const styles = StyleSheet.create({
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24 },
+  btnText: { fontFamily: SF_PRO, fontSize: 24 },
   btnPrimaryText: { color: '#fff' },
 });

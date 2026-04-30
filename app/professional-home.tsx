@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Clipboard,
+  InteractionManager,
   Modal,
   Platform,
   Pressable,
@@ -37,6 +38,7 @@ import {
   getNotesInFolder,
   hydrateProNotes,
   subscribeProNotes,
+  updateProNote,
   type ProNote,
 } from '@/lib/pro-note-store';
 import { transcribeAudio } from '@/lib/transcription';
@@ -62,6 +64,28 @@ const NEW_NOTE_OPTIONS = [
   { id: 'voice', label: 'Upload voice memo', emoji: '🎵', bg: '#BBD4FB' },
 ] as const;
 
+function getContentEmoji(title: string, subtitle: string): string {
+  const text = `${title} ${subtitle}`.toLowerCase();
+  if (/meet|call|zoom|standup|sync|agenda/.test(text)) return '📅';
+  if (/code|engineer|software|dev|tech|api|bug|deploy/.test(text)) return '💻';
+  if (/design|ui|ux|figma|wireframe|prototype/.test(text)) return '🎨';
+  if (/market|brand|campaign|ads|seo|growth/.test(text)) return '📈';
+  if (/finance|budget|revenue|cost|profit|money/.test(text)) return '💰';
+  if (/health|medical|fitness|wellness|doctor/.test(text)) return '🏥';
+  if (/legal|contract|law|compliance|policy/.test(text)) return '⚖️';
+  if (/product|launch|roadmap|feature|milestone/.test(text)) return '🚀';
+  if (/research|study|analysis|data|report/.test(text)) return '🔬';
+  if (/team|people|hr|recruit|hire|culture/.test(text)) return '👥';
+  if (/sales|pitch|client|deal|prospect/.test(text)) return '🤝';
+  if (/learn|course|training|education|tutorial/.test(text)) return '📚';
+  if (/idea|brainstorm|creative|concept|innovation/.test(text)) return '💡';
+  if (/strategy|plan|goal|vision|mission/.test(text)) return '🎯';
+  if (/write|content|blog|article|copy/.test(text)) return '✍️';
+  if (/youtube|video|watch|film|podcast/.test(text)) return '▶️';
+  if (/audio|record|voice|speech|sound/.test(text)) return '🎙️';
+  return '📝';
+}
+
 const SAMPLE_NOTES = [
   {
     id: 'welcome',
@@ -73,7 +97,8 @@ const SAMPLE_NOTES = [
 
 export default function ProfessionalHomeScreen() {
   const insets = useSafeAreaInsets();
-  const [filter, setFilter] = useState<FilterTab>('all');
+  const { openFolders } = useLocalSearchParams<{ openFolders?: string }>();
+  const [filter, setFilter] = useState<FilterTab>(openFolders === '1' ? 'folders' : 'all');
   const [search, setSearch] = useState('');
   const [showNewNote, setShowNewNote] = useState(false);
   const [savedNotes, setSavedNotes] = useState<ReturnType<typeof getAllProNotes>>(getAllProNotes());
@@ -83,6 +108,9 @@ export default function ProfessionalHomeScreen() {
   const [showCreateFolder, setShowCreateFolder] = useState(false);
   const [folderName, setFolderName] = useState('');
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+
+  // Move-to-folder sheet
+  const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsub = subscribeProNotes(() => {
@@ -105,10 +133,24 @@ export default function ProfessionalHomeScreen() {
   // Recording
   const [showRecord, setShowRecord] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recordingMetering, setRecordingMetering] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingRecordRef = useRef(false);
+
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setRecordingDuration((p) => p + 1), 1000);
+  }, []);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const recordSlide = useSharedValue(1);
   const recordAnimStyle = useAnimatedStyle(() => ({
@@ -120,47 +162,89 @@ export default function ProfessionalHomeScreen() {
   }, []);
 
   // ─── Recording helpers ───────────────────────────────────────────────────
-  const openRecord = useCallback(async () => {
-    setShowRecord(true);
-    recordSlide.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
+  const beginRecording = useCallback(async () => {
     try {
       const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== 'granted') {
+        Alert.alert(
+          'Microphone access needed',
+          'Enable microphone access in Settings to record notes.'
+        );
+        recordSlide.value = withTiming(1, { duration: 250, easing: Easing.in(Easing.cubic) }, () =>
+          runOnJS(setShowRecord)(false)
+        );
+        return;
+      }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording: rec } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        {
+          ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+          isMeteringEnabled: true,
+        },
+        (s) => {
+          if (s.metering != null) setRecordingMetering(s.metering);
+        },
+        100
       );
+      recordingRef.current = rec;
       setRecording(rec);
       setRecordingDuration(0);
       setIsPaused(false);
       setRecordingMetering(null);
       activateKeepAwakeAsync();
-      rec.setOnRecordingStatusUpdate((s) => {
-        if (s.metering != null) setRecordingMetering(s.metering);
-      });
-      rec.setProgressUpdateInterval(100);
-      timerRef.current = setInterval(() => setRecordingDuration((p) => p + 1), 1000);
+      startTimer();
     } catch (e) {
       console.error('startRecording failed', e);
+      Alert.alert('Could not start recording', (e as Error)?.message ?? 'Please try again.');
+      recordSlide.value = withTiming(1, { duration: 250, easing: Easing.in(Easing.cubic) }, () =>
+        runOnJS(setShowRecord)(false)
+      );
     }
+  }, [startTimer]);
+
+  const openRecord = useCallback(() => {
+    pendingRecordRef.current = true;
+    setShowRecord(true);
+    recordSlide.value = withTiming(0, { duration: 350, easing: Easing.out(Easing.cubic) });
   }, []);
 
+  useEffect(() => {
+    if (!showRecord || !pendingRecordRef.current) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      pendingRecordRef.current = false;
+      beginRecording();
+    });
+    return () => task.cancel();
+  }, [showRecord, beginRecording]);
+
   const pauseRecording = useCallback(async () => {
-    if (!recording || isPaused) return;
-    await recording.pauseAsync();
+    const rec = recordingRef.current;
+    if (!rec || isPaused) return;
+    try {
+      await rec.pauseAsync();
+    } catch (e) {
+      console.error('pauseRecording failed', e);
+      return;
+    }
     setIsPaused(true);
     setRecordingMetering(null);
-    if (timerRef.current) clearInterval(timerRef.current);
+    stopTimer();
     deactivateKeepAwake();
-  }, [recording, isPaused]);
+  }, [isPaused, stopTimer]);
 
   const resumeRecording = useCallback(async () => {
-    if (!recording || !isPaused) return;
-    await recording.startAsync();
+    const rec = recordingRef.current;
+    if (!rec || !isPaused) return;
+    try {
+      await rec.startAsync();
+    } catch (e) {
+      console.error('resumeRecording failed', e);
+      return;
+    }
     setIsPaused(false);
     activateKeepAwakeAsync();
-    timerRef.current = setInterval(() => setRecordingDuration((p) => p + 1), 1000);
-  }, [recording, isPaused]);
+    startTimer();
+  }, [isPaused, startTimer]);
 
   // Recording-save state
   const [savingRecording, setSavingRecording] = useState(false);
@@ -179,7 +263,7 @@ export default function ProfessionalHomeScreen() {
         'You are an expert professional note-taker. Return only valid JSON — no markdown, no code fences.',
         `Analyze this transcript and return a JSON object with this exact shape:
 {
-  "title": "Main topic in 3-6 words",
+  "title": "Main topic in 2-4 words",
   "subtitle": "One sentence describing the content",
   "overview": [
     { "bold": "Main Focus", "text": "what this is primarily about" },
@@ -205,11 +289,14 @@ ${transcript.slice(0, 12000)}`
   );
 
   const cancelRecord = useCallback(() => {
-    if (recording) {
-      recording.stopAndUnloadAsync();
+    pendingRecordRef.current = false;
+    const rec = recordingRef.current;
+    if (rec) {
+      rec.stopAndUnloadAsync().catch(() => {});
+      recordingRef.current = null;
       setRecording(null);
     }
-    if (timerRef.current) clearInterval(timerRef.current);
+    stopTimer();
     setIsPaused(false);
     setRecordingDuration(0);
     setRecordingMetering(null);
@@ -217,21 +304,23 @@ ${transcript.slice(0, 12000)}`
     recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
       runOnJS(setShowRecord)(false)
     );
-  }, [recording]);
+  }, [stopTimer]);
 
   const stopAndSave = useCallback(async () => {
-    if (!recording) return;
-    if (timerRef.current) clearInterval(timerRef.current);
+    const rec = recordingRef.current;
+    if (!rec) return;
+    stopTimer();
     deactivateKeepAwake();
     setSavingRecording(true);
     setSavingMessage('Stopping recording…');
     let uri: string | null = null;
     try {
-      await recording.stopAndUnloadAsync();
-      uri = recording.getURI();
+      await rec.stopAndUnloadAsync();
+      uri = rec.getURI();
     } catch (e) {
       console.error('stopRecording failed', e);
     }
+    recordingRef.current = null;
     setRecording(null);
     setIsPaused(false);
     setRecordingDuration(0);
@@ -270,7 +359,7 @@ ${transcript.slice(0, 12000)}`
       );
       Alert.alert('Could not save recording', e?.message ?? 'Please try again.');
     }
-  }, [recording, generateNoteFromTranscript]);
+  }, [generateNoteFromTranscript, stopTimer]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -371,9 +460,24 @@ ${transcript.slice(0, 12000)}`
     const name = folderName.trim();
     if (!name) return;
     hapticSelect();
-    createFolder(name);
+    const folder = createFolder(name);
     setFolderName('');
     setShowCreateFolder(false);
+    if (moveNoteId) {
+      updateProNote(moveNoteId, { folderId: folder.id });
+      setMoveNoteId(null);
+      setActiveFolderId(null);
+      setFilter('folders');
+    }
+  };
+
+  const handleAssignToFolder = (folderId: string) => {
+    if (!moveNoteId) return;
+    hapticSelect();
+    updateProNote(moveNoteId, { folderId });
+    setMoveNoteId(null);
+    setActiveFolderId(null);
+    setFilter('folders');
   };
 
   // ─── Content ─────────────────────────────────────────────────────────────
@@ -462,6 +566,12 @@ ${transcript.slice(0, 12000)}`
           <Pressable
             key={note.id}
             style={({ pressed }) => [styles.noteCard, pressed && { opacity: 0.85 }]}
+            onLongPress={() => {
+              if (!note.generated) return;
+              hapticSelect();
+              setMoveNoteId(note.id);
+            }}
+            delayLongPress={350}
             onPress={() => {
               hapticSelect();
               if (note.generated) {
@@ -478,7 +588,7 @@ ${transcript.slice(0, 12000)}`
             }}
           >
             <View style={styles.noteIconWrap}>
-              <Text style={{ fontSize: scaleFont(20) }}>{note.generated ? '📝' : '⭐'}</Text>
+              <Text style={{ fontSize: scaleFont(20) }}>{note.generated ? getContentEmoji(note.title, note.subtitle) : '⭐'}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.noteTitle}>{note.title}</Text>
@@ -694,6 +804,53 @@ ${transcript.slice(0, 12000)}`
           </View>
         </Animated.View>
       )}
+
+      {/* ── Move note to folder sheet ── */}
+      <Modal
+        visible={moveNoteId !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMoveNoteId(null)}
+      >
+        <Pressable style={styles.sheetBackdrop} onPress={() => setMoveNoteId(null)}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: insets.bottom + scaleSize(20) }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Move to folder</Text>
+              <Pressable style={styles.sheetClose} hitSlop={12} onPress={() => setMoveNoteId(null)}>
+                <Text style={{ fontSize: scaleFont(16), color: DEEP_BLACK }}>✕</Text>
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.sheetOption, pressed && { opacity: 0.85 }]}
+              onPress={() => { hapticSelect(); setShowCreateFolder(true); }}
+            >
+              <View style={[styles.sheetIconCircle, { backgroundColor: '#E5E7EB' }]}>
+                <Ionicons name="add" size={20} color={DEEP_BLACK} />
+              </View>
+              <Text style={styles.sheetOptionText}>New folder</Text>
+            </Pressable>
+
+            <ScrollView style={{ maxHeight: scaleSize(360) }} showsVerticalScrollIndicator={false}>
+              {folders.map((f) => (
+                <Pressable
+                  key={f.id}
+                  style={({ pressed }) => [styles.sheetOption, pressed && { opacity: 0.85 }]}
+                  onPress={() => handleAssignToFolder(f.id)}
+                >
+                  <View style={[styles.sheetIconCircle, { backgroundColor: '#FBE7B0' }]}>
+                    <Text style={{ fontSize: scaleFont(18) }}>📁</Text>
+                  </View>
+                  <Text style={styles.sheetOptionText}>{f.name}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* ── Create folder modal ── */}
       <Modal visible={showCreateFolder} transparent animationType="fade" onRequestClose={() => setShowCreateFolder(false)}>
@@ -918,7 +1075,9 @@ const styles = StyleSheet.create({
     gap: scaleSize(12),
     backgroundColor: CARD,
     borderRadius: scaleSize(16),
-    padding: scaleSize(14),
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(16),
+    marginBottom: scaleSize(10),
   },
   noteIconWrap: {
     width: scaleSize(40),

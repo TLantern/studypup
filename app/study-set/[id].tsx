@@ -18,6 +18,7 @@ import {
   ACCENT_BLUE_TINT,
   SUBTITLE_GRAY,
   HAIRLINE,
+  SF_PRO,
 } from '@/lib/onboarding-theme';
 
 // Legacy alias — points to new accent so existing usages light up correctly.
@@ -226,18 +227,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 20,
   },
-  shareBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: DEEP_BLACK },
+  shareBtnText: { fontFamily: SF_PRO, fontSize: 14, color: DEEP_BLACK },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 120 },
   title: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700',
     fontSize: 24,
     color: '#000',
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 4,
   },
-  date: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24 },
+  date: { fontFamily: SF_PRO, fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24 },
   methodsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -256,7 +258,7 @@ const styles = StyleSheet.create({
     minWidth: '47%',
   },
   methodIcon: { width: 24, height: 24, marginRight: 10 },
-  methodLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: DEEP_BLACK },
+  methodLabel: { fontFamily: SF_PRO, fontSize: 15, color: DEEP_BLACK },
   methodBtnAvatar: {
     borderWidth: 1.5,
     borderColor: ACCENT_BLUE,
@@ -267,9 +269,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  avatarIcon: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: ACCENT_BLUE, marginRight: 10 },
+  avatarIcon: { fontFamily: SF_PRO, fontSize: 18, color: ACCENT_BLUE, marginRight: 10 },
   avatarLabel: { color: ACCENT_BLUE },
-  avatarSubtitle: { fontFamily: 'Fredoka_400Regular', fontSize: 11, color: SUBTITLE_GRAY, marginTop: 1 },
+  avatarSubtitle: { fontFamily: SF_PRO, fontSize: 11, color: SUBTITLE_GRAY, marginTop: 1 },
   notesActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,9 +288,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   notesActionIcon: { width: 24, height: 24 },
-  notesActionLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: ACCENT_BLUE },
+  notesActionLabel: { fontFamily: SF_PRO, fontSize: 16, color: ACCENT_BLUE },
   notesCard: { marginTop: 24, marginBottom: 0 },
-  emptyNotes: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#888' },
+  emptyNotes: { fontFamily: SF_PRO, fontSize: 15, color: '#888' },
   stickyBar: {
     position: 'absolute',
     bottom: 0,
@@ -315,7 +317,7 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   stickyEmoji: { fontSize: 17 },
-  stickyLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 12, color: '#444', lineHeight: 15 },
+  stickyLabel: { fontFamily: SF_PRO, fontSize: 12, color: '#444', lineHeight: 15 },
   resumeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -328,7 +330,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   resumeLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 17,
     color: '#fff',
   },
@@ -340,7 +342,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sourceDividerLine: { flex: 1, height: 1, backgroundColor: '#e0e0e0' },
-  sourceDividerLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#999' },
+  sourceDividerLabel: { fontFamily: SF_PRO, fontSize: 13, color: '#999' },
   sourceBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -354,5 +356,5 @@ const styles = StyleSheet.create({
     borderColor: '#ebebeb',
   },
   sourceBtnEmoji: { fontSize: 20 },
-  sourceBtnLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#555', flex: 1 },
+  sourceBtnLabel: { fontFamily: SF_PRO, fontSize: 15, color: '#555', flex: 1 },
 });

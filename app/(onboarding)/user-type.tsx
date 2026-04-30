@@ -46,7 +46,7 @@ export default function GradeLevelScreen() {
     if (tag === 'student') {
       router.push('/subjects');
     } else {
-      router.push('/professional-welcome');
+      router.push('/meeting-review');
     }
   };
 

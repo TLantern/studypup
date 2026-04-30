@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Animated, Pressable, StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard, Modal } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View, TouchableWithoutFeedback, Keyboard, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-store';
@@ -22,6 +22,7 @@ const BUTTON_SHADOW = {
 };
 
 const OFF_WHITE = '#F7F7F5';
+const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
 function ShineButton({
   label,
@@ -232,8 +233,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: OFF_WHITE },
   container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06, justifyContent: 'space-between' },
   centeredBlock: { flex: 1, justifyContent: 'center' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(16) },
+  title: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.5, fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtitle: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(16) },
   socialBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -250,27 +251,28 @@ const styles = StyleSheet.create({
   appleBtn: { backgroundColor: '#000' },
   socialIcon: { width: scaleSize(22), height: scaleSize(22), marginRight: scaleSize(10) },
   socialIconWhite: { tintColor: '#fff' },
-  socialBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333' },
+  socialBtnText: { fontFamily: SF_PRO, fontWeight: '600', letterSpacing: -0.2, fontSize: scaleFont(18), color: '#333' },
   shineSweep: { position: 'absolute', top: 0, bottom: 0, justifyContent: 'center' },
   btnDisabled: { opacity: 0.6 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(16), marginTop: scaleSize(4) },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#ccc' },
-  dividerText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#333', marginHorizontal: scaleSize(16) },
+  dividerText: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(16), color: '#333', marginHorizontal: scaleSize(16) },
   phoneBtn: {
     alignItems: 'center',
     paddingVertical: scaleSize(14),
   },
   phoneBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '500',
     fontSize: scaleFont(17),
     color: '#333',
     textDecorationLine: 'underline',
   },
-  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(8), textAlign: 'center' },
+  errorText: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(8), textAlign: 'center' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaleSize(32) },
   modalCard: { backgroundColor: '#fff', borderRadius: scaleSize(20), padding: scaleSize(28), width: '100%', alignItems: 'center' },
-  modalTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
-  modalBody: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
+  modalTitle: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.3, fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
+  modalBody: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
   modalBtn: { backgroundColor: '#FD8A8A', borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
-  modalBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#fff' },
+  modalBtnText: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.2, fontSize: scaleFont(18), color: '#fff' },
 });

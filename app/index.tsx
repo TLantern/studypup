@@ -17,7 +17,6 @@ import { isPaywallBypassed, togglePaywallBypassed } from '@/lib/dev-bypass';
 const DEEP_BLACK = '#0D0D0F';
 const OFF_WHITE = '#F7F7F5';
 const ACCENT_BLUE = '#7FA8FF';
-const SILVER = '#C9CCD1';
 
 const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
@@ -33,7 +32,7 @@ export default function WelcomeScreen() {
 
   const iconMeasureRef = useRef<View>(null);
   const lottieRef = useRef<LottieView>(null);
-  const [speed, setSpeed] = useState(4);
+  const [speed, setSpeed] = useState(6);
   const phase = useRef<'fast' | 'slow'>('fast');
 
   const tapCountRef = useRef(0);
@@ -78,81 +77,80 @@ export default function WelcomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (!loading && uid) {
-      router.replace('/(tabs)');
-    }
-  }, [uid, loading]);
+    if (loading) return;
+    if (!uid) return;
+    router.replace('/(tabs)');
+  }, [loading]);
 
-  if (loading || uid) {
-    return null;
-  }
+  const isNewUser = !loading && !uid;
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(isSmallDevice ? 60 : 130) }]}>
-        <Animated.View entering={FadeIn.duration(600)} style={styles.headerBlock}>
-          <Pressable onPress={handleTitleTap}>
-            <Text style={styles.title}>
-              <Text style={styles.titleAccent}>Capture</Text>
-              <Text style={styles.titleRest}> what matters</Text>
-            </Text>
-          </Pressable>
-        </Animated.View>
+      {isNewUser && (
+        <View style={[styles.container, { paddingTop: insets.top + scaleVertical(isSmallDevice ? 60 : 130) }]}>
+          <Animated.View entering={FadeIn.duration(600)} style={styles.headerBlock}>
+            <Pressable onPress={handleTitleTap}>
+              <Text style={styles.title}>
+                <Text style={styles.titleAccent}>Capture</Text>
+                <Text style={styles.titleRest}> what matters</Text>
+              </Text>
+            </Pressable>
+          </Animated.View>
 
-        <View
-          ref={iconMeasureRef}
-          style={styles.iconShadow}
-          onLayout={() => {
-            iconMeasureRef.current?.measure((_x, _y, w, h, pageX, pageY) => {
-              welcomeIconRef.set({ x: pageX, y: pageY, width: w, height: h });
-            });
-          }}
-        >
-          <View style={styles.iconWrap}>
-            <Image
-              source={require('../assets/images/notario-icon.png')}
-              style={styles.icon}
-              contentFit="cover"
+          <View
+            ref={iconMeasureRef}
+            style={styles.iconShadow}
+            onLayout={() => {
+              iconMeasureRef.current?.measure((_x, _y, w, h, pageX, pageY) => {
+                welcomeIconRef.set({ x: pageX, y: pageY, width: w, height: h });
+              });
+            }}
+          >
+            <View style={styles.iconWrap}>
+              <Image
+                source={require('../assets/images/notario-icon.png')}
+                style={styles.icon}
+                contentFit="cover"
+              />
+            </View>
+          </View>
+
+          <View style={styles.waveWrap} pointerEvents="none">
+            <LottieView
+              ref={(r) => {
+                (lottieRef as any).current = r;
+                console.log('[Wave] LottieView ref set:', !!r);
+              }}
+              source={require('../Abstract Waves.json')}
+              loop={false}
+              speed={speed}
+              style={styles.lottie}
+              resizeMode="cover"
+              onAnimationFinish={onWaveSegmentFinish}
+              onAnimationLoaded={() => console.log('[Wave] animation loaded')}
+              onAnimationFailure={(e) => console.log('[Wave] animation FAILED:', e)}
             />
           </View>
-        </View>
 
-
-        <View style={styles.waveWrap} pointerEvents="none">
-          <LottieView
-            ref={(r) => {
-              (lottieRef as any).current = r;
-              console.log('[Wave] LottieView ref set:', !!r);
-            }}
-            source={require('../Abstract Waves.json')}
-            loop={false}
-            speed={speed}
-            style={styles.lottie}
-            resizeMode="cover"
-            onAnimationFinish={onWaveSegmentFinish}
-            onAnimationLoaded={() => console.log('[Wave] animation loaded')}
-            onAnimationFailure={(e) => console.log('[Wave] animation FAILED:', e)}
-          />
+          <View style={[styles.footer, { paddingBottom: insets.bottom + scaleSize(20) }]}>
+            <Pressable
+              style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+              onPress={() => { hapticContinue(); router.push('/user-type'); }}
+            >
+              <Text style={styles.ctaText}>Get Started</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.replace({ pathname: '/create-account', params: { mode: 'login' } })}
+              style={styles.loginWrap}
+              hitSlop={12}
+            >
+              <Text style={styles.loginText}>
+                Already have an account? <Text style={styles.loginLink}>Log in</Text>
+              </Text>
+            </Pressable>
+          </View>
         </View>
-
-        <View style={[styles.footer, { paddingBottom: insets.bottom + scaleSize(20) }]}>
-          <Pressable
-            style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
-            onPress={() => { hapticContinue(); router.push('/user-type'); }}
-          >
-            <Text style={styles.ctaText}>Get Started</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.replace({ pathname: '/create-account', params: { mode: 'login' } })}
-            style={styles.loginWrap}
-            hitSlop={12}
-          >
-            <Text style={styles.loginText}>
-              Already have an account? <Text style={styles.loginLink}>Log in</Text>
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      )}
     </OnboardingView>
   );
 }

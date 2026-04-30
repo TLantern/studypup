@@ -17,6 +17,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const SALMON = '#7FA8FF';
 
@@ -176,13 +177,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   promptTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#333',
     marginBottom: 8,
   },
   promptText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#555',
     lineHeight: 22,
@@ -207,12 +208,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   bubbleText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#333',
   },
   bubbleTextUser: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#fff',
   },
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingTop: 12,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#333',
     maxHeight: 100,

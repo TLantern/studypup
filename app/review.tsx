@@ -9,6 +9,7 @@ import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN } from '@/lib/sup
 import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { setItem } from '@/lib/storage';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const markReviewShown = () => setItem('review:shown', 'true');
 
@@ -58,9 +59,9 @@ export default function ReviewScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding, justifyContent: 'space-between' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(16) },
+  title: { fontFamily: SF_PRO, fontSize: RESPONSIVE.titleSmall, color: '#000', textAlign: 'center', marginBottom: scaleSize(16) },
   subtitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: RESPONSIVE.body,
     color: '#333',
     textAlign: 'center',
@@ -81,6 +82,6 @@ const styles = StyleSheet.create({
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.button, color: '#fff' },
-  skipText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleSize(16), color: '#555', textAlign: 'center', textDecorationLine: 'underline' },
+  continueBtnText: { fontFamily: SF_PRO, fontSize: RESPONSIVE.button, color: '#fff' },
+  skipText: { fontFamily: SF_PRO, fontSize: scaleSize(16), color: '#555', textAlign: 'center', textDecorationLine: 'underline' },
 });

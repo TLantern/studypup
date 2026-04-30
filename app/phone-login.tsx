@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ const BUTTON_SHADOW = {
 
 const OFF_WHITE = '#F7F7F5';
 const ACCENT_BLUE = '#7FA8FF';
+const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
 const COUNTRIES = [
   { label: '🇺🇸 United States', dial: '+1' },
@@ -190,7 +192,7 @@ export default function PhoneLoginScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={[styles.container, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }]}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>← Back</Text>
+            <Ionicons name="chevron-back" size={scaleSize(28)} color="#333" />
           </Pressable>
 
           <Text style={styles.title}>Create an Account</Text>
@@ -301,9 +303,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: OFF_WHITE },
   container: { flex: 1, paddingHorizontal: SCREEN_WIDTH * 0.06 },
   backBtn: { marginBottom: scaleSize(16) },
-  backBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(17), color: '#333' },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
-  subtitle: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
+  title: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.5, fontSize: scaleFont(32), color: '#000', textAlign: 'center', marginBottom: scaleSize(8) },
+  subtitle: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(18), color: '#333', textAlign: 'center', marginBottom: scaleSize(32) },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     minWidth: scaleSize(68),
     alignItems: 'center',
   },
-  countryCodeText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#000' },
+  countryCodeText: { fontFamily: SF_PRO, fontWeight: '500', fontSize: scaleFont(15), color: '#000' },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: '#fff',
@@ -333,7 +334,8 @@ const styles = StyleSheet.create({
     paddingBottom: scaleSize(32),
   },
   modalTitle: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
+    fontWeight: '700',
     fontSize: scaleFont(20),
     textAlign: 'center',
     paddingVertical: scaleSize(16),
@@ -350,9 +352,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   countryItemActive: { backgroundColor: '#f0f8ff' },
-  countryItemText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#000' },
-  countryItemDial: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(15), color: '#555' },
-  phoneInput: { flex: 1, paddingHorizontal: scaleSize(16), paddingVertical: scaleSize(16), fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16) },
+  countryItemText: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(16), color: '#000' },
+  countryItemDial: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(15), color: '#555' },
+  phoneInput: { flex: 1, paddingHorizontal: scaleSize(16), paddingVertical: scaleSize(16), fontFamily: SF_PRO, fontSize: scaleFont(16) },
   otpRow: { marginBottom: scaleSize(16) },
   otpInput: {
     backgroundColor: '#fff',
@@ -361,13 +363,13 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     paddingVertical: scaleSize(16),
     paddingHorizontal: scaleSize(16),
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: scaleFont(16),
   },
-  otpHint: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(13), color: '#666', textAlign: 'center', marginBottom: scaleSize(8) },
+  otpHint: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(13), color: '#666', textAlign: 'center', marginBottom: scaleSize(8) },
   resendBtn: { alignItems: 'center', marginBottom: scaleSize(16), paddingVertical: scaleSize(8) },
   resendBtnDisabled: { opacity: 0.5 },
-  resendBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#333', textDecorationLine: 'underline' },
+  resendBtnText: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(16), color: '#333', textDecorationLine: 'underline' },
   continueBtn: {
     backgroundColor: ACCENT_BLUE,
     borderRadius: scaleSize(12),
@@ -379,12 +381,12 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   continueBtnDisabled: { opacity: 0.6 },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(20), color: '#fff' },
-  errorText: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(4), textAlign: 'center' },
+  continueBtnText: { fontFamily: SF_PRO, fontWeight: '600', letterSpacing: -0.2, fontSize: scaleFont(18), color: '#fff' },
+  errorText: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(14), color: '#b91c1c', marginTop: scaleSize(4), textAlign: 'center' },
   noAccountOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: scaleSize(32) },
   noAccountCard: { backgroundColor: '#fff', borderRadius: scaleSize(20), padding: scaleSize(28), width: '100%', alignItems: 'center' },
-  noAccountTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
-  noAccountBody: { fontFamily: 'Fredoka_400Regular', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
+  noAccountTitle: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.3, fontSize: scaleFont(22), color: '#000', marginBottom: scaleSize(12), textAlign: 'center' },
+  noAccountBody: { fontFamily: SF_PRO, fontWeight: '400', fontSize: scaleFont(16), color: '#444', textAlign: 'center', marginBottom: scaleSize(24), lineHeight: scaleFont(22) },
   noAccountBtn: { backgroundColor: ACCENT_BLUE, borderRadius: scaleSize(12), paddingVertical: scaleSize(14), paddingHorizontal: scaleSize(32), ...BUTTON_SHADOW },
-  noAccountBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: scaleFont(18), color: '#fff' },
+  noAccountBtnText: { fontFamily: SF_PRO, fontWeight: '700', letterSpacing: -0.2, fontSize: scaleFont(18), color: '#fff' },
 });

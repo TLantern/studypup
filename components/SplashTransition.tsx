@@ -22,6 +22,7 @@ interface Props {
 
 export function SplashTransition({ fontsReady, onDone }: Props) {
   const bgOpacity = useSharedValue(1);
+  const iconOpacity = useSharedValue(1);
   const iconTx = useSharedValue(0);
   const iconTy = useSharedValue(0);
   const iconScale = useSharedValue(1);
@@ -43,6 +44,8 @@ export function SplashTransition({ fontsReady, onDone }: Props) {
       iconTx.value = withTiming((layout.x + layout.width / 2) - cx, { duration: DURATION, easing });
       iconTy.value = withTiming((layout.y + layout.height / 2) - cy, { duration: DURATION, easing });
       iconScale.value = withTiming(layout.width / OVERLAY_ICON_SIZE, { duration: DURATION, easing });
+    } else {
+      runOnJS(onDone)();
     }
   }
 
@@ -66,6 +69,7 @@ export function SplashTransition({ fontsReady, onDone }: Props) {
   const bgStyle = useAnimatedStyle(() => ({ opacity: bgOpacity.value }));
 
   const iconStyle = useAnimatedStyle(() => ({
+    opacity: iconOpacity.value,
     transform: [
       { translateX: iconTx.value },
       { translateY: iconTy.value },

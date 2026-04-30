@@ -4,6 +4,7 @@ import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { callOpenAI, callOpenAIText } from '@/lib/openai-service';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const SALMON = '#7FA8FF';
 const GREEN = '#BCFFC0';
@@ -290,12 +291,12 @@ Is this answer correct or close enough?`;
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
   streakWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, gap: 0 },
-  streakCount: { fontFamily: 'FredokaOne_400Regular', fontSize: 28, color: '#1A1A1A', marginBottom: -8, marginRight: -14 },
+  streakCount: { fontFamily: SF_PRO, fontSize: 28, color: '#1A1A1A', marginBottom: -8, marginRight: -14 },
   fireLottie: { width: 68, height: 68 },
   scroll: { flex: 1 },
   wrapContent: { paddingVertical: 24, paddingBottom: 48 },
   question: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#333',
     marginBottom: 16,
@@ -304,7 +305,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#333',
     shadowColor: '#333',
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  submitText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
+  submitText: { fontFamily: SF_PRO, fontSize: 18, color: '#fff' },
   resultCorrect: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: '#81FF88',
   },
-  resultCorrectText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
+  resultCorrectText: { fontFamily: SF_PRO, fontSize: 18, color: '#fff' },
   resultWrong: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -347,7 +348,7 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: '#F5686A',
   },
-  resultWrongText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
+  resultWrongText: { fontFamily: SF_PRO, fontSize: 18, color: '#fff' },
   submitBtnDisabled: { opacity: 0.5 },
   inlineExplainWrap: {
     flexDirection: 'row',
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   },
   inlineExplainText: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
@@ -386,7 +387,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  tryAgainText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333' },
+  tryAgainText: { fontFamily: SF_PRO, fontSize: 16, color: '#333' },
   divider: { height: 1, backgroundColor: '#ddd', marginHorizontal: -24, marginTop: 16, marginBottom: 0 },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 },
   navBtn: {
@@ -397,5 +398,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  counter: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333' },
+  counter: { fontFamily: SF_PRO, fontSize: 18, color: '#333' },
 });

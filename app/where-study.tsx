@@ -10,6 +10,7 @@ import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { SCREEN_WIDTH } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const IS_IPAD = SCREEN_WIDTH >= 768;
 
@@ -252,7 +253,7 @@ export default function WhereStudyScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
-  title: { fontFamily: 'FredokaOne_400Regular', fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
+  title: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
   dropdownRow: { marginBottom: IS_IPAD ? 68 : 52 },
   dropdownBtn: {
     flex: 1,
@@ -269,8 +270,8 @@ const styles = StyleSheet.create({
     ...BUTTON_SHADOW,
   },
   dropdownTextCol: { flex: 1, justifyContent: 'center' },
-  dropdownLabelInBtn: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 14 : 12, color: '#666', marginBottom: 2 },
-  dropdownValue: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 18 : 16, color: '#000' },
+  dropdownLabelInBtn: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 14 : 12, color: '#666', marginBottom: 2 },
+  dropdownValue: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 18 : 16, color: '#000' },
   dropdownArrow: { fontSize: 12, color: '#666' },
   puppy: {
     flex: 1,
@@ -289,10 +290,10 @@ const styles = StyleSheet.create({
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
+  continueBtnText: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: '70%' },
-  modalTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 20, marginBottom: 16, textAlign: 'center' },
+  modalTitle: { fontFamily: SF_PRO, fontSize: 20, marginBottom: 16, textAlign: 'center' },
   modalOption: { backgroundColor: '#f5f5f5', borderRadius: 12, padding: 16, marginBottom: 10 },
-  modalOptionText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#000' },
+  modalOptionText: { fontFamily: SF_PRO, fontSize: 16, color: '#000' },
 });

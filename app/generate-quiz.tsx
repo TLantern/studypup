@@ -23,7 +23,7 @@ import { ActivityIndicator, Alert, Animated, Dimensions, Modal, Pressable, Scrol
 import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { callOpenAIChat, callOpenAIText, isOpenAIConfigured } from '@/lib/openai-service';
-import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY, GRAPHITE_GRAY, METALLIC_SILVER } from '@/lib/onboarding-theme';
+import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY, GRAPHITE_GRAY, METALLIC_SILVER, SF_PRO } from '@/lib/onboarding-theme';
 // Legacy aliases — point to Notario palette so existing styling reads from new tokens.
 const SALMON = ACCENT_BLUE;
 const PURPLE = ACCENT_BLUE;
@@ -142,6 +142,7 @@ export default function GenerateQuizScreen() {
   const streakFiredRef = useRef(false);
   const reportShownRef = useRef(false);
   const sessionAnsweredIds = useRef<Set<string>>(new Set());
+  const sessionInteractedRef = useRef(false);
   const creditedRef = useRef<Set<string>>(new Set());
   const [explainOpen, setExplainOpen] = useState(false);
   const [explainLoading, setExplainLoading] = useState(false);
@@ -484,6 +485,7 @@ export default function GenerateQuizScreen() {
 
   useEffect(() => {
     if (loading || !materials || reportShownRef.current) return;
+    if (!sessionInteractedRef.current) return;
     const scorable = selectedIds.filter((id) => id !== 'notes' && id !== 'tutor');
     if (scorable.length === 0) return;
 
@@ -518,7 +520,7 @@ export default function GenerateQuizScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingCenter]}>
+      <View style={[styles.container, styles.loadingCenter, { paddingHorizontal: 0, backgroundColor: '#FFFFFF' }]}>
         {isResume ? (
           <ActivityIndicator size="large" color="#FD8A8A" />
         ) : (
@@ -536,6 +538,7 @@ export default function GenerateQuizScreen() {
   };
 
   const handleFlashcardAnswersUpdate = (answers: Record<string, 'correct' | 'incorrect'>) => {
+    sessionInteractedRef.current = true;
     setFlashcardAnswers(answers);
     const correct = Object.values(answers).filter((a) => a === 'correct').length;
     setFlashcardCorrect(correct);
@@ -558,6 +561,7 @@ export default function GenerateQuizScreen() {
   };
 
   const handleWrittenAnswersUpdate = (answers: Record<string, { answer: string; correct: boolean; explanation?: string }>) => {
+    sessionInteractedRef.current = true;
     setWrittenAnswers(answers);
     const correct = Object.values(answers).filter((r) => r.correct).length;
     setWrittenCorrect(correct);
@@ -580,6 +584,7 @@ export default function GenerateQuizScreen() {
   };
 
   const handleFillAnswersUpdate = (answers: Record<string, { answer: string; correct: boolean; explanation?: string }>) => {
+    sessionInteractedRef.current = true;
     setFillAnswers(answers);
     const correct = Object.values(answers).filter((r) => r.correct).length;
     setFillCorrect(correct);
@@ -611,6 +616,7 @@ export default function GenerateQuizScreen() {
 
   const handleSelectAnswer = (i: number) => {
     if (quizLocked) return;
+    sessionInteractedRef.current = true;
     setSelectedAnswer(i);
     const isCorrect = i === correctIndex;
 
@@ -1149,15 +1155,15 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 16,
   },
-  streakPopupNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 64, color: ACCENT_BLUE },
-  streakPopupLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 22, color: ACCENT_BLUE, marginBottom: 20 },
-  streakPopupMsg: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#ccc', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
+  streakPopupNum: { fontFamily: SF_PRO, fontSize: 64, color: ACCENT_BLUE },
+  streakPopupLabel: { fontFamily: SF_PRO, fontSize: 22, color: ACCENT_BLUE, marginBottom: 20 },
+  streakPopupMsg: { fontFamily: SF_PRO, fontSize: 16, color: '#ccc', textAlign: 'center', lineHeight: 22, marginBottom: 28 },
   streakPopupBtn: { backgroundColor: ACCENT_BLUE, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 40 },
-  streakPopupBtnText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#fff' },
+  streakPopupBtnText: { fontFamily: SF_PRO, fontSize: 18, color: '#fff' },
   container: { flex: 1, backgroundColor: OFF_WHITE, paddingHorizontal: 24 },
   loadingCenter: { justifyContent: 'center', alignItems: 'center' },
   generatingText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: PURPLE,
     marginTop: 16,
@@ -1174,7 +1180,7 @@ const styles = StyleSheet.create({
   closeBtn: { padding: 4, marginLeft: 'auto', marginRight: -25 },
   title: {
     flex: 1,
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 22,
     color: DEEP_BLACK,
     textAlign: 'center',
@@ -1206,9 +1212,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   tabIcon: { width: 20, height: 20 },
-  tabIconText: { fontSize: 14, fontFamily: 'Fredoka_400Regular', color: DEEP_BLACK, textDecorationLine: 'underline', width: 20, textAlign: 'center' },
+  tabIconText: { fontSize: 14, fontFamily: SF_PRO, color: DEEP_BLACK, textDecorationLine: 'underline', width: 20, textAlign: 'center' },
   tabLabel: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: METALLIC_SILVER,
   },
@@ -1242,7 +1248,7 @@ const styles = StyleSheet.create({
     borderColor: '#e5e5e5',
   },
   editNoteIcon: { width: 24, height: 24 },
-  editNoteLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: PURPLE },
+  editNoteLabel: { fontFamily: SF_PRO, fontSize: 16, color: PURPLE },
   notesStudyWrap: { flex: 1 },
   modalBackdrop: {
     flex: 1,
@@ -1259,7 +1265,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
   },
   editNoteModalTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#333',
     marginBottom: 16,
@@ -1269,7 +1275,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 12,
     padding: 14,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#333',
     minHeight: 80,
@@ -1278,7 +1284,7 @@ const styles = StyleSheet.create({
   },
   editNoteModalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12 },
   editNoteModalCancel: { paddingVertical: 10, paddingHorizontal: 16 },
-  editNoteModalCancelText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666' },
+  editNoteModalCancelText: { fontFamily: SF_PRO, fontSize: 16, color: '#666' },
   editNoteModalRegen: {
     backgroundColor: PURPLE,
     borderRadius: 12,
@@ -1286,25 +1292,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   editNoteModalRegenDisabled: { opacity: 0.5 },
-  editNoteModalRegenText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#fff' },
+  editNoteModalRegenText: { fontFamily: SF_PRO, fontSize: 16, color: '#fff' },
   body: { flex: 1 },
   bodyContent: { paddingBottom: 24 },
   question: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: OFF_WHITE,
     textAlign: 'center',
     marginBottom: 20,
   },
   questionCounter: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   },
   quipLabel: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#333',
     textAlign: 'center',
@@ -1319,7 +1325,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   quizStreakCount: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 28,
     color: '#1A1A1A',
     marginBottom: -8,
@@ -1339,7 +1345,7 @@ const styles = StyleSheet.create({
   },
   quizExplainText: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
@@ -1399,12 +1405,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5686A',
   },
   answerNumText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#fff',
   },
   answerText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: DEEP_BLACK,
   },
@@ -1447,7 +1453,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   quizNavCounter: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: DEEP_BLACK,
   },
@@ -1463,7 +1469,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   explainBtnText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#fff',
   },
@@ -1491,7 +1497,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   explainTitle: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 20,
     color: '#333',
   },
@@ -1502,7 +1508,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   explainLoadingText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: PURPLE,
   },
@@ -1525,7 +1531,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   explainBubbleText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#333',
   },
@@ -1546,7 +1552,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   explainSuggestionText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#444',
   },
@@ -1561,7 +1567,7 @@ const styles = StyleSheet.create({
   },
   explainInput: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 15,
     color: '#333',
     backgroundColor: '#f9f9f9',
@@ -1601,7 +1607,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tryAgainText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#333',
   },
@@ -1634,7 +1640,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tryAgainTextRow: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#333',
   },
@@ -1650,7 +1656,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   explainBtnTextRow: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#fff',
   },

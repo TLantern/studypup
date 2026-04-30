@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 export default function RecordLectureScreen() {
   const handleDelete = () => {
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#AADDDD' 
   },
   title: { 
-    fontFamily: 'Fredoka_400Regular', 
+    fontFamily: SF_PRO, 
     fontSize: 24, 
     marginBottom: 40 
   },
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#86EFAC',
   },
   buttonText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     fontWeight: '600',
   },

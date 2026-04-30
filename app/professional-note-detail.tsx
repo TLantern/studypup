@@ -19,11 +19,14 @@ import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 import {
+  createFolder,
   deleteProNote,
+  getAllFolders,
   getCurrentProNote,
   getProNoteById,
   subscribeProNotes,
   updateProNote,
+  type ProFolder,
   type StoredProNote,
 } from '@/lib/pro-note-store';
 import { NotarioChatModal } from '@/components/NotarioChatModal';
@@ -31,11 +34,13 @@ import { ProNoteEditModal } from '@/components/ProNoteEditModal';
 import { processContentAndGenerateMaterials } from '@/lib/content-processing';
 import { getItem } from '@/lib/storage';
 import { Audio } from 'expo-av';
+import { GeneratingContentScreen } from '@/components/GeneratingContentScreen';
 
 const BG = '#F2F2F4';
 const CARD = '#FFFFFF';
 const DEEP_BLACK = '#0D0D0F';
 const SUBTITLE_GRAY = '#6B7280';
+const ACCENT_BLUE = '#3B82F6';
 const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 
 const ACTIONS = [
@@ -56,9 +61,14 @@ export default function ProfessionalNoteDetailScreen() {
   const [editOpen, setEditOpen] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [studying, setStudying] = useState(false);
+  const [studyMaterialTitle, setStudyMaterialTitle] = useState<string | null>(null);
   const [, forceTick] = useState(0);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false);
+  const [newFolderMode, setNewFolderMode] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [folders, setFolders] = useState<ProFolder[]>(getAllFolders());
 
   useEffect(() => {
     return () => {
@@ -71,7 +81,10 @@ export default function ProfessionalNoteDetailScreen() {
   }, []);
 
   useEffect(() => {
-    const unsub = subscribeProNotes(() => forceTick((n) => n + 1));
+    const unsub = subscribeProNotes(() => {
+      forceTick((n) => n + 1);
+      setFolders(getAllFolders());
+    });
     return () => { unsub(); };
   }, []);
 
@@ -120,6 +133,7 @@ export default function ProfessionalNoteDetailScreen() {
         return;
       }
       try {
+        setStudyMaterialTitle(null);
         setStudying(true);
         const userId = (await getItem('userId')) ?? 'local_user';
         const text = `${note.title}\n\n${note.subtitle}\n\n${notesText}${
@@ -133,6 +147,10 @@ export default function ProfessionalNoteDetailScreen() {
           true,
           ['quiz', 'flashcards']
         );
+        if (materials.title) {
+          setStudyMaterialTitle(materials.title);
+          await new Promise((r) => setTimeout(r, 2200));
+        }
         router.push({
           pathname: '/generate-quiz',
           params: { methods: 'quiz,flashcards', materialId: materials.id },
@@ -141,6 +159,7 @@ export default function ProfessionalNoteDetailScreen() {
         Alert.alert('Study generation failed', e?.message ?? 'Please try again.');
       } finally {
         setStudying(false);
+        setStudyMaterialTitle(null);
       }
     }
   };
@@ -159,6 +178,42 @@ export default function ProfessionalNoteDetailScreen() {
       },
     ]);
   };
+
+  const closeFolderPicker = () => {
+    setFolderPickerOpen(false);
+    setNewFolderMode(false);
+    setNewFolderName('');
+  };
+
+  const handleAssignFolder = (folderId: string) => {
+    if (!note) return;
+    hapticSelect();
+    updateProNote(note.id, { folderId });
+    closeFolderPicker();
+    router.replace({ pathname: '/professional-home', params: { openFolders: '1' } });
+  };
+
+  const handleCreateFolderAndAssign = () => {
+    const name = newFolderName.trim();
+    if (!name || !note) return;
+    hapticSelect();
+    const folder = createFolder(name);
+    updateProNote(note.id, { folderId: folder.id });
+    closeFolderPicker();
+    router.replace({ pathname: '/professional-home', params: { openFolders: '1' } });
+  };
+
+  if (studying) {
+    return (
+      <View style={styles.generatingWrap}>
+        <GeneratingContentScreen
+          contentTypes={['quiz', 'flashcards']}
+          contentName={note?.title}
+          materialTitle={studyMaterialTitle}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -189,11 +244,18 @@ export default function ProfessionalNoteDetailScreen() {
         <Text style={styles.titleSecond}>{subtitle}</Text>
 
         <View style={styles.metaRow}>
-          <View style={styles.metaTag}>
+          <Pressable
+            style={styles.metaTag}
+            onPress={() => { if (note) { hapticSelect(); setFolderPickerOpen(true); } }}
+          >
             <Ionicons name="document-text-outline" size={14} color={DEEP_BLACK} />
-            <Text style={styles.metaTagText}>All Notes</Text>
+            <Text style={styles.metaTagText}>
+              {note?.folderId
+                ? (folders.find((f) => f.id === note.folderId)?.name ?? 'All Notes')
+                : 'All Notes'}
+            </Text>
             <Ionicons name="chevron-down" size={14} color={DEEP_BLACK} />
-          </View>
+          </Pressable>
           <Text style={styles.metaDate}>29 Apr 2026 · 00:02:01</Text>
         </View>
 
@@ -293,7 +355,7 @@ export default function ProfessionalNoteDetailScreen() {
               </View>
             ))}
 
-            <Text style={styles.h2}>Action Items / Next Steps</Text>
+            <Text style={styles.h2}>Action Items</Text>
             {note.actionItems.map((item, i) => (
               <View key={i} style={styles.bullet}>
                 <Text style={styles.bulletDot}>•</Text>
@@ -349,7 +411,7 @@ export default function ProfessionalNoteDetailScreen() {
               </Text>
             </View>
 
-            <Text style={styles.h2}>Action Items / Next Steps</Text>
+            <Text style={styles.h2}>Action Items</Text>
 
             <View style={styles.bullet}>
               <Text style={styles.bulletDot}>•</Text>
@@ -469,12 +531,77 @@ export default function ProfessionalNoteDetailScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <Modal
+        visible={folderPickerOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={closeFolderPicker}
+      >
+        <Pressable style={styles.folderOverlay} onPress={closeFolderPicker}>
+          <Pressable
+            style={[styles.folderSheet, { paddingBottom: insets.bottom + scaleSize(16) }]}
+            onPress={() => {}}
+          >
+            <View style={styles.folderHandle} />
+            <Text style={styles.folderSheetTitle}>Move to Folder</Text>
+
+            {newFolderMode ? (
+              <View style={styles.newFolderRow}>
+                <TextInput
+                  style={styles.newFolderInput}
+                  placeholder="Folder name"
+                  placeholderTextColor={SUBTITLE_GRAY}
+                  value={newFolderName}
+                  onChangeText={setNewFolderName}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleCreateFolderAndAssign}
+                />
+                <Pressable style={styles.newFolderConfirm} onPress={handleCreateFolderAndAssign}>
+                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable
+                style={styles.folderRow}
+                onPress={() => { hapticSelect(); setNewFolderMode(true); }}
+              >
+                <View style={[styles.folderRowIcon, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="folder-outline" size={18} color={ACCENT_BLUE} />
+                </View>
+                <Text style={styles.folderRowText}>New Folder</Text>
+                <Ionicons name="add-circle-outline" size={20} color={ACCENT_BLUE} />
+              </Pressable>
+            )}
+
+            {folders.length > 0 && <View style={styles.folderDivider} />}
+
+            {folders.map((f) => (
+              <Pressable
+                key={f.id}
+                style={styles.folderRow}
+                onPress={() => handleAssignFolder(f.id)}
+              >
+                <View style={[styles.folderRowIcon, { backgroundColor: '#F5F3FF' }]}>
+                  <Ionicons name="folder" size={18} color="#7C3AED" />
+                </View>
+                <Text style={styles.folderRowText}>{f.name}</Text>
+                {note?.folderId === f.id && (
+                  <Ionicons name="checkmark-circle" size={20} color={ACCENT_BLUE} />
+                )}
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
+  generatingWrap: { flex: 1, backgroundColor: BG },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -726,5 +853,81 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(15),
     color: DEEP_BLACK,
     lineHeight: scaleFont(22),
+  },
+  folderOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  folderSheet: {
+    backgroundColor: CARD,
+    borderTopLeftRadius: scaleSize(20),
+    borderTopRightRadius: scaleSize(20),
+    paddingHorizontal: scaleSize(20),
+    paddingTop: scaleSize(12),
+  },
+  folderHandle: {
+    width: scaleSize(36),
+    height: scaleSize(4),
+    borderRadius: scaleSize(2),
+    backgroundColor: '#E5E5E7',
+    alignSelf: 'center',
+    marginBottom: scaleSize(16),
+  },
+  folderSheetTitle: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(17),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    marginBottom: scaleSize(14),
+  },
+  folderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(12),
+    paddingVertical: scaleSize(12),
+  },
+  folderRowIcon: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    borderRadius: scaleSize(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderRowText: {
+    flex: 1,
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '500',
+    color: DEEP_BLACK,
+  },
+  folderDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E5E5E7',
+    marginVertical: scaleSize(4),
+  },
+  newFolderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(10),
+    paddingVertical: scaleSize(8),
+  },
+  newFolderInput: {
+    flex: 1,
+    backgroundColor: BG,
+    borderRadius: scaleSize(10),
+    paddingHorizontal: scaleSize(14),
+    paddingVertical: scaleSize(10),
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: DEEP_BLACK,
+  },
+  newFolderConfirm: {
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(10),
+    backgroundColor: ACCENT_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

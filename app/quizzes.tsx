@@ -9,7 +9,7 @@ import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
-import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY } from '@/lib/onboarding-theme';
+import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY, SF_PRO } from '@/lib/onboarding-theme';
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -50,8 +50,8 @@ const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
   progress: { width: 120, height: 16, alignSelf: 'center', marginBottom: 24 },
-  heading: { fontFamily: 'FredokaOne_400Regular', fontSize: RESPONSIVE.titleLarge, color: DEEP_BLACK, textAlign: 'center', marginBottom: scaleSize(8) },
-  subtext: { fontFamily: 'Fredoka_400Regular', fontSize: RESPONSIVE.subtitle, color: SUBTITLE_GRAY, textAlign: 'center', marginBottom: 24 },
+  heading: { fontFamily: SF_PRO, fontSize: RESPONSIVE.titleLarge, color: DEEP_BLACK, textAlign: 'center', marginBottom: scaleSize(8) },
+  subtext: { fontFamily: SF_PRO, fontSize: RESPONSIVE.subtitle, color: SUBTITLE_GRAY, textAlign: 'center', marginBottom: 24 },
   heroWrap: { flex: 1, width: '100%', maxHeight: SCREEN_HEIGHT * 0.54, alignSelf: 'center', marginBottom: 24 },
   hero: { width: '100%', height: '100%' },
   buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -24 },
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
     borderColor: ACCENT_BLUE_PRESSED,
     ...BUTTON_SHADOW,
   },
-  btnText: { fontFamily: 'Fredoka_400Regular', fontSize: 24 },
+  btnText: { fontFamily: SF_PRO, fontSize: 24 },
   btnPrimaryText: { color: '#fff' },
 });

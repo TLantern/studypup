@@ -8,6 +8,7 @@ import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const PURPLE = '#7FA8FF';
 
@@ -332,8 +333,8 @@ const styles = StyleSheet.create({
   lottie: { width: 240, height: 240 },
   ctaWrap: { alignItems: 'center', width: '100%' },
   startBtn: { backgroundColor: '#ede9fe', borderRadius: 24, paddingVertical: 11, paddingHorizontal: 36 },
-  startBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: 17, color: PURPLE },
-  phaseLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#666', marginBottom: 14 },
+  startBtnText: { fontFamily: SF_PRO, fontSize: 17, color: PURPLE },
+  phaseLabel: { fontFamily: SF_PRO, fontSize: 16, color: '#666', marginBottom: 14 },
   interruptBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#ede9fe', borderRadius: 24, paddingVertical: 10, paddingHorizontal: 24 },
-  interruptBtnText: { fontFamily: 'FredokaOne_400Regular', fontSize: 16, color: PURPLE },
+  interruptBtnText: { fontFamily: SF_PRO, fontSize: 16, color: PURPLE },
 });

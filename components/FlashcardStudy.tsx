@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { SF_PRO } from '@/lib/onboarding-theme';
 
 const SALMON = '#7FA8FF';
 const THUMB_DOWN_BG = '#E06C78';
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
     height: 68,
   },
   streakCount: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 28,
     color: '#1A1A1A',
     marginBottom: -8,
@@ -392,8 +393,8 @@ const styles = StyleSheet.create({
   cardBack: { backgroundColor: '#f0f4ff' },
   cardCorrect: { backgroundColor: '#DCFCE7' },
   cardIncorrect: { backgroundColor: '#FEE2E2' },
-  cardText: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 12 },
-  flipHint: { fontFamily: 'Fredoka_400Regular', fontSize: 14, color: '#999' },
+  cardText: { fontFamily: SF_PRO, fontSize: 18, color: '#333', textAlign: 'center', marginBottom: 12 },
+  flipHint: { fontFamily: SF_PRO, fontSize: 14, color: '#999' },
   feedback: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   plusOneText: {
-    fontFamily: 'FredokaOne_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 18,
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.35)',
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   microText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 11,
     color: '#555',
     textAlign: 'center',
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   },
   feedbackBtnDown: { backgroundColor: THUMB_DOWN_BG },
   feedbackBtnUp: { backgroundColor: THUMB_UP_BG },
-  feedbackText: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#333', flex: 0 },
+  feedbackText: { fontFamily: SF_PRO, fontSize: 16, color: '#333', flex: 0 },
   divider: {
     height: 1,
     backgroundColor: '#ddd',
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  counter: { fontFamily: 'Fredoka_400Regular', fontSize: 18, color: '#333' },
+  counter: { fontFamily: SF_PRO, fontSize: 18, color: '#333' },
   explainWrap: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -486,7 +487,7 @@ const styles = StyleSheet.create({
   },
   explainText: {
     flex: 1,
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   gotItText: {
-    fontFamily: 'Fredoka_400Regular',
+    fontFamily: SF_PRO,
     fontSize: 16,
     color: '#fff',
   },
