@@ -32,6 +32,14 @@ export const scaleVertical = (size: number): number => Math.round(size * heightR
 export const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
 
+/** Max content width for iPad — keeps text/buttons in a readable column */
+export const MAX_CONTENT_WIDTH = 600;
+
+/** Spread into a container View style to center-constrain content on iPad */
+export const tabletContainerStyle = isTablet
+  ? ({ maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as const })
+  : ({});
+
 export { SCREEN_WIDTH, SCREEN_HEIGHT };
 
 export const RESPONSIVE = {

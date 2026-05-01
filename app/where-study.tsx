@@ -8,11 +8,10 @@ import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
-import { SCREEN_WIDTH } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import { SF_PRO } from '@/lib/onboarding-theme';
 
-const IS_IPAD = SCREEN_WIDTH >= 768;
 
 const BUTTON_SHADOW = {
   shadowColor: '#333333',
@@ -253,8 +252,8 @@ export default function WhereStudyScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, paddingHorizontal: 24 },
-  title: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 34 : 28, color: '#000', textAlign: 'center', marginBottom: 24 },
-  dropdownRow: { marginBottom: IS_IPAD ? 68 : 52 },
+  title: { fontFamily: SF_PRO, fontSize: scaleFont(28), color: '#000', textAlign: 'center', marginBottom: scaleVertical(24) },
+  dropdownRow: { marginBottom: scaleVertical(52) },
   dropdownBtn: {
     flex: 1,
     flexDirection: 'row',
@@ -262,35 +261,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#fff',
     borderRadius: 12,
-    paddingVertical: IS_IPAD ? 20 : 16,
-    paddingHorizontal: IS_IPAD ? 18 : 16,
-    minHeight: IS_IPAD ? 84 : 72,
+    paddingVertical: scaleVertical(16),
+    paddingHorizontal: scaleSize(16),
+    minHeight: scaleVertical(72),
     borderWidth: 1,
     borderColor: '#ddd',
     ...BUTTON_SHADOW,
   },
   dropdownTextCol: { flex: 1, justifyContent: 'center' },
-  dropdownLabelInBtn: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 14 : 12, color: '#666', marginBottom: 2 },
-  dropdownValue: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 18 : 16, color: '#000' },
+  dropdownLabelInBtn: { fontFamily: SF_PRO, fontSize: scaleFont(12), color: '#666', marginBottom: 2 },
+  dropdownValue: { fontFamily: SF_PRO, fontSize: scaleFont(16), color: '#000' },
   dropdownArrow: { fontSize: 12, color: '#666' },
   puppy: {
     flex: 1,
     width: '100%',
-    maxHeight: 240,
+    maxHeight: scaleSize(240),
     alignSelf: 'center',
-    marginVertical: 24,
+    marginVertical: scaleVertical(24),
   },
   buttons: { marginTop: 'auto', paddingTop: 6, marginBottom: -34 },
   continueBtn: {
     backgroundColor: '#FD8A8A',
-    borderRadius: 35,
-    paddingVertical: IS_IPAD ? 14 : 18,
+    borderRadius: scaleSize(35),
+    paddingVertical: scaleVertical(18),
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#CA6E6E',
     ...BUTTON_SHADOW,
   },
-  continueBtnText: { fontFamily: SF_PRO, fontSize: IS_IPAD ? 22 : 24, color: '#fff' },
+  continueBtnText: { fontFamily: SF_PRO, fontSize: scaleFont(24), color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40, maxHeight: '70%' },
   modalTitle: { fontFamily: SF_PRO, fontSize: 20, marginBottom: 16, textAlign: 'center' },

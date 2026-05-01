@@ -9,7 +9,7 @@ import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
-import { SCREEN_WIDTH } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH } from '@/lib/responsive';
 
 const SUBJECT_LABELS: Record<string, string> = {
   biology: 'Biology',
@@ -25,8 +25,7 @@ const SUBJECT_LABELS: Record<string, string> = {
 const COUNTS = ['5,000', '6,200', '7,500', '8,100', '9,300', '10,000'];
 const randomCount = () => COUNTS[Math.floor(Math.random() * COUNTS.length)];
 
-const IS_IPAD = SCREEN_WIDTH >= 768;
-
+const LOTTIE_SIZE = Math.min(SCREEN_WIDTH - 48, scaleSize(360));
 
 export default function StudentsImproveScreen() {
   const insets = useSafeAreaInsets();
@@ -96,30 +95,30 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: SF_PRO,
-    fontSize: IS_IPAD ? 26 : 22,
+    fontSize: scaleFont(22),
     fontWeight: '700',
     color: DEEP_BLACK,
     textAlign: 'center',
     letterSpacing: -0.5,
-    marginBottom: 14,
+    marginBottom: scaleVertical(14),
   },
   lottieWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 280,
+    minHeight: scaleSize(220),
   },
   lottie: {
-    width: 480,
-    height: 480,
+    width: LOTTIE_SIZE,
+    height: LOTTIE_SIZE,
   },
   endWrap: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleVertical(24),
   },
   endText: {
     fontFamily: SF_PRO,
-    fontSize: 17,
+    fontSize: scaleFont(17),
     fontWeight: '500',
     color: '#555',
     textAlign: 'center',
