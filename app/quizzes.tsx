@@ -1,12 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
-import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import { ACCENT_BLUE, ACCENT_BLUE_PRESSED, ACCENT_BLUE_TINT, OFF_WHITE, DEEP_BLACK, SUBTITLE_GRAY, SF_PRO } from '@/lib/onboarding-theme';
@@ -22,9 +20,6 @@ const BUTTON_SHADOW = {
 export default function QuizzesScreen() {
   const insets = useSafeAreaInsets();
   const hoverStyle = useHoverFloatStyle();
-  useEffect(() => {
-    trackPageViewed('onboarding_quizzes');
-  }, []);
   return (
     <OnboardingView>
       <LinearGradient colors={[ACCENT_BLUE_TINT, OFF_WHITE]} locations={[0, 0.63]} style={styles.gradient}>

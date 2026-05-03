@@ -6,7 +6,6 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { scaleFont, scaleSize, scaleVertical } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
@@ -134,9 +133,6 @@ export default function WhereStudyScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
 
-  useEffect(() => {
-    trackPageViewed('onboarding_where_study');
-  }, []);
 
   const showRegion = country === 'United States' || country === 'Canada';
   const regionLabel = country === 'Canada' ? 'Province' : 'State';

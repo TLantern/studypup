@@ -1,12 +1,10 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
 import { useHoverFloatStyle } from '@/lib/useHoverFloat';
-import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize, SCREEN_HEIGHT } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import { SF_PRO } from '@/lib/onboarding-theme';
@@ -22,9 +20,6 @@ const BUTTON_SHADOW = {
 export default function InstantAnswersScreen() {
   const insets = useSafeAreaInsets();
   const hoverStyle = useHoverFloatStyle();
-  useEffect(() => {
-    trackPageViewed('onboarding_instantanswers');
-  }, []);
   return (
     <OnboardingView>
       <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>

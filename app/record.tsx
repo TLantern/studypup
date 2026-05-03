@@ -3,11 +3,9 @@ import { useHoverFloatStyle } from '@/lib/useHoverFloat';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { trackPageViewed } from '@/lib/analytics';
 import { OnboardingView } from '@/components/OnboardingView';
 import { SF_PRO } from '@/lib/onboarding-theme';
 
@@ -22,9 +20,6 @@ const BUTTON_SHADOW = {
 export default function RecordScreen() {
   const insets = useSafeAreaInsets();
   const hoverStyle = useHoverFloatStyle();
-  useEffect(() => {
-    trackPageViewed('onboarding_record');
-  }, []);
   return (
     <OnboardingView>
       <LinearGradient colors={['#C4C4C4', '#AADDDD']} locations={[0, 0.63]} style={styles.gradient}>

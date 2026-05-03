@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PLACEMENT_ONBOARDING_COMPLETE, PLACEMENT_VALUE_SCREEN } from '@/lib/superwall';
-import { trackPageViewed } from '@/lib/analytics';
 import { RESPONSIVE, scaleSize } from '@/lib/responsive';
 import { setItem } from '@/lib/storage';
 import { SF_PRO } from '@/lib/onboarding-theme';
@@ -25,9 +24,6 @@ export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
   const preloadPaywalls = useSuperwall((s) => s.preloadPaywalls);
 
-  useEffect(() => {
-    trackPageViewed('onboarding_review');
-  }, []);
 
   useEffect(() => {
     preloadPaywalls([PLACEMENT_VALUE_SCREEN, PLACEMENT_ONBOARDING_COMPLETE]).catch(() => {});
