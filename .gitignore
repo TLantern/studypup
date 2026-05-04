@@ -38,15 +38,6 @@ yarn-error.*
 
 app-example
 
-# generated native folders — exclude contents but allow specific tracked files
-/ios/*
-!/ios/Podfile
-!/ios/Podfile.lock
-!/ios/Notario.xcodeproj/
-/ios/Notario.xcodeproj/*
-!/ios/Notario.xcodeproj/project.pbxproj
-!/ios/Notario/
-/ios/Notario/*
-!/ios/Notario/Info.plist
-!/ios/Notario/AppDelegate.swift
+# generated native folders
+/ios
 /android
