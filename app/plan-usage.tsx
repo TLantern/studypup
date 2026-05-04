@@ -43,6 +43,12 @@ export default function PlanUsageScreen() {
     );
   };
 
+  const handleSkip = () => {
+    hapticSelect();
+    if (superwallAvailable) router.push('/paywall');
+    else router.replace('/create-account');
+  };
+
   const handleContinue = async () => {
     if (selected.length === 0) return;
     hapticContinue();
@@ -54,7 +60,7 @@ export default function PlanUsageScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: 0 }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -97,6 +103,10 @@ export default function PlanUsageScreen() {
         >
           <Text style={sharedStyles.continueBtnText}>Continue</Text>
         </Pressable>
+
+        <Pressable onPress={handleSkip} hitSlop={12} style={[styles.skipBtn, { height: insets.bottom + scaleSize(24), justifyContent: 'center' }]}>
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
     </OnboardingView>
   );
@@ -129,4 +139,6 @@ const styles = StyleSheet.create({
     color: ACCENT_BLUE,
     opacity: 0.8,
   },
+  skipBtn: { alignItems: 'center' as const },
+  skipText: { ...sharedStyles.skipText, fontSize: scaleFont(17), textDecorationLine: 'underline' as const },
 });

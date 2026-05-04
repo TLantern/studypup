@@ -50,6 +50,7 @@ export const sharedStyles = {
     color: DEEP_BLACK,
     letterSpacing: -0.5,
     marginBottom: scaleSize(8),
+    textAlign: 'center' as const,
   },
   subtitle: {
     fontFamily: SF_PRO,
@@ -57,6 +58,7 @@ export const sharedStyles = {
     color: SUBTITLE_GRAY,
     fontWeight: '400' as const,
     marginBottom: scaleSize(28),
+    textAlign: 'center' as const,
   },
   card: {
     backgroundColor: OFF_WHITE,

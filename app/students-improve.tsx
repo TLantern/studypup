@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { OnboardingView } from '@/components/OnboardingView';
 import { trackPageViewed } from '@/lib/analytics';
-import { hapticContinue } from '@/lib/haptics';
+import { hapticContinue, hapticSelect } from '@/lib/haptics';
+import { useContext } from 'react';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH } from '@/lib/responsive';
@@ -33,6 +35,13 @@ export default function StudentsImproveScreen() {
   const [showEndContent, setShowEndContent] = useState(false);
   const fadeAnim = useSharedValue(0);
   const [title, setTitle] = useState('Students have boosted their grades with Notario');
+  const superwallAvailable = useContext(SuperwallAvailableContext);
+
+  const handleSkip = () => {
+    hapticSelect();
+    if (superwallAvailable) router.push('/paywall');
+    else router.replace('/create-account');
+  };
 
   useEffect(() => {
     trackPageViewed('ob_student_social_proof');
@@ -59,7 +68,7 @@ export default function StudentsImproveScreen() {
 
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + 84, paddingBottom: insets.bottom + 24 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 84, paddingBottom: 0 }]}>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.lottieWrap}>
         <LottieView
@@ -82,6 +91,9 @@ export default function StudentsImproveScreen() {
           </Animated.View>
         </>
       )}
+      <Pressable onPress={handleSkip} hitSlop={12} style={[styles.skipBtn, { height: insets.bottom + scaleSize(24), justifyContent: 'center' }]}>
+        <Text style={styles.skipText}>Skip</Text>
+      </Pressable>
       </View>
     </OnboardingView>
   );
@@ -130,4 +142,6 @@ const styles = StyleSheet.create({
   btn: sharedStyles.continueBtn,
   btnText: sharedStyles.continueBtnText,
   btnPrimaryText: {},
+  skipBtn: { alignItems: 'center' as const },
+  skipText: { ...sharedStyles.skipText, fontSize: scaleFont(17), textDecorationLine: 'underline' as const },
 });

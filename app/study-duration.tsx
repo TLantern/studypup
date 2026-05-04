@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { scaleSize, scaleFont } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
+import { SuperwallAvailableContext } from '@/lib/superwall';
 
 const OPTIONS = [
   { id: '10-20', label: '10–20 min', emoji: '🌱' },
@@ -21,6 +22,7 @@ const OPTIONS = [
 export default function StudyDurationScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
+  const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     trackPageViewed('ob_student_study_duration');
@@ -33,9 +35,15 @@ export default function StudyDurationScreen() {
     router.push('/notification-optin');
   };
 
+  const handleSkip = () => {
+    hapticSelect();
+    if (superwallAvailable) router.push('/paywall');
+    else router.replace('/create-account');
+  };
+
   return (
     <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
+      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: 0 }]}>
         <View style={styles.progressRow}>
           <Pressable style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
@@ -64,6 +72,10 @@ export default function StudyDurationScreen() {
             </Pressable>
           ))}
         </ScrollView>
+
+        <Pressable onPress={handleSkip} hitSlop={12} style={[styles.skipBtn, { height: insets.bottom + scaleSize(24), justifyContent: 'center' }]}>
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
     </OnboardingView>
   );
@@ -86,4 +98,6 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
   progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
   backBtn: { padding: scaleSize(4) },
+  skipBtn: { alignItems: 'center' },
+  skipText: { ...sharedStyles.skipText, fontSize: scaleFont(17), textDecorationLine: 'underline' },
 });
