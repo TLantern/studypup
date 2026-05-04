@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Notario",
-    "slug": "notario",
-    "version": "1.2.0",
+    "slug": "studypup",
+    "version": "2.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/notariomainicon.png",
     "scheme": "notario",
