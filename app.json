@@ -112,7 +112,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.114632107142-skgnhps8drg13j4rqjag4ijhneg6o7pa"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

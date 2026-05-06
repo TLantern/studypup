@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { scaleSize, scaleFont } from '@/lib/responsive';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
 import { SuperwallAvailableContext } from '@/lib/superwall';
@@ -34,11 +34,13 @@ export default function CurrentGpaScreen() {
     hapticSelect();
     setSelected(id);
     await updateOnboarding({ current_gpa: id });
+    trackEvent('ob_student_current_gpa_selected', { gpa: id });
     router.push('/target-gpa');
   };
 
   const handleSkip = () => {
     hapticSelect();
+    trackEvent('ob_student_current_gpa_skipped');
     if (superwallAvailable) router.push('/paywall');
     else router.replace('/create-account');
   };

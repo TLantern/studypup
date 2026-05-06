@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 import { scaleFont, scaleSize } from '@/lib/responsive';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { OnboardingView } from '@/components/OnboardingView';
 import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, MUTED_TEXT, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
@@ -58,6 +58,7 @@ export default function QuizResultsScreen() {
 
   useEffect(() => {
     trackPageViewed('ob_student_quiz_results');
+    trackEvent('ob_student_quiz_completed', { score: mastery, grade: letterGrade(mastery), weak_concept: weak ?? null });
   }, []);
 
   const mastery = parseInt(scoreParam ?? '0', 10);

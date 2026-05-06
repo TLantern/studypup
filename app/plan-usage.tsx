@@ -11,7 +11,7 @@ import { ensureUserDoc } from '@/lib/user-profile';
 import { useAuth } from '@/lib/auth-store';
 import { scaleSize, scaleFont } from '@/lib/responsive';
 import { SuperwallAvailableContext } from '@/lib/superwall';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticSelect, hapticContinue } from '@/lib/haptics';
 import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
 
@@ -45,6 +45,7 @@ export default function PlanUsageScreen() {
 
   const handleSkip = () => {
     hapticSelect();
+    trackEvent('ob_student_plan_usage_skipped');
     if (superwallAvailable) router.push('/paywall');
     else router.replace('/create-account');
   };
@@ -53,6 +54,7 @@ export default function PlanUsageScreen() {
     if (selected.length === 0) return;
     hapticContinue();
     await updateOnboarding({ plan_usage: selected });
+    trackEvent('ob_student_plan_usage_selected', { features: selected });
     await storageSetItem(ONBOARDING_COMPLETE_KEY, 'true');
     if (user) await ensureUserDoc(user).catch((e) => console.error('Failed to save onboarding to Firebase:', e));
     router.push('/creating-plan');

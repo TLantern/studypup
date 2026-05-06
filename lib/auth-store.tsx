@@ -5,6 +5,7 @@ import { getFirebase } from '@/lib/firebase';
 import { ensureUserDoc, ensureProfessionalDoc } from '@/lib/user-profile';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { getItem, setItem } from '@/lib/storage';
+import { identifyUser } from '@/lib/analytics';
 
 const STORED_USER_KEY = 'auth:user';
 const STORED_PHONE_KEY = 'auth:phone';
@@ -58,6 +59,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       saveUserData(u);
       if (u) {
+        console.log('[Auth] onAuthStateChanged — user signed in, uid:', u.uid);
+        identifyUser(u.uid);
         getOnboarding().then((onboarding) => {
           if (onboarding.user_tag === 'working-class') {
             ensureProfessionalDoc(u).catch((e) => console.error('Failed to ensure professional doc:', e));

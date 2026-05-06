@@ -7,7 +7,7 @@ import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding, type UserTag } from '@/lib/onboarding-storage';
 import { writeUserTag } from '@/lib/user-profile';
 import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, trackEvent, getPostHogClient } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 
 const DEEP_BLACK = '#0D0D0F';
@@ -43,6 +43,9 @@ export default function GradeLevelScreen() {
     const tag: UserTag = STUDENT_IDS.has(id) ? 'student' : 'working-class';
     await updateOnboarding({ grade_level: id, user_tag: tag });
     await writeUserTag(tag);
+    const path = tag === 'student' ? 'student' : 'professional';
+    trackEvent('ob_user_type_selected', { role: id, path });
+    getPostHogClient()?.setPersonProperties({ user_path: path, role: id });
     if (tag === 'student') {
       router.push('/subjects');
     } else {

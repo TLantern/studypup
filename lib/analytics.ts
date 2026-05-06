@@ -1,23 +1,47 @@
 import { Platform, NativeModules } from 'react-native';
 
+// ── PostHog ───────────────────────────────────────────────────────────────────
+
+let posthog: any = null;
+
+try {
+  const { PostHog } = require('posthog-react-native');
+  const phKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? '';
+  if (phKey) {
+    posthog = new PostHog(phKey, { host: 'https://us.i.posthog.com' });
+    console.log('[PostHog] instance created');
+  } else {
+    console.log('[PostHog] skipped — token missing');
+  }
+} catch (e) {
+  console.log('[PostHog] failed to load:', String(e));
+}
+
+export function getPostHogClient() {
+  return posthog;
+}
+
 // ── Mixpanel ──────────────────────────────────────────────────────────────────
 
 let mixpanel: any = null;
-let mixpanelReadyReason = 'unknown';
+let mixpanelInitCompleted = false;
+
+// Events that arrive before init() completes are queued and flushed afterward.
+type QueuedEvent = { eventName: string; payload: Record<string, any> };
+const preInitQueue: QueuedEvent[] = [];
 
 try {
   const { Mixpanel } = require('mixpanel-react-native');
   const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN ?? '';
-  if (!token) {
-    mixpanel = null;
-    mixpanelReadyReason = 'missing_token';
-  } else {
+  console.log('[Mixpanel] module loaded, token present:', !!token, 'length:', token.length);
+  if (token) {
     mixpanel = new Mixpanel(token, false);
-    mixpanelReadyReason = 'ready';
+    console.log('[Mixpanel] instance created');
+  } else {
+    console.log('[Mixpanel] skipped — token missing');
   }
-} catch (error) {
-  mixpanel = null;
-  mixpanelReadyReason = `constructor_or_require_failed:${String(error)}`;
+} catch (e) {
+  console.log('[Mixpanel] failed to load:', String(e));
 }
 
 // ── AppsFlyer ─────────────────────────────────────────────────────────────────
@@ -107,43 +131,95 @@ const didInit = { current: false };
 export async function initAnalytics() {
   if (didInit.current) return;
   didInit.current = true;
+  console.log('[Analytics] initAnalytics — mixpanel ready:', !!mixpanel, 'posthog ready:', !!posthog);
 
-  // Mixpanel
-  if (!mixpanel) {
-    console.log('[Mixpanel] Initialization skipped', { reason: mixpanelReadyReason });
-  } else {
+  if (mixpanel) {
     try {
-      console.log('[Mixpanel] Initialization started');
       await mixpanel.init();
-      console.log('[Mixpanel] Initialization finished');
+      mixpanelInitCompleted = true;
+      console.log('[Mixpanel] init() complete, queue depth:', preInitQueue.length);
+
+      if (preInitQueue.length > 0) {
+        for (const { eventName, payload } of preInitQueue) {
+          console.log('[Mixpanel] flushing queued event:', eventName);
+          mixpanel.track(eventName, payload);
+        }
+        preInitQueue.length = 0;
+      }
     } catch (error) {
-      console.log('[Mixpanel] Initialization error', String(error));
+      console.log('[Mixpanel] init() error:', String(error));
     }
   }
 
-  // AppsFlyer
   initAppsFlyer();
+}
+
+// ── Identity ──────────────────────────────────────────────────────────────────
+
+export function identifyUser(uid: string) {
+  if (mixpanel) {
+    try {
+      mixpanel.identify(uid);
+    } catch (error) {
+      console.log('[Mixpanel] identify() error:', String(error));
+    }
+  }
+  if (posthog) {
+    try {
+      posthog.identify(uid);
+    } catch (error) {
+      console.log('[PostHog] identify() error:', String(error));
+    }
+  }
 }
 
 // ── Event helpers ─────────────────────────────────────────────────────────────
 
+export function trackEvent(eventName: string, props?: Record<string, any>) {
+  if (posthog) {
+    try {
+      posthog.capture(eventName, props ?? {});
+    } catch (error) {
+      console.log('[PostHog] capture() error:', String(error));
+    }
+  }
+  if (mixpanel) {
+    try {
+      mixpanel.track(eventName, props ?? {});
+    } catch (error) {
+      console.log('[Mixpanel] track() error:', String(error));
+    }
+  }
+}
+
 export function trackPageViewed(page_name: string, props?: Record<string, any>) {
-  const pageName = (page_name ?? '').trim();
-  if (!mixpanel || !pageName) {
-    console.log('[Mixpanel] page_viewed skipped', {
-      hasMixpanel: !!mixpanel,
-      hasPageName: !!pageName,
-      page_name: pageName,
-    });
+  if (!page_name?.trim()) return;
+
+  const eventName = `${page_name.trim()}_viewed`;
+  const payload = { page_name: page_name.trim(), ...(props ?? {}) };
+
+  if (posthog) {
+    try {
+      posthog.capture(eventName, payload);
+    } catch (error) {
+      console.log('[PostHog] capture() error:', String(error));
+    }
+  }
+
+  if (!mixpanel) {
+    console.log('[Mixpanel] trackPageViewed skipped — not loaded', { page_name });
     return;
   }
+
+  if (!mixpanelInitCompleted) {
+    preInitQueue.push({ eventName, payload });
+    console.log('[Mixpanel] queued:', eventName, '— queue depth:', preInitQueue.length);
+    return;
+  }
+
   try {
-    const eventName = `${pageName}_viewed`;
-    const payload = { page_name: pageName, ...(props ?? {}) };
-    console.log('[Mixpanel] Tracking custom viewed event', { eventName, payload });
     mixpanel.track(eventName, payload);
-    console.log('[Mixpanel] custom viewed track call completed', { eventName });
   } catch (error) {
-    console.log('[Mixpanel] custom viewed track error', { page_name: pageName, error: String(error) });
+    console.log('[Mixpanel] track() error:', String(error));
   }
 }

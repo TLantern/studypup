@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { scaleSize, scaleFont, SCREEN_WIDTH } from '@/lib/responsive';
 import { applyNotifPrefs, getNotifPrefs, requestPermissions } from '@/lib/notifications';
-import { trackPageViewed } from '@/lib/analytics';
+import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO, CARD_SHADOW, sharedStyles } from '@/lib/onboarding-theme';
 
@@ -26,6 +26,7 @@ export default function NotificationOptinScreen() {
       const prefs = await getNotifPrefs();
       await applyNotifPrefs(prefs);
     }
+    trackEvent('ob_student_reminders_result', { granted });
     router.push('/current-gpa');
   }
 
@@ -64,7 +65,7 @@ export default function NotificationOptinScreen() {
           <Pressable style={styles.continueBtn} onPress={allow}>
             <Text style={styles.continueBtnText}>Allow Notifications</Text>
           </Pressable>
-          <Pressable style={styles.skipWrap} onPress={() => { hapticContinue(); router.push('/current-gpa'); }}>
+          <Pressable style={styles.skipWrap} onPress={() => { hapticContinue(); trackEvent('ob_student_reminders_skipped'); router.push('/current-gpa'); }}>
             <Text style={styles.skipText}>Not now</Text>
           </Pressable>
         </View>

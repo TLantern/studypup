@@ -26,6 +26,7 @@ LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
 import { AuthProvider } from '@/lib/auth-store';
 import { hydratePaywallBypass } from '@/lib/dev-bypass';
 import { initAnalytics } from '@/lib/analytics';
+import { PostHogProvider } from 'posthog-react-native';
 import React from 'react';
 import {
   PaywallTriggerProvider as PaywallTriggerProviderRaw,
@@ -39,6 +40,7 @@ SplashScreen.preventAutoHideAsync();
 
 const SUPERWALL_IOS_KEY = process.env.EXPO_PUBLIC_SUPERWALL_IOS_KEY ?? '';
 const SUPERWALL_ANDROID_KEY = process.env.EXPO_PUBLIC_SUPERWALL_ANDROID_KEY ?? '';
+const POSTHOG_API_KEY = process.env.EXPO_PUBLIC_POSTHOG_API_KEY ?? '';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Fredoka_400Regular, FredokaOne_400Regular });
@@ -115,8 +117,17 @@ export default function RootLayout() {
     <SplashTransition fontsReady={fontsLoaded} onDone={() => setSplashMounted(false)} />
   ) : null;
 
+  const wrapPostHog = (children: React.ReactNode) =>
+    POSTHOG_API_KEY ? (
+      <PostHogProvider apiKey={POSTHOG_API_KEY} options={{ host: 'https://us.i.posthog.com' }}>
+        {children}
+      </PostHogProvider>
+    ) : (
+      <>{children}</>
+    );
+
   if (SuperwallProvider) {
-    return (
+    return wrapPostHog(
       <>
         <SuperwallProvider
           apiKeys={apiKeys}
@@ -127,14 +138,14 @@ export default function RootLayout() {
           <SuperwallAvailableContext.Provider value={true}>{content}</SuperwallAvailableContext.Provider>
         </SuperwallProvider>
         {splash}
-      </>
+      </>,
     );
   }
   console.warn('[RootLayout] SuperwallProvider not available, Superwall disabled');
-  return (
+  return wrapPostHog(
     <>
       <SuperwallAvailableContext.Provider value={false}>{content}</SuperwallAvailableContext.Provider>
       {splash}
-    </>
+    </>,
   );
 }
