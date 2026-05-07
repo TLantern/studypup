@@ -1,40 +1,43 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { DEEP_BLACK } from '@/lib/onboarding-theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
+import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleSize, scaleFont } from '@/lib/responsive';
+import { scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
 import { trackPageViewed, trackEvent } from '@/lib/analytics';
-import { hapticSelect } from '@/lib/haptics';
-import { ACCENT_BLUE, sharedStyles } from '@/lib/onboarding-theme';
+import { hapticSelect, hapticContinue } from '@/lib/haptics';
+import { ACCENT_BLUE, ACCENT_BLUE_TINT, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 import { SuperwallAvailableContext } from '@/lib/superwall';
 
-const OPTIONS = [
-  { id: 'below-2', label: 'Below 2.0' },
-  { id: '2-2.5', label: '2.0 – 2.5' },
-  { id: '2.5-3', label: '2.5 – 3.0' },
-  { id: '3-3.5', label: '3.0 – 3.5' },
-  { id: '3.5+', label: '3.5+' },
-  { id: 'unsure', label: "I'm not sure" },
-];
+const MIN_GPA = 0.0;
+const MAX_GPA = 4.0;
+const STEP = 0.1;
+const DEFAULT_GPA = 2.5;
 
 export default function CurrentGpaScreen() {
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [gpa, setGpa] = useState(DEFAULT_GPA);
   const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     trackPageViewed('ob_student_current_gpa');
   }, []);
 
-  const handleSelect = async (id: string) => {
+  const adjust = (delta: number) => {
     hapticSelect();
-    setSelected(id);
-    await updateOnboarding({ current_gpa: id });
-    trackEvent('ob_student_current_gpa_selected', { gpa: id });
+    setGpa((prev) => {
+      const next = Math.round((prev + delta) * 10) / 10;
+      return Math.min(MAX_GPA, Math.max(MIN_GPA, next));
+    });
+  };
+
+  const handleContinue = async () => {
+    hapticContinue();
+    const value = gpa.toFixed(1);
+    await updateOnboarding({ current_gpa: value });
+    trackEvent('ob_student_current_gpa_selected', { gpa: value });
     router.push('/target-gpa');
   };
 
@@ -46,60 +49,90 @@ export default function CurrentGpaScreen() {
   };
 
   return (
-    <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: 0 }]}>
-        <View style={styles.progressRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
-          </Pressable>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '70%' }]} />
+    <OnboardingView header={<OnboardingProgressRow progress={0.70} onSkip={handleSkip} />}>
+      <View style={styles.container}>
+        <Text style={styles.eyebrow}>Personalizing your Notario...</Text>
+        <Text style={styles.title}>What is your GPA now?</Text>
+        
+        <View style={styles.center}>
+          <View style={styles.tracker}>
+            <Pressable onPress={() => adjust(-STEP)} hitSlop={16} style={styles.stepBtn}>
+              <Text style={styles.symbol}>−</Text>
+            </Pressable>
+            <Text style={styles.gpaText}>{gpa.toFixed(1)}</Text>
+            <Pressable onPress={() => adjust(STEP)} hitSlop={16} style={styles.stepBtn}>
+              <Text style={styles.symbol}>+</Text>
+            </Pressable>
           </View>
         </View>
 
-        <Text style={styles.title}>What's your current GPA?</Text>
-        <Text style={styles.subtitle}>This helps tailor your study plan.</Text>
-
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {OPTIONS.map((o) => (
-            <Pressable
-              key={o.id}
-              style={({ pressed }) => [
-                styles.card,
-                selected === o.id && styles.cardSelected,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => handleSelect(o.id)}
-            >
-              <Text style={[styles.cardText, selected === o.id && styles.cardTextSelected]}>{o.label}</Text>
-            </Pressable>
-          ))}
-        </ScrollView>
-
-        <Pressable onPress={handleSkip} hitSlop={12} style={[styles.skipBtn, { height: insets.bottom + scaleSize(24), justifyContent: 'center' }]}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + scaleSize(16) }]}>
+          <Pressable style={styles.btn} onPress={handleContinue}>
+            <Text style={styles.btnText}>Continue →</Text>
+          </Pressable>
+        </View>
       </View>
     </OnboardingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: sharedStyles.container,
-  progressTrack: sharedStyles.progressTrack,
-  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
-  title: sharedStyles.title,
-  subtitle: sharedStyles.subtitle,
-  scroll: { flex: 1 },
-  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
-  card: sharedStyles.card,
-  cardSelected: sharedStyles.cardSelected,
-  cardPressed: sharedStyles.cardPressed,
-  cardText: sharedStyles.cardText,
-  cardTextSelected: sharedStyles.cardTextSelected,
-  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
-  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
-  backBtn: { padding: scaleSize(4) },
-  skipBtn: { alignItems: 'center' },
-  skipText: { ...sharedStyles.skipText, fontSize: scaleFont(17), textDecorationLine: 'underline' },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: scaleSize(24),
+  },
+  eyebrow: sharedStyles.eyebrow,
+  title: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(22),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    letterSpacing: -0.5,
+    marginBottom: scaleSize(6),
+  },
+  hint: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: 'rgba(0,0,0,0.35)',
+    fontWeight: '400',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tracker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: ACCENT_BLUE_TINT,
+    borderRadius: scaleSize(20),
+    paddingVertical: scaleSize(22),
+    paddingHorizontal: scaleSize(32),
+    gap: scaleSize(28),
+  },
+  stepBtn: {
+    padding: scaleSize(4),
+  },
+  symbol: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(28),
+    fontWeight: '500',
+    color: DEEP_BLACK,
+    lineHeight: scaleFont(32),
+  },
+  gpaText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(42),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    minWidth: scaleSize(80),
+    textAlign: 'center',
+    letterSpacing: -1,
+  },
+  footer: {
+    paddingTop: scaleSize(12),
+  },
+  btn: sharedStyles.continueBtn,
+  btnText: sharedStyles.continueBtnText,
 });
