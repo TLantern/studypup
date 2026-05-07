@@ -109,11 +109,12 @@ const styles = StyleSheet.create({
   tracker: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
     backgroundColor: ACCENT_BLUE_TINT,
     borderRadius: scaleSize(20),
     paddingVertical: scaleSize(22),
     paddingHorizontal: scaleSize(32),
-    gap: scaleSize(28),
   },
   stepBtn: {
     padding: scaleSize(4),

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
@@ -33,8 +33,8 @@ const SELF_POINTS: [number, number][] = [
   [1.00, 0.13],
 ];
 
-const CHART_W = 300;
-const CHART_H = 180;
+const CHART_ASPECT = 300 / 180;
+const GRID_LINES = 5;
 
 function Segment({ x1, y1, x2, y2, color, strokeWidth = 3 }: {
   x1: number; y1: number; x2: number; y2: number;
@@ -62,28 +62,29 @@ function Segment({ x1, y1, x2, y2, color, strokeWidth = 3 }: {
   );
 }
 
-function ChartLine({ points, color, strokeWidth = 3 }: {
+function ChartLine({ points, color, strokeWidth = 3, chartW, chartH }: {
   points: [number, number][];
   color: string;
   strokeWidth?: number;
+  chartW: number;
+  chartH: number;
 }) {
   return (
     <>
       {points.slice(0, -1).map((pt, i) => {
-        const x1 = pt[0] * CHART_W;
-        const y1 = (1 - pt[1]) * CHART_H;
-        const x2 = points[i + 1][0] * CHART_W;
-        const y2 = (1 - points[i + 1][1]) * CHART_H;
+        const x1 = pt[0] * chartW;
+        const y1 = (1 - pt[1]) * chartH;
+        const x2 = points[i + 1][0] * chartW;
+        const y2 = (1 - points[i + 1][1]) * chartH;
         return <Segment key={i} x1={x1} y1={y1} x2={x2} y2={y2} color={color} strokeWidth={strokeWidth} />;
       })}
-      {/* Filled circles at each joint to hide segment gaps */}
       {points.map((pt, i) => (
         <View
           key={`dot-${i}`}
           style={{
             position: 'absolute',
-            left: pt[0] * CHART_W - strokeWidth / 2,
-            top: (1 - pt[1]) * CHART_H - strokeWidth / 2,
+            left: pt[0] * chartW - strokeWidth / 2,
+            top: (1 - pt[1]) * chartH - strokeWidth / 2,
             width: strokeWidth,
             height: strokeWidth,
             borderRadius: strokeWidth,
@@ -95,12 +96,12 @@ function ChartLine({ points, color, strokeWidth = 3 }: {
   );
 }
 
-const GRID_LINES = 5;
-
 export default function GpaProjectionScreen() {
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+  const [chartW, setChartW] = useState(0);
+  const chartH = chartW > 0 ? chartW / CHART_ASPECT : 0;
 
   useEffect(() => {
     trackPageViewed('ob_gpa_projection');
@@ -114,45 +115,46 @@ export default function GpaProjectionScreen() {
     <OnboardingView header={<OnboardingProgressRow progress={0.92} />}>
       <View style={styles.container}>
         <View style={styles.content}>
-        <Animated.View style={[styles.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <Text style={styles.headline}>You took the first step!</Text>
-          <Text style={styles.body}>
-            With regular effort, Notario helps you{'\n'}achieve long-term progress.
-          </Text>
-        </Animated.View>
+          <Animated.View style={[styles.hero, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <Text style={styles.headline}>You took the first step!</Text>
+            <Text style={styles.body}>
+              With regular effort, Notario helps you{'\n'}achieve long-term progress.
+            </Text>
+          </Animated.View>
 
-        <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Your GPA</Text>
-            <View style={styles.legend}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: ACCENT_BLUE }]} />
-                <Text style={styles.legendLabel}>with Notario</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#C4C4C4' }]} />
-                <Text style={[styles.legendLabel, { color: '#A0A0A0' }]}>self-study</Text>
+          <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Your GPA</Text>
+              <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: ACCENT_BLUE }]} />
+                  <Text style={styles.legendLabel}>with Notario</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#C4C4C4' }]} />
+                  <Text style={[styles.legendLabel, { color: '#A0A0A0' }]}>self-study</Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          <View style={styles.chartContainer}>
-            {/* Grid lines */}
-            {Array.from({ length: GRID_LINES }).map((_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.gridLine,
-                  { top: (i / (GRID_LINES - 1)) * CHART_H },
-                ]}
-              />
-            ))}
-
-            {/* Chart lines */}
-            <ChartLine points={SELF_POINTS} color="#C4C4C4" strokeWidth={2.5} />
-            <ChartLine points={COCO_POINTS} color={ACCENT_BLUE} strokeWidth={3.5} />
-          </View>
-        </Animated.View>
+            <View
+              style={[styles.chartContainer, chartH > 0 && { height: chartH }]}
+              onLayout={(e) => setChartW(e.nativeEvent.layout.width)}
+            >
+              {chartW > 0 && (
+                <>
+                  {Array.from({ length: GRID_LINES }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[styles.gridLine, { top: (i / (GRID_LINES - 1)) * chartH }]}
+                    />
+                  ))}
+                  <ChartLine points={SELF_POINTS} color="#C4C4C4" strokeWidth={2.5} chartW={chartW} chartH={chartH} />
+                  <ChartLine points={COCO_POINTS} color={ACCENT_BLUE} strokeWidth={3.5} chartW={chartW} chartH={chartH} />
+                </>
+              )}
+            </View>
+          </Animated.View>
         </View>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + scaleSize(16) }]}>
@@ -242,10 +244,10 @@ const styles = StyleSheet.create({
     color: DEEP_BLACK,
   },
   chartContainer: {
-    width: CHART_W,
-    height: CHART_H,
-    alignSelf: 'center',
+    width: '100%',
+    height: 180,
     position: 'relative',
+    overflow: 'hidden',
   },
   gridLine: {
     position: 'absolute',

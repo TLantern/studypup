@@ -104,7 +104,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   list: { gap: scaleSize(8) },
   footer: {
-    paddingHorizontal: scaleSize(24),
     paddingTop: scaleSize(12),
   },
   card: {
