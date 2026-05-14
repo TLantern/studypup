@@ -6,6 +6,7 @@ import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/lib/auth-store';
 import { deleteAllLocalKnowledgeGraphs } from '@/lib/knowledge-graph-storage';
+import { deleteAllProNotes } from '@/lib/pro-note-store';
 import { deleteAllLocalMaterials } from '@/lib/study-materials-storage';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 
@@ -102,6 +103,7 @@ export default function SettingsScreen() {
                     onPress: async () => {
                       await deleteAllLocalMaterials();
                       await deleteAllLocalKnowledgeGraphs();
+                      deleteAllProNotes();
                     },
                   },
                 ]

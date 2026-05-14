@@ -24,6 +24,7 @@ export interface ProNote {
   audioUri?: string;
   transcript?: string;
   folderId?: string | null;
+  noteType?: 'todo';
   createdAt?: number;
   updatedAt?: number;
 }
@@ -171,6 +172,14 @@ export function deleteProNote(id: string): void {
   _notes = _notes.filter((n) => n.id !== id);
   persistNotes();
   deleteNoteFromFirebase(id);
+  emit();
+}
+
+export function deleteAllProNotes(): void {
+  const ids = _notes.map((n) => n.id);
+  _notes = [];
+  persistNotes();
+  ids.forEach(deleteNoteFromFirebase);
   emit();
 }
 

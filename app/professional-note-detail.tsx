@@ -65,6 +65,7 @@ export default function ProfessionalNoteDetailScreen() {
   const [, forceTick] = useState(0);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
   const [newFolderMode, setNewFolderMode] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -285,9 +286,13 @@ export default function ProfessionalNoteDetailScreen() {
                   newSound.setOnPlaybackStatusUpdate((status) => {
                     if (status.isLoaded) {
                       setIsPlaying(status.isPlaying);
+                      if (status.durationMillis && status.durationMillis > 0) {
+                        setPlaybackProgress(status.positionMillis / status.durationMillis);
+                      }
                       if (status.didJustFinish) {
                         newSound.setPositionAsync(0);
                         setIsPlaying(false);
+                        setPlaybackProgress(0);
                       }
                     }
                   });
@@ -301,9 +306,15 @@ export default function ProfessionalNoteDetailScreen() {
               <Ionicons name={isPlaying ? 'pause' : 'play'} size={18} color="#FFFFFF" />
             </Pressable>
             <View style={styles.waveform}>
-              {WAVEFORM_BARS.map((h, i) => (
-                <View key={i} style={[styles.waveBar, { height: h }]} />
-              ))}
+              {WAVEFORM_BARS.map((h, i) => {
+                const played = i / WAVEFORM_BARS.length < playbackProgress;
+                return (
+                  <View
+                    key={i}
+                    style={[styles.waveBar, { height: h, backgroundColor: played ? '#000000' : '#9CA3AF' }]}
+                  />
+                );
+              })}
             </View>
           </View>
         ) : null}

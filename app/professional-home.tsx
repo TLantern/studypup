@@ -22,6 +22,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as DocumentPicker from 'expo-document-picker';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
@@ -36,12 +37,14 @@ import {
   getAllFolders,
   getAllProNotes,
   getNotesInFolder,
+  getProNoteById,
   hydrateProNotes,
   subscribeProNotes,
   updateProNote,
   type ProNote,
 } from '@/lib/pro-note-store';
 import { transcribeAudio } from '@/lib/transcription';
+import { RecordingWaveform } from '@/components/RecordingWaveform';
 
 const BG = '#F2F2F4';
 const CARD = '#FFFFFF';
@@ -59,10 +62,15 @@ const FILTERS: { id: FilterTab; label: string }[] = [
 ];
 
 const NEW_NOTE_OPTIONS = [
-  { id: 'record', label: 'New record', emoji: '🎙️', bg: '#FBD3D8' },
+  { id: 'record', label: 'Record Audio', emoji: '🎙️', bg: '#FBD3D8' },
+  { id: 'todo', label: 'To-do List', emoji: '📝', bg: '#D8F3DC' },
   { id: 'youtube', label: 'YouTube Video', emoji: '▶️', bg: '#FBE0B5' },
   { id: 'voice', label: 'Upload voice memo', emoji: '🎵', bg: '#BBD4FB' },
 ] as const;
+
+const TODO_STORAGE_KEY = '@studypup/todo-list';
+
+type TodoItem = { id: string; text: string; done: boolean };
 
 function getContentEmoji(title: string, subtitle: string): string {
   const text = `${title} ${subtitle}`.toLowerCase();
@@ -92,8 +100,14 @@ const SAMPLE_NOTES = [
     title: 'Welcome to the App!',
     subtitle: 'Discover all features today',
     unread: true,
+    createdAt: Date.now(),
   },
 ];
+
+function formatNoteDate(ts: number): string {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function ProfessionalHomeScreen() {
   const insets = useSafeAreaInsets();
@@ -129,6 +143,70 @@ export default function ProfessionalHomeScreen() {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [ytStatus, setYtStatus] = useState<string | null>(null);
   const [ytError, setYtError] = useState<string | null>(null);
+
+  // To-do list
+  const [showTodo, setShowTodo] = useState(false);
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([]);
+  const [todoInput, setTodoInput] = useState('');
+  const [todoTitle, setTodoTitle] = useState('');
+  const [todoCreatedAt, setTodoCreatedAt] = useState<Date>(new Date());
+  const [editingTodoNoteId, setEditingTodoNoteId] = useState<string | null>(null);
+  const todoHydratedRef = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(TODO_STORAGE_KEY).then((raw) => {
+      if (raw) {
+        try { setTodoItems(JSON.parse(raw)); } catch {}
+      }
+      todoHydratedRef.current = true;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!todoHydratedRef.current) return;
+    AsyncStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todoItems)).catch(() => {});
+  }, [todoItems]);
+
+  const closeTodoAndSave = () => {
+    if (todoItems.length > 0 || todoTitle.trim()) {
+      const payload = {
+        title: todoTitle.trim() || 'To-do List',
+        subtitle: 'To-do List',
+        overview: [] as import('@/lib/pro-note-store').ProNoteBullet[],
+        keyTopics: [] as import('@/lib/pro-note-store').ProNoteBullet[],
+        actionItems: todoItems.map((t) => (t.done ? '✓ ' : '') + t.text),
+        finalReflection: '',
+        noteType: 'todo' as const,
+      };
+      if (editingTodoNoteId) {
+        updateProNote(editingTodoNoteId, payload);
+      } else {
+        addProNote({ ...payload, createdAt: todoCreatedAt.getTime() });
+      }
+      setTodoItems([]);
+      setTodoTitle('');
+      setEditingTodoNoteId(null);
+    }
+    setShowTodo(false);
+  };
+
+  const addTodoItem = () => {
+    const text = todoInput.trim();
+    if (!text) return;
+    hapticSelect();
+    setTodoItems((prev) => [...prev, { id: `${Date.now()}`, text, done: false }]);
+    setTodoInput('');
+  };
+
+  const toggleTodoItem = (id: string) => {
+    hapticSelect();
+    setTodoItems((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  };
+
+  const removeTodoItem = (id: string) => {
+    hapticSelect();
+    setTodoItems((prev) => prev.filter((t) => t.id !== id));
+  };
 
   // Recording
   const [showRecord, setShowRecord] = useState(false);
@@ -375,6 +453,10 @@ ${transcript.slice(0, 12000)}`
     setShowNewNote(false);
     if (id === 'record') {
       setTimeout(openRecord, 300);
+    } else if (id === 'todo') {
+      setTodoCreatedAt(new Date());
+      setTodoTitle('');
+      setTimeout(() => setShowTodo(true), 300);
     } else if (id === 'youtube') {
       setYoutubeUrl('');
       setTimeout(() => setShowYouTube(true), 300);
@@ -538,8 +620,8 @@ ${transcript.slice(0, 12000)}`
     const activeFolder = activeFolderId ? folders.find((f) => f.id === activeFolderId) : null;
 
     const allNotes = [
-      ...(activeFolderId ? [] : SAMPLE_NOTES.map((n) => ({ ...n, generated: false }))),
-      ...folderFilter.map((n) => ({ id: n.id, title: n.title, subtitle: n.subtitle, unread: false, generated: true })),
+      ...(activeFolderId ? [] : SAMPLE_NOTES.map((n) => ({ ...n, generated: false, noteType: undefined as 'todo' | undefined }))),
+      ...folderFilter.map((n) => ({ id: n.id, title: n.title, subtitle: n.subtitle, unread: false, generated: true, createdAt: n.createdAt, noteType: n.noteType })),
     ];
 
     const filtered = search.trim()
@@ -574,7 +656,22 @@ ${transcript.slice(0, 12000)}`
             delayLongPress={350}
             onPress={() => {
               hapticSelect();
-              if (note.generated) {
+              if (note.generated && note.noteType === 'todo') {
+                const stored = getProNoteById(note.id);
+                if (stored) {
+                  setTodoTitle(stored.title === 'To-do List' ? '' : stored.title);
+                  setTodoCreatedAt(new Date(stored.createdAt));
+                  setEditingTodoNoteId(stored.id);
+                  setTodoItems(
+                    stored.actionItems.map((text: string, i: number) => ({
+                      id: `${stored.id}_${i}`,
+                      text: text.startsWith('✓ ') ? text.slice(2) : text,
+                      done: text.startsWith('✓ '),
+                    }))
+                  );
+                  setShowTodo(true);
+                }
+              } else if (note.generated) {
                 router.push({
                   pathname: '/professional-note-detail',
                   params: { title: note.title, subtitle: note.subtitle, generated: '1', noteId: note.id },
@@ -592,7 +689,7 @@ ${transcript.slice(0, 12000)}`
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.noteTitle}>{note.title}</Text>
-              <Text style={styles.noteSubtitle}>{note.subtitle}</Text>
+              <Text style={styles.noteSubtitle}>{note.createdAt ? formatNoteDate(note.createdAt) : ''}</Text>
             </View>
             {note.unread && <View style={styles.unreadDot} />}
             <Ionicons name="chevron-forward" size={18} color={DEEP_BLACK} />
@@ -754,23 +851,8 @@ ${transcript.slice(0, 12000)}`
       {showRecord && (
         <Animated.View style={[styles.recordScreen, { paddingTop: insets.top, paddingBottom: insets.bottom + scaleSize(20) }, recordAnimStyle]}>
           {/* Waveform */}
-          <View style={styles.recordWaveWrap}>
-            {Array.from({ length: 40 }, (_, i) => {
-              const norm = recordingMetering != null
-                ? Math.max(0, Math.min(1, (recordingMetering + 160) / 160))
-                : 0.15;
-              const wave = 0.3 + 0.7 * (Math.sin(i * 0.45) * 0.5 + 0.5);
-              const h = Math.max(4, Math.round(norm * wave * 60));
-              return (
-                <View
-                  key={i}
-                  style={[
-                    styles.recordWaveBar,
-                    { height: h, opacity: isPaused ? 0.4 : 1 },
-                  ]}
-                />
-              );
-            })}
+          <View style={{ marginBottom: scaleSize(40) }}>
+            <RecordingWaveform metering={recordingMetering} isPaused={isPaused} />
           </View>
 
           {/* Status + timer */}
@@ -804,6 +886,79 @@ ${transcript.slice(0, 12000)}`
           </View>
         </Animated.View>
       )}
+
+      {/* ── To-do list notepad ── */}
+      <Modal visible={showTodo} transparent animationType="slide" onRequestClose={closeTodoAndSave}>
+        <View style={styles.todoBackdrop}>
+          <View style={[styles.todoSheet, { paddingTop: insets.top + scaleSize(8), paddingBottom: insets.bottom + scaleSize(16) }]}>
+            <View style={styles.todoHeader}>
+              <Pressable hitSlop={12} onPress={closeTodoAndSave} style={styles.todoBackBtn}>
+                <Ionicons name="chevron-back" size={scaleFont(24)} color={DEEP_BLACK} />
+              </Pressable>
+              <Text style={styles.todoDateText}>
+                {todoCreatedAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {' at '}
+                {todoCreatedAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+              </Text>
+              <View style={{ width: scaleSize(32) }} />
+            </View>
+
+            <TextInput
+              value={todoTitle}
+              onChangeText={setTodoTitle}
+              placeholder="New Note"
+              placeholderTextColor={SUBTITLE_GRAY}
+              style={styles.todoTitleInput}
+              returnKeyType="next"
+              autoFocus
+            />
+
+            <View style={styles.todoInputRow}>
+              <TextInput
+                value={todoInput}
+                onChangeText={setTodoInput}
+                placeholder="Add a task…"
+                placeholderTextColor={SUBTITLE_GRAY}
+                style={styles.todoInput}
+                returnKeyType="done"
+                onSubmitEditing={addTodoItem}
+              />
+              <Pressable
+                style={({ pressed }) => [styles.todoAddBtn, pressed && { opacity: 0.85 }]}
+                onPress={addTodoItem}
+              >
+                <Ionicons name="add" size={22} color="#FFFFFF" />
+              </Pressable>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: scaleSize(8) }} showsVerticalScrollIndicator={false}>
+              {todoItems.length === 0 ? (
+                <Text style={styles.todoEmpty}>No tasks yet. Add one above.</Text>
+              ) : (
+                todoItems.map((t) => (
+                  <View key={t.id} style={styles.todoRow}>
+                    <Pressable
+                      style={styles.todoCheck}
+                      hitSlop={8}
+                      onPress={() => toggleTodoItem(t.id)}
+                    >
+                      <View style={[styles.todoCheckbox, t.done && styles.todoCheckboxDone]}>
+                        {t.done && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                      </View>
+                    </Pressable>
+                    <Text style={[styles.todoText, t.done && styles.todoTextDone]} numberOfLines={3}>
+                      {t.text}
+                    </Text>
+                    <Pressable hitSlop={8} onPress={() => removeTodoItem(t.id)}>
+                      <Ionicons name="close" size={18} color={SUBTITLE_GRAY} />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Move note to folder sheet ── */}
       <Modal
@@ -1096,8 +1251,8 @@ const styles = StyleSheet.create({
   },
   noteSubtitle: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(14),
-    color: DEEP_BLACK,
+    fontSize: scaleFont(13),
+    color: '#8E8E93',
   },
   unreadDot: {
     width: 8,
@@ -1295,19 +1450,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
-  recordWaveWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleSize(3),
-    height: scaleSize(80),
-    marginBottom: scaleSize(40),
-    paddingHorizontal: scaleSize(20),
-  },
-  recordWaveBar: {
-    flex: 1,
-    backgroundColor: ACCENT_BLUE,
-    borderRadius: 2,
-  },
   recordStatusWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1371,5 +1513,105 @@ const styles = StyleSheet.create({
     height: scaleSize(26),
     borderRadius: scaleSize(4),
     backgroundColor: '#FFFFFF',
+  },
+  // To-do list notepad
+  todoBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  todoSheet: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: scaleSize(20),
+  },
+  todoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: scaleSize(4),
+  },
+  todoBackBtn: {
+    width: scaleSize(32),
+    alignItems: 'flex-start',
+  },
+  todoDateText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(13),
+    color: SUBTITLE_GRAY,
+    textAlign: 'center',
+  },
+  todoTitleInput: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(26),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+    paddingVertical: scaleSize(8),
+    marginBottom: scaleSize(12),
+    padding: 0,
+  },
+  todoInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(8),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(14),
+    paddingHorizontal: scaleSize(14),
+    paddingVertical: scaleSize(10),
+    marginBottom: scaleSize(12),
+  },
+  todoInput: {
+    flex: 1,
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: DEEP_BLACK,
+    padding: 0,
+  },
+  todoAddBtn: {
+    width: scaleSize(36),
+    height: scaleSize(36),
+    borderRadius: scaleSize(18),
+    backgroundColor: DEEP_BLACK,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todoEmpty: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: SUBTITLE_GRAY,
+    textAlign: 'center',
+    marginTop: scaleSize(40),
+  },
+  todoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(12),
+    backgroundColor: '#FFFFFF',
+    borderRadius: scaleSize(12),
+    paddingVertical: scaleSize(12),
+    paddingHorizontal: scaleSize(14),
+    marginBottom: scaleSize(8),
+  },
+  todoCheck: { padding: scaleSize(2) },
+  todoCheckbox: {
+    width: scaleSize(22),
+    height: scaleSize(22),
+    borderRadius: scaleSize(6),
+    borderWidth: 2,
+    borderColor: DEEP_BLACK,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  todoCheckboxDone: {
+    backgroundColor: DEEP_BLACK,
+  },
+  todoText: {
+    flex: 1,
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: DEEP_BLACK,
+  },
+  todoTextDone: {
+    color: SUBTITLE_GRAY,
+    textDecorationLine: 'line-through',
   },
 });
