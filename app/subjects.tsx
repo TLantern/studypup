@@ -1,16 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { DEEP_BLACK } from '@/lib/onboarding-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
+import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { scaleSize, scaleFont } from '@/lib/responsive';
 import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
-import { ACCENT_BLUE, SUBTITLE_GRAY, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
-import { SuperwallAvailableContext } from '@/lib/superwall';
+import { sharedStyles, ACCENT_BLUE, SF_PRO, DEEP_BLACK, SCREEN_PADDING, OFF_WHITE } from '@/lib/onboarding-theme';
 
 const SUBJECTS = [
   { id: 'biology', label: 'Biology', emoji: '🧬' },
@@ -26,8 +24,6 @@ const SUBJECTS = [
 export default function SubjectsScreen() {
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<string | null>(null);
-  const superwallAvailable = useContext(SuperwallAvailableContext);
-
   useEffect(() => {
     trackPageViewed('ob_student_subjects');
   }, []);
@@ -40,73 +36,96 @@ export default function SubjectsScreen() {
     router.push('/students-improve');
   };
 
-  const handleSkip = () => {
-    hapticSelect();
-    trackEvent('ob_student_subjects_skipped');
-    if (superwallAvailable) {
-      router.push('/paywall');
-    } else {
-      router.replace('/create-account');
-    }
-  };
-
   return (
-    <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: 0 }]}>
-        <View style={styles.progressRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
-          </Pressable>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '28%' }]} />
-          </View>
-        </View>
-
-        <Text style={styles.title}>Which subject are you struggling with most?</Text>
-        <Text style={styles.subtitle}>Pick your biggest challenge right now.</Text>
-
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {SUBJECTS.map((s) => (
-            <Pressable
-              key={s.id}
-              style={({ pressed }) => [
-                styles.card,
-                selected === s.id && styles.cardSelected,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => handleSelect(s.id)}
-            >
-              <Text style={[styles.cardText, selected === s.id && styles.cardTextSelected]}>{s.label}</Text>
-              <Text style={styles.cardEmoji}>{s.emoji}</Text>
-            </Pressable>
-          ))}
+    <OnboardingView header={<OnboardingProgressRow progress={0.28} />}>
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + scaleSize(24) }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.subtitle}>Personalizing your Notario...</Text>
+          <Text style={styles.title}>What is your major or primary area of study?</Text>
+          {SUBJECTS.map((s) => {
+            const isSelected = selected === s.id;
+            return (
+              <Pressable
+                key={s.id}
+                style={({ pressed }) => [styles.card, isSelected && styles.cardSelected, pressed && styles.cardPressed]}
+                onPress={() => handleSelect(s.id)}
+              >
+                <View style={styles.cardRow}>
+                  <View style={[styles.emojiCircle, isSelected && styles.emojiCircleSelected]}>
+                    <Text style={styles.emojiText}>{s.emoji}</Text>
+                  </View>
+                  <Text style={[styles.cardText, isSelected && styles.cardTextSelected]}>{s.label}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
-
-        <Pressable onPress={handleSkip} hitSlop={12} style={[styles.skipBtn, { height: insets.bottom + scaleSize(24), justifyContent: 'center' }]}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
       </View>
     </OnboardingView>
   );
 }
 
+const CARD_RADIUS = scaleSize(14);
+const EMOJI_SIZE = scaleSize(42);
+
 const styles = StyleSheet.create({
-  container: sharedStyles.container,
-  progressTrack: sharedStyles.progressTrack,
-  progressFill: { height: '100%', backgroundColor: ACCENT_BLUE, borderRadius: 6 },
-  title: sharedStyles.title,
-  subtitle: sharedStyles.subtitle,
+  container: {
+    flex: 1,
+    paddingHorizontal: SCREEN_PADDING,
+  },
+  title: { ...sharedStyles.title, textAlign: 'left', paddingBottom: scaleSize(6) },
+  subtitle: { ...sharedStyles.eyebrow, marginBottom: scaleSize(-2) },
   scroll: { flex: 1 },
-  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
-  card: sharedStyles.card,
-  cardSelected: sharedStyles.cardSelected,
-  cardPressed: sharedStyles.cardPressed,
-  cardText: sharedStyles.cardText,
-  cardTextSelected: sharedStyles.cardTextSelected,
-  cardEmoji: { fontSize: scaleFont(20) },
-  progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: scaleSize(36), gap: scaleSize(8) },
-  progressTrack: { flex: 1, height: 10, backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 6 },
-  backBtn: { padding: scaleSize(4) },
-  skipBtn: { alignItems: 'center', paddingTop: scaleSize(8) },
-  skipText: { ...sharedStyles.skipText, fontSize: scaleFont(17), textDecorationLine: 'underline' },
+  list: { gap: scaleSize(8) },
+  card: {
+    backgroundColor: OFF_WHITE,
+    borderRadius: CARD_RADIUS,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.07)',
+    overflow: 'hidden',
+  },
+  cardSelected: {
+    borderColor: ACCENT_BLUE,
+    backgroundColor: '#EEF3FF',
+  },
+  cardPressed: { opacity: 0.72 },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: scaleSize(7),
+    paddingHorizontal: scaleSize(14),
+    gap: scaleSize(14),
+  },
+  emojiCircle: {
+    width: EMOJI_SIZE,
+    height: EMOJI_SIZE,
+    borderRadius: EMOJI_SIZE / 2,
+    backgroundColor: 'rgba(127,168,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(127,168,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiCircleSelected: {
+    backgroundColor: 'rgba(127,168,255,0.18)',
+    borderColor: 'rgba(127,168,255,0.35)',
+  },
+  emojiText: {
+    fontSize: scaleFont(20),
+  },
+  cardText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(16),
+    fontWeight: '500',
+    color: DEEP_BLACK,
+    flex: 1,
+  },
+  cardTextSelected: {
+    color: ACCENT_BLUE,
+    fontWeight: '600',
+  },
 });

@@ -1,3 +1,15 @@
+// TEMPORARILY COMMENTED OUT — students-improve screen disabled
+import { router } from 'expo-router';
+import { useEffect } from 'react';
+
+export default function StudentsImproveScreen() {
+  useEffect(() => {
+    router.replace('/current-gpa');
+  }, []);
+  return null;
+}
+
+/*
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState, useContext } from 'react';
@@ -164,3 +176,4 @@ const styles = StyleSheet.create({
   btn: sharedStyles.continueBtn,
   btnText: sharedStyles.continueBtnText,
 });
+*/
