@@ -191,7 +191,7 @@ export default function GenerateQuizScreen() {
   const fetchFlashcardExplanation = (f: { id: string; front: string; back: string }) => {
     if (flashcardExplanations[f.id]) return;
     callOpenAIText(
-      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right. Return only the reason, starting directly with the explanation (do not start with "This answer" or "Because").',
       `Question: ${f.front}\nCorrect answer: ${f.back}`,
       { maxTokens: 80 }
     ).then((text) => {
@@ -203,7 +203,7 @@ export default function GenerateQuizScreen() {
     if (quizExplanations[q.id]) return;
     const correct = q.options[q.correct_answer_index] ?? '';
     callOpenAIText(
-      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right.',
+      'You are a study tutor. In 1 concise sentence, explain why the correct answer is right. Return only the reason, starting directly with the explanation (do not start with "This answer" or "Because").',
       `Question: ${q.question}\nCorrect answer: ${correct}`,
       { maxTokens: 80 }
     ).then((text) => {
@@ -1006,7 +1006,7 @@ export default function GenerateQuizScreen() {
             {quizInlineExplain ? (
               <Animated.View style={[styles.quizExplainWrap, { opacity: quizExplainOpacity, transform: [{ translateY: quizExplainY }] }]}>
                 <Ionicons name="bulb-outline" size={16} color="#E06C78" style={{ marginRight: 6 }} />
-                <Text style={styles.quizExplainText}>{quizInlineExplain}</Text>
+                <Text style={styles.quizExplainText}>The right answer is {correctIndex + 1} because {quizInlineExplain}</Text>
               </Animated.View>
             ) : null}
           </ScrollView>
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
   question: {
     fontFamily: SF_PRO,
     fontSize: 18,
-    color: OFF_WHITE,
+    color: DEEP_BLACK,
     textAlign: 'center',
     marginBottom: 20,
   },

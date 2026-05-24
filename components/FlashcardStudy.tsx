@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SF_PRO } from '@/lib/onboarding-theme';
 
 const SALMON = '#7FA8FF';
@@ -67,17 +67,16 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
   const lottieRef = useRef<LottieView>(null);
   const [explainText, setExplainText] = useState('');
   const [wrongAnswered, setWrongAnswered] = useState(false);
+  const [showGotIt, setShowGotIt] = useState(false);
   const explainOpacity = useRef(new Animated.Value(0)).current;
   const explainTranslateY = useRef(new Animated.Value(16)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const flipDoneRef = useRef(false);
 
-  // If wrong was pressed but explanation wasn't ready yet, animate it in when it arrives
+  // If wrong was pressed but explanation wasn't ready yet, reveal it once flip is done and it arrives
   useEffect(() => {
-    if (wrongAnswered && !explainText && card?.id && explanations[card.id]) {
-      setExplainText(explanations[card.id]);
-      Animated.parallel([
-        Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(explainTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
-      ]).start();
+    if (wrongAnswered && flipDoneRef.current && !explainText && card?.id && explanations[card.id]) {
+      revealExplanation(explanations[card.id]);
     }
   }, [explanations, card?.id, wrongAnswered, explainText]);
 
@@ -207,8 +206,21 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     setFlipped(false);
     setExplainText('');
     setWrongAnswered(false);
+    setShowGotIt(false);
+    flipDoneRef.current = false;
     explainOpacity.setValue(0);
     explainTranslateY.setValue(16);
+  };
+
+  const revealExplanation = (text: string) => {
+    setExplainText(text);
+    Animated.parallel([
+      Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(explainTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
+    ]).start(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+      setTimeout(() => setShowGotIt(true), 150);
+    });
   };
   const isLastCard = index >= total - 1;
   const next = () => {
@@ -237,13 +249,22 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     onWrongAnswer?.(card);
     runWrong();
     setWrongAnswered(true);
-    const preloaded = explanations[card.id];
-    if (preloaded) {
-      setExplainText(preloaded);
-      Animated.parallel([
-        Animated.timing(explainOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(explainTranslateY, { toValue: 0, duration: 350, useNativeDriver: true }),
-      ]).start();
+
+    const afterFlip = () => {
+      flipDoneRef.current = true;
+      const preloaded = explanations[card.id];
+      if (preloaded) {
+        revealExplanation(preloaded);
+      }
+      // if explanation not ready yet, the useEffect below will fire revealExplanation when it arrives
+    };
+
+    if (!flipped) {
+      // Flip to show the answer first
+      Animated.spring(flipAnim, { toValue: 1, friction: 8, tension: 10, useNativeDriver: true })
+        .start(({ finished }) => { if (finished) { setFlipped(true); afterFlip(); } });
+    } else {
+      afterFlip();
     }
   };
 
@@ -253,7 +274,7 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { borderWidth: borderW, borderColor: flashColor, opacity: flashOpacity }]} />
       </Modal>
       {/* Streak fire */}
-      <Animated.View pointerEvents="none" style={[styles.streakWrap, isTablet && { marginTop: 20, height: 120 }, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
+      <Animated.View pointerEvents="none" style={[styles.streakWrap, isTablet && { marginTop: 20, height: 120 }, wrongAnswered && { height: 0, overflow: 'hidden' }, { opacity: fireOpacity, transform: [{ scale: fireScale }] }]}>
         <Animated.Text style={[styles.streakCount, isTablet && { fontSize: 52 }, { transform: [{ scale: numScale }] }]}>{streak}</Animated.Text>
         <LottieView
           ref={lottieRef}
@@ -264,7 +285,14 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
         />
       </Animated.View>
 
-      <View style={styles.topSection}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.topSection}
+        contentContainerStyle={styles.topSectionContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={[styles.cardWrap, isTablet && { height: 420, marginHorizontal: width * 0.1 }]}>
           {/* Deck cards behind */}
           <View style={[styles.card, styles.deckCard3]} />
@@ -298,15 +326,17 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
             {explainText ? (
               <Animated.View style={[styles.explainWrap, { opacity: explainOpacity, transform: [{ translateY: explainTranslateY }] }]}>
                 <Ionicons name="bulb-outline" size={16} color="#E06C78" style={{ marginRight: 6 }} />
-                <Text style={styles.explainText}>{explainText}</Text>
+                <Text style={styles.explainText}>The right answer is {card.answer} because {explainText}</Text>
               </Animated.View>
             ) : null}
-            <Pressable style={styles.gotItBtn} onPress={next}>
-              <Text style={styles.gotItText}>Got It</Text>
-            </Pressable>
+            {showGotIt ? (
+              <Pressable style={styles.gotItBtn} onPress={next}>
+                <Text style={styles.gotItText}>Got It</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
-      </View>
+      </ScrollView>
 
       <View style={styles.divider} />
       <View style={styles.nav}>
@@ -342,7 +372,7 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, paddingVertical: 24 },
+  wrap: { flex: 1, paddingTop: 24, paddingBottom: 4 },
   streakWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -362,7 +392,8 @@ const styles = StyleSheet.create({
     marginBottom: -8,
     marginRight: -14,
   },
-  topSection: { flex: 1, justifyContent: 'center' },
+  topSection: { flex: 1 },
+  topSectionContent: { flexGrow: 1, justifyContent: 'center', paddingBottom: 8 },
   cardWrap: { height: 240, marginBottom: 24 },
   card: {
     backgroundColor: '#fff',
@@ -463,7 +494,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
   },
   navBtn: {
     width: 48,
