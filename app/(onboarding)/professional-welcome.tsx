@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   list: {
-    gap: scaleSize(12),
+    gap: scaleSize(8),
     paddingBottom: scaleSize(16),
   },
   progressRow: {

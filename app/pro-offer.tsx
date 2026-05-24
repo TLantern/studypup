@@ -9,6 +9,7 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated';
 import { trackPageViewed } from '@/lib/analytics';
+import { isPaywallBypassed } from '@/lib/dev-bypass';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 import { SuperwallAvailableContext, usePlacementHook } from '@/lib/superwall';
 
@@ -81,10 +82,10 @@ export default function ProOfferScreen() {
   }, []);
 
   const handleAnimDone = useCallback(() => {
-    if (superwallAvailable && usePlacementHook) {
-      setPaywallActive(true);
-    } else {
+    if (isPaywallBypassed() || !(superwallAvailable && usePlacementHook)) {
       router.replace('/create-account');
+    } else {
+      setPaywallActive(true);
     }
   }, [superwallAvailable]);
 

@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
+import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { ACCENT_BLUE, DEEP_BLACK, OFF_WHITE, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
 import { scaleSize, scaleFont } from '@/lib/responsive';
@@ -32,21 +32,12 @@ export default function FocusStruggleScreen() {
   };
 
   return (
-    <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleSize(24), paddingBottom: insets.bottom + scaleSize(24) }]}>
-        <View style={styles.progressRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
-          </Pressable>
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
-          </View>
-        </View>
-
-        <Text style={styles.title}>How often do you struggle to focus or "zone out" in meetings?</Text>
+    <OnboardingView header={<OnboardingProgressRow progress={0.72} />}>
+      <View style={styles.container}>
         <Text style={styles.subtitle}>Personalizing your Notario...</Text>
+        <Text style={styles.title}>How often do you struggle to focus or "zone out" in meetings?</Text>
 
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + scaleSize(24) }]} showsVerticalScrollIndicator={false}>
           {OPTIONS.map((o) => (
             <Pressable
               key={o.id}
@@ -87,10 +78,10 @@ const styles = StyleSheet.create({
     backgroundColor: ACCENT_BLUE,
     borderRadius: 6,
   },
-  title: { ...sharedStyles.title, fontSize: scaleFont(20) },
-  subtitle: sharedStyles.subtitle,
+  title: { ...sharedStyles.title, textAlign: 'left', paddingBottom: scaleSize(10) },
+  subtitle: sharedStyles.eyebrow,
   scroll: { flex: 1 },
-  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
+  list: { gap: scaleSize(8) },
   card: {
     backgroundColor: OFF_WHITE,
     borderRadius: scaleSize(8),

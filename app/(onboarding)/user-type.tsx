@@ -1,9 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
+import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding, type UserTag } from '@/lib/onboarding-storage';
 import { writeUserTag } from '@/lib/user-profile';
 import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
@@ -21,12 +21,11 @@ const STUDENT_IDS = new Set(['undergraduate', 'highschool', 'middleschool', 'gra
 
 const ROLES = [
   { id: 'professional', label: 'Professional', emoji: '💼' },
-  { id: 'undergraduate', label: 'Undergraduate Student', emoji: '🎓' },
+  { id: 'undergraduate', label: 'College / University Student', emoji: '🎓' },
   { id: 'highschool', label: 'High School Student', emoji: '📚' },
-  { id: 'middleschool', label: 'Middle School Student', emoji: '🎒' },
   { id: 'graduate', label: 'Graduate Student', emoji: '🔬' },
   { id: 'educator', label: 'Educator', emoji: '🍎' },
-  { id: 'other', label: 'Other', emoji: '✨' },
+  { id: 'other', label: 'Something else', emoji: '💡' },
 ];
 
 export default function GradeLevelScreen() {
@@ -54,37 +53,29 @@ export default function GradeLevelScreen() {
   };
 
   return (
-    <OnboardingView>
-      <View style={[styles.container, { paddingTop: insets.top + scaleVertical(24), paddingBottom: insets.bottom + scaleVertical(24) }]}>
-        <View style={styles.progressRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={28} color={DEEP_BLACK} />
-          </Pressable>
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
-          </View>
-        </View>
-
-        <Text style={styles.title}>What describes you best?</Text>
+    <OnboardingView header={<OnboardingProgressRow progress={0.14} />}>
+      <View style={styles.container}>
         <Text style={styles.subtitle}>Personalizing your Notario...</Text>
+        <Text style={styles.title}>What describes you best?</Text>
 
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {ROLES.map((role) => (
-            <Pressable
-              key={role.id}
-              style={({ pressed }) => [
-                styles.card,
-                selected === role.id && styles.cardSelected,
-                pressed && styles.cardPressed,
-              ]}
-              onPress={() => handleSelect(role.id)}
-            >
-              <Text style={[styles.cardText, selected === role.id && styles.cardTextSelected]}>
-                {role.label}
-              </Text>
-              <Text style={styles.cardEmoji}>{role.emoji}</Text>
-            </Pressable>
-          ))}
+        <ScrollView style={styles.scroll} contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + scaleSize(24), flexGrow: 1, justifyContent: 'flex-end' }]} showsVerticalScrollIndicator={false}>
+          {ROLES.map((role) => {
+            const isSelected = selected === role.id;
+            return (
+              <Pressable
+                key={role.id}
+                style={({ pressed }) => [styles.card, isSelected && styles.cardSelected, pressed && styles.cardPressed]}
+                onPress={() => handleSelect(role.id)}
+              >
+                <View style={styles.cardRow}>
+                  <View style={[styles.emojiCircle, isSelected && styles.emojiCircleSelected]}>
+                    <Text style={styles.emojiText}>{role.emoji}</Text>
+                  </View>
+                  <Text style={[styles.cardText, isSelected && styles.cardTextSelected]}>{role.label}</Text>
+                </View>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </View>
     </OnboardingView>
@@ -120,59 +111,69 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(26),
+    fontSize: scaleFont(22),
     fontWeight: '700',
     color: DEEP_BLACK,
     letterSpacing: -0.5,
     marginBottom: scaleSize(8),
+    paddingBottom: scaleSize(10)
   },
   subtitle: {
     fontFamily: SF_PRO,
     fontSize: scaleFont(15),
-    color: SUBTITLE_GRAY,
+    color: ACCENT_BLUE,
     fontWeight: '400',
-    marginBottom: scaleVertical(isSmallDevice ? 16 : 28),
+    marginBottom: scaleSize(2),
   },
   scroll: {
     flex: 1,
   },
   list: {
-    gap: scaleSize(12),
-    paddingBottom: scaleSize(16),
+    gap: scaleSize(8),
   },
   card: {
     backgroundColor: OFF_WHITE,
-    borderRadius: scaleSize(8),
-    paddingVertical: scaleSize(18),
-    paddingHorizontal: scaleSize(20),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    borderRadius: scaleSize(14),
     borderWidth: 1.5,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 0,
-    elevation: 5,
+    borderColor: 'rgba(0,0,0,0.07)',
+    overflow: 'hidden',
   },
   cardSelected: {
     borderColor: ACCENT_BLUE,
     backgroundColor: '#EEF3FF',
   },
-  cardPressed: {
-    opacity: 0.75,
+  cardPressed: { opacity: 0.72 },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: scaleSize(7),
+    paddingHorizontal: scaleSize(14),
+    gap: scaleSize(14),
   },
+  emojiCircle: {
+    width: scaleSize(42),
+    height: scaleSize(42),
+    borderRadius: scaleSize(21),
+    backgroundColor: 'rgba(127,168,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(127,168,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiCircleSelected: {
+    backgroundColor: 'rgba(127,168,255,0.18)',
+    borderColor: 'rgba(127,168,255,0.35)',
+  },
+  emojiText: { fontSize: scaleFont(20) },
   cardText: {
     fontFamily: SF_PRO,
     fontSize: scaleFont(16),
-    fontWeight: '600',
+    fontWeight: '500',
     color: DEEP_BLACK,
+    flex: 1,
   },
   cardTextSelected: {
     color: ACCENT_BLUE,
-  },
-  cardEmoji: {
-    fontSize: scaleFont(20),
+    fontWeight: '600',
   },
 });

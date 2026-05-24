@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   title: sharedStyles.title,
   subtitle: sharedStyles.subtitle,
   scroll: { flex: 1 },
-  list: { gap: scaleSize(12), paddingBottom: scaleSize(16) },
+  list: { gap: scaleSize(8), paddingBottom: scaleSize(16) },
   card: {
     backgroundColor: OFF_WHITE,
     borderRadius: scaleSize(8),

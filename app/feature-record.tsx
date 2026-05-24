@@ -133,18 +133,18 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(34),
+    fontSize: scaleFont(30),
     fontWeight: '800',
     color: DEEP_BLACK,
     letterSpacing: -0.8,
-    marginBottom: scaleSize(10),
+    marginBottom: scaleSize(4),
   },
   titleAccent: {
     color: ACCENT_BLUE,
   },
   subtitle: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(16),
+    fontSize: scaleFont(13),
     color: SUBTITLE_GRAY,
     marginBottom: scaleSize(48),
   },
