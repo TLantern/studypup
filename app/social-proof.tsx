@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
 import { OnboardingView } from '@/components/OnboardingView';
 import { getOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
+import { RESPONSIVE, scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   progressRow: {
     flexDirection: 'row',

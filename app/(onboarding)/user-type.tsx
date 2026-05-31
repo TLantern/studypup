@@ -6,7 +6,7 @@ import { OnboardingView } from '@/components/OnboardingView';
 import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding, type UserTag } from '@/lib/onboarding-storage';
 import { writeUserTag } from '@/lib/user-profile';
-import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
+import { RESPONSIVE, scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed, trackEvent, getPostHogClient } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   progressRow: {
     flexDirection: 'row',

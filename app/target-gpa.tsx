@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { updateOnboarding, getOnboarding } from '@/lib/onboarding-storage';
-import { scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
+import { RESPONSIVE, scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
 import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticSelect, hapticContinue } from '@/lib/haptics';
 import { ACCENT_BLUE, ACCENT_BLUE_TINT, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   eyebrow: sharedStyles.eyebrow,
   title: {

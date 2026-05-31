@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   Alert,
@@ -15,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as StoreReview from 'expo-store-review';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
@@ -55,7 +57,7 @@ const WAVEFORM_BARS = Array.from({ length: 50 }, (_, i) =>
 
 export default function ProfessionalNoteDetailScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ title?: string; subtitle?: string; generated?: string; noteId?: string }>();
+  const params = useLocalSearchParams<{ title?: string; subtitle?: string; generated?: string; noteId?: string; firstRecord?: string }>();
   const [chatOpen, setChatOpen] = useState(false);
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -79,6 +81,16 @@ export default function ProfessionalNoteDetailScreen() {
 
   useEffect(() => {
     trackPageViewed('professional_note_detail');
+  }, []);
+
+  useEffect(() => {
+    if (params.generated !== '1') return;
+    const REVIEW_KEY = '@studypup/review_requested';
+    AsyncStorage.getItem(REVIEW_KEY).then((done) => {
+      if (done) return;
+      StoreReview.requestReview().catch(() => {});
+      AsyncStorage.setItem(REVIEW_KEY, '1').catch(() => {});
+    });
   }, []);
 
   useEffect(() => {
@@ -635,6 +647,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: DEEP_BLACK,
     letterSpacing: -0.4,
+    textAlign: 'center',
   },
   titleSecond: {
     fontFamily: SF_PRO,
@@ -643,6 +656,7 @@ const styles = StyleSheet.create({
     color: DEEP_BLACK,
     letterSpacing: -0.4,
     marginBottom: scaleSize(12),
+    textAlign: 'center',
   },
   metaRow: {
     flexDirection: 'row',

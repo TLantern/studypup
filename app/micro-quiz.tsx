@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize } from '@/lib/responsive';
+import { RESPONSIVE, scaleFont, scaleSize } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { OnboardingView } from '@/components/OnboardingView';
 import { DEEP_BLACK, OFF_WHITE, ACCENT_BLUE, SUBTITLE_GRAY, CARD_SHADOW, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   dotsRow: {
     flexDirection: 'row',

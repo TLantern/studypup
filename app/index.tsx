@@ -8,7 +8,7 @@ import { SuperwallAvailableContext } from '@/lib/superwall';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticContinue } from '@/lib/haptics';
 import { useAuth } from '@/lib/auth-store';
-import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH, isSmallDevice } from '@/lib/responsive';
+import { scaleFont, scaleSize, scaleVertical, SCREEN_WIDTH, SCREEN_HEIGHT, isSmallDevice, isTablet, MAX_CONTENT_WIDTH } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import LottieView from 'lottie-react-native';
 import { welcomeIconRef } from '@/lib/welcomeIconRef';
@@ -22,7 +22,8 @@ const SF_PRO = Platform.select({ ios: 'System', android: 'sans-serif', default: 
 
 const ICON_SIZE = Math.min(SCREEN_WIDTH * 0.22, 96);
 const LOTTIE_ASPECT = 572 / 965;
-const WAVE_HEIGHT = SCREEN_WIDTH * LOTTIE_ASPECT * 2.2;
+const WAVE_HEIGHT = Math.min(SCREEN_WIDTH * LOTTIE_ASPECT * 2.2, SCREEN_HEIGHT * 0.45);
+const WAVE_LEFT_OFFSET = isTablet ? -Math.round((SCREEN_WIDTH - MAX_CONTENT_WIDTH) / 2) : 0;
 
 
 export default function WelcomeScreen() {
@@ -204,8 +205,7 @@ const styles = StyleSheet.create({
   },
   waveWrap: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    left: WAVE_LEFT_OFFSET,
     bottom: scaleVertical(isSmallDevice ? 60 : 100),
     height: WAVE_HEIGHT,
     width: SCREEN_WIDTH,

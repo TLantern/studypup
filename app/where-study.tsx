@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProgressBar } from '@/components/ProgressBar';
 import { updateOnboarding } from '@/lib/onboarding-storage';
 import { hapticContinue } from '@/lib/haptics';
-import { scaleFont, scaleSize, scaleVertical } from '@/lib/responsive';
+import { RESPONSIVE, scaleFont, scaleSize, scaleVertical } from '@/lib/responsive';
 import { OnboardingView } from '@/components/OnboardingView';
 import { SF_PRO } from '@/lib/onboarding-theme';
 
@@ -247,7 +247,7 @@ export default function WhereStudyScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, paddingHorizontal: 24 },
+  container: { flex: 1, paddingHorizontal: RESPONSIVE.horizontalPadding },
   title: { fontFamily: SF_PRO, fontSize: scaleFont(28), color: '#000', textAlign: 'center', marginBottom: scaleVertical(24) },
   dropdownRow: { marginBottom: scaleVertical(52) },
   dropdownBtn: {

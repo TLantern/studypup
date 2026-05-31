@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import LottieView from 'lottie-react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -21,6 +22,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import RECORDING_PHRASES_JSON from '../recording-phrases.json';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
@@ -45,6 +47,127 @@ import {
 } from '@/lib/pro-note-store';
 import { transcribeAudio } from '@/lib/transcription';
 import { RecordingWaveform } from '@/components/RecordingWaveform';
+
+const RECORDING_TIPS = [
+  "Say names out loud, it helps attribute who said what",
+  "State action items clearly — who, what, and by when",
+  "Summarize decisions out loud before moving on",
+  "Spell out acronyms the first time you use them",
+  "The more context you speak, the richer your notes",
+  "State the date and parties present at the start",
+  "Speak at a normal pace — rushing creates gaps",
+  "Avoid talking over each other for cleaner transcription",
+];
+
+function FirstRecordingOverlay({ almostDone }: { almostDone: boolean }) {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const indexRef = useRef(0);
+  const lottieRef = useRef<LottieView>(null);
+
+  useEffect(() => { lottieRef.current?.play(); }, []);
+
+  useEffect(() => {
+    if (almostDone) return;
+    const t = setTimeout(() => {
+      opacity.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }, () => {
+        const next = (indexRef.current + 1) % RECORDING_TIPS.length;
+        indexRef.current = next;
+        runOnJS(setPhraseIndex)(next);
+        translateY.value = 10;
+        opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+        translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) });
+      });
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [phraseIndex, almostDone]);
+
+  useEffect(() => {
+    if (!almostDone) return;
+    opacity.value = withTiming(0, { duration: 300 }, () => {
+      opacity.value = withTiming(1, { duration: 300 });
+    });
+  }, [almostDone]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <View style={firstRecStyles.container}>
+      <LottieView
+        ref={lottieRef}
+        source={require('../transcribe.json')}
+        style={firstRecStyles.lottie}
+        loop
+      />
+      <Animated.Text style={[firstRecStyles.text, animStyle]}>
+        {almostDone ? 'Almost done...' : RECORDING_TIPS[phraseIndex]}
+      </Animated.Text>
+    </View>
+  );
+}
+
+const firstRecStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  lottie: { width: 280, height: 280 },
+  text: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    marginTop: 24,
+  },
+});
+
+function RotatingPhrase() {
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const indexRef = useRef(0);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      opacity.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) }, () => {
+        const next = (indexRef.current + 1) % RECORDING_PHRASES_JSON.length;
+        indexRef.current = next;
+        runOnJS(setPhraseIndex)(next);
+        translateY.value = 10;
+        opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.ease) });
+        translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.ease) });
+      });
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [phraseIndex]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.Text style={[rotatingPhraseStyle, animStyle]}>
+      {RECORDING_PHRASES_JSON[phraseIndex]}
+    </Animated.Text>
+  );
+}
+
+const rotatingPhraseStyle = {
+  fontFamily: Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' }),
+  fontSize: scaleFont(22),
+  fontWeight: '600' as const,
+  color: '#9CA3AF',
+  textAlign: 'center' as const,
+  paddingHorizontal: scaleSize(32),
+};
 
 const BG = '#F2F2F4';
 const CARD = '#FFFFFF';
@@ -327,6 +450,8 @@ export default function ProfessionalHomeScreen() {
   // Recording-save state
   const [savingRecording, setSavingRecording] = useState(false);
   const [savingMessage, setSavingMessage] = useState<string | null>(null);
+  const [showFirstRecordingOverlay, setShowFirstRecordingOverlay] = useState(false);
+  const [overlayAlmostDone, setOverlayAlmostDone] = useState(false);
 
   const generateNoteFromTranscript = useCallback(
     async (transcript: string, extras: Partial<ProNote> = {}): Promise<string> => {
@@ -389,8 +514,9 @@ ${transcript.slice(0, 12000)}`
     if (!rec) return;
     stopTimer();
     deactivateKeepAwake();
-    setSavingRecording(true);
-    setSavingMessage('Stopping recording…');
+
+    setShowFirstRecordingOverlay(true);
+
     let uri: string | null = null;
     try {
       await rec.stopAndUnloadAsync();
@@ -405,6 +531,7 @@ ${transcript.slice(0, 12000)}`
     setRecordingMetering(null);
 
     if (!uri) {
+      setShowFirstRecordingOverlay(false);
       setSavingRecording(false);
       setSavingMessage(null);
       recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
@@ -415,11 +542,12 @@ ${transcript.slice(0, 12000)}`
     }
 
     try {
-      setSavingMessage('Transcribing audio…');
       const transcript = await transcribeAudio(uri);
       if (!transcript.trim()) throw new Error('Transcription returned no text.');
-      setSavingMessage('Generating notes…');
+      setOverlayAlmostDone(true);
       const noteId = await generateNoteFromTranscript(transcript, { audioUri: uri });
+      setShowFirstRecordingOverlay(false);
+      setOverlayAlmostDone(false);
       setSavingRecording(false);
       setSavingMessage(null);
       recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
@@ -430,6 +558,8 @@ ${transcript.slice(0, 12000)}`
         params: { generated: '1', noteId },
       });
     } catch (e: any) {
+      setShowFirstRecordingOverlay(false);
+      setOverlayAlmostDone(false);
       setSavingRecording(false);
       setSavingMessage(null);
       recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
@@ -850,8 +980,13 @@ ${transcript.slice(0, 12000)}`
       {/* ── Recording screen ── */}
       {showRecord && (
         <Animated.View style={[styles.recordScreen, { paddingTop: insets.top, paddingBottom: insets.bottom + scaleSize(20) }, recordAnimStyle]}>
+          {/* Rotating phrase — centered in the space above the waveform */}
+          <View style={styles.rotatingPhraseWrap}>
+            <RotatingPhrase />
+          </View>
+
           {/* Waveform */}
-          <View style={{ marginBottom: scaleSize(40) }}>
+          <View style={{ marginBottom: scaleSize(80) }}>
             <RecordingWaveform metering={recordingMetering} isPaused={isPaused} />
           </View>
 
@@ -864,9 +999,9 @@ ${transcript.slice(0, 12000)}`
 
           {/* Controls */}
           <View style={styles.recordControlsRow}>
-            <Pressable style={styles.recordCtrlBtn} onPress={cancelRecord}>
+            <Pressable style={[styles.recordCtrlBtn, { marginTop: scaleSize(28) }]} onPress={cancelRecord}>
               <View style={styles.recordCtrlCircle}>
-                <Text style={{ fontSize: scaleFont(18) }}>✕</Text>
+                <Ionicons name="close" size={scaleFont(22)} color={DEEP_BLACK} />
               </View>
               <Text style={styles.recordCtrlLabel}>Cancel</Text>
             </Pressable>
@@ -877,9 +1012,9 @@ ${transcript.slice(0, 12000)}`
               </View>
             </Pressable>
 
-            <Pressable style={styles.recordCtrlBtn} onPress={isPaused ? resumeRecording : pauseRecording}>
+            <Pressable style={[styles.recordCtrlBtn, { marginTop: scaleSize(28) }]} onPress={isPaused ? resumeRecording : pauseRecording}>
               <View style={styles.recordCtrlCircle}>
-                <Text style={{ fontSize: scaleFont(18) }}>{isPaused ? '▶' : '⏸'}</Text>
+                <Ionicons name={isPaused ? 'play' : 'pause'} size={scaleFont(22)} color={DEEP_BLACK} />
               </View>
               <Text style={styles.recordCtrlLabel}>{isPaused ? 'Resume' : 'Pause'}</Text>
             </Pressable>
@@ -1039,6 +1174,11 @@ ${transcript.slice(0, 12000)}`
             </View>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* ── First-recording full-screen overlay ── */}
+      <Modal visible={showFirstRecordingOverlay} animationType="fade" presentationStyle="fullScreen">
+        <FirstRecordingOverlay almostDone={overlayAlmostDone} />
       </Modal>
 
       {/* ── Saving overlay (transcription / generation) ── */}
@@ -1450,6 +1590,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
+  rotatingPhraseWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: '48%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   recordStatusWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1464,22 +1613,22 @@ const styles = StyleSheet.create({
   },
   recordStatusText: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(13),
+    fontSize: scaleFont(11),
     fontWeight: '700',
     color: '#EF4444',
     letterSpacing: 1,
   },
   recordTimer: {
     fontFamily: SF_PRO,
-    fontSize: scaleFont(52),
+    fontSize: scaleFont(36),
     fontWeight: '700',
     color: DEEP_BLACK,
     letterSpacing: -1,
-    marginBottom: scaleSize(48),
+    marginBottom: scaleSize(16),
   },
   recordControlsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     width: '100%',
     paddingHorizontal: scaleSize(40),

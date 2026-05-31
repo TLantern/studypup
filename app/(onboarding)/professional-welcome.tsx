@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
 import { updateOnboarding } from '@/lib/onboarding-storage';
-import { scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
+import { RESPONSIVE, scaleFont, scaleSize, scaleVertical, isSmallDevice } from '@/lib/responsive';
 import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
   },
   progressTrack: {
     flex: 1,

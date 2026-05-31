@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { tabletContainerStyle, scaleSize } from '@/lib/responsive';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -53,6 +54,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.inner, tabletContainerStyle]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#000" />
@@ -83,22 +85,24 @@ export default function NotificationsScreen() {
           ))}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F5' },
+  inner: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
   },
   backBtn: { width: 40, alignItems: 'flex-start' },
   title: { fontFamily: SF_PRO, fontSize: 22, color: '#000' },
-  scroll: { paddingHorizontal: 20, paddingBottom: 40 },
+  scroll: { paddingHorizontal: scaleSize(20), paddingBottom: scaleSize(40) },
   sectionTitle: {
     fontFamily: SF_PRO,
     fontSize: 16,
@@ -121,8 +125,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(16),
   },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   rowText: { flex: 1, marginRight: 12 },

@@ -7,7 +7,7 @@ import { OnboardingProgressRow } from '@/components/OnboardingProgressRow';
 import { hapticContinue } from '@/lib/haptics';
 import { trackPageViewed } from '@/lib/analytics';
 import { ACCENT_BLUE, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
-import { scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
+import { RESPONSIVE, scaleSize, scaleFont, scaleVertical } from '@/lib/responsive';
 
 // Normalized [x, y]: x 0→1 left→right, y 0→1 bottom→top
 const COCO_POINTS: [number, number][] = [
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: scaleSize(24),
+    paddingHorizontal: RESPONSIVE.horizontalPadding,
     justifyContent: 'space-between',
   },
   content: {

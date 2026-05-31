@@ -12,7 +12,7 @@ export const isTallDevice = SCREEN_HEIGHT > 900;  // Pro Max, etc.
 
 // Width ratio — capped at 1.2x for phones, 1.0x for tablets (prevent runaway scaling)
 const widthRatio = isTablet
-  ? Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.0)
+  ? Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.3)
   : Math.min(SCREEN_WIDTH / BASE_WIDTH, 1.2);
 
 // Height ratio — capped at 1.15x to avoid excessive vertical spacing on tall phones
