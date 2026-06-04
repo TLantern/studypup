@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as StoreReview from 'expo-store-review';
-import { trackPageViewed } from '@/lib/analytics';
 import { hapticSelect } from '@/lib/haptics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 import {
@@ -108,7 +107,7 @@ const WAVEFORM_BARS = Array.from({ length: 50 }, (_, i) =>
   Math.max(4, Math.round(Math.abs(Math.sin(i * 0.6) * 20) + Math.random() * 10))
 );
 
-export default function ProfessionalNoteDetailScreen() {
+export default function ViralProfessionalNoteDetailScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ title?: string; subtitle?: string; generated?: string; noteId?: string; firstRecord?: string }>();
   const [chatOpen, setChatOpen] = useState(false);
@@ -132,9 +131,6 @@ export default function ProfessionalNoteDetailScreen() {
     };
   }, [sound]);
 
-  useEffect(() => {
-    trackPageViewed('professional_note_detail');
-  }, []);
 
   useEffect(() => {
     if (params.generated !== '1') return;
@@ -256,7 +252,7 @@ export default function ProfessionalNoteDetailScreen() {
     hapticSelect();
     updateProNote(note.id, { folderId });
     closeFolderPicker();
-    router.replace({ pathname: '/professional-home', params: { openFolders: '1' } });
+    router.replace({ pathname: '/viral-professional-home', params: { openFolders: '1' } });
   };
 
   const handleCreateFolderAndAssign = () => {
@@ -266,7 +262,7 @@ export default function ProfessionalNoteDetailScreen() {
     const folder = createFolder(name);
     updateProNote(note.id, { folderId: folder.id });
     closeFolderPicker();
-    router.replace({ pathname: '/professional-home', params: { openFolders: '1' } });
+    router.replace({ pathname: '/viral-professional-home', params: { openFolders: '1' } });
   };
 
   if (studying) {

@@ -90,6 +90,9 @@ export default function RootLayout() {
               'quizzes',
               'professional-home',
               'professional-note-detail',
+              'viral-professional-home',
+              'viral-professional-note-detail',
+              'viral-transcribing',
             ].map((name) => (
               <Stack.Screen key={name} name={name} options={{ animation: 'none' }} />
             ))}

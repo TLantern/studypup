@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OnboardingView } from '@/components/OnboardingView';
@@ -9,7 +9,6 @@ import { RESPONSIVE, scaleSize, scaleFont, scaleVertical } from '@/lib/responsiv
 import { trackPageViewed, trackEvent } from '@/lib/analytics';
 import { hapticSelect, hapticContinue } from '@/lib/haptics';
 import { ACCENT_BLUE, ACCENT_BLUE_TINT, DEEP_BLACK, SF_PRO, sharedStyles } from '@/lib/onboarding-theme';
-import { SuperwallAvailableContext } from '@/lib/superwall';
 
 const MIN_GPA = 0.0;
 const MAX_GPA = 4.0;
@@ -19,7 +18,6 @@ const DEFAULT_GPA = 2.5;
 export default function CurrentGpaScreen() {
   const insets = useSafeAreaInsets();
   const [gpa, setGpa] = useState(DEFAULT_GPA);
-  const superwallAvailable = useContext(SuperwallAvailableContext);
 
   useEffect(() => {
     trackPageViewed('ob_student_current_gpa');
@@ -41,15 +39,8 @@ export default function CurrentGpaScreen() {
     router.push('/target-gpa');
   };
 
-  const handleSkip = () => {
-    hapticSelect();
-    trackEvent('ob_student_current_gpa_skipped');
-    if (superwallAvailable) router.push('/paywall');
-    else router.replace('/create-account');
-  };
-
   return (
-    <OnboardingView header={<OnboardingProgressRow progress={0.70} onSkip={handleSkip} />}>
+    <OnboardingView header={<OnboardingProgressRow progress={0.70} />}>
       <View style={styles.container}>
         <Text style={styles.eyebrow}>Personalizing your Notario...</Text>
         <Text style={styles.title}>What is your GPA now?</Text>

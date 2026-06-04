@@ -20,6 +20,7 @@ export async function transcribeAudio(uri: string): Promise<string> {
       name: 'audio.m4a',
     } as any);
     formData.append('model', 'gpt-4o-transcribe');
+    formData.append('prompt', 'When multiple speakers are present, label each turn as "Speaker 1:", "Speaker 2:", "Speaker 3:", etc. on its own line before the spoken text.');
 
     const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
