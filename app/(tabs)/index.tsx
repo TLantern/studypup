@@ -29,7 +29,6 @@ import { getOnboarding } from '@/lib/onboarding-storage';
 import { useAuth } from '@/lib/auth-store';
 import { sendReauthOtp, reauthenticateWithOtp } from '@/lib/auth';
 import { trackPageViewed } from '@/lib/analytics';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import { PaymentWarningModal } from '@/components/PaymentWarningModal';
 import { schedulePaymentWarningNotifications } from '@/lib/notifications';
 import { useBillingRetryCheck } from '@/lib/useBillingRetryCheck';
@@ -59,9 +58,9 @@ const SALMON_DARK = ACCENT_BLUE_PRESSED;
 const SHEET_OPTIONS = [
   { id: 'record',  label: 'Record',      emoji: '🎙️', bg: '#EDE7F6' },
   { id: 'camera',  label: 'Camera',      emoji: '📷', bg: '#FFF3E0' },
-  { id: 'photos',  label: 'Photos',      emoji: '🖼️', bg: '#E3F2FD' },
-  { id: 'upload',  label: 'File Upload', emoji: '📄', bg: '#E0F2F1' },
-  { id: 'notes',   label: 'Notes',       emoji: '🔗', bg: '#F3E5F5' },
+  { id: 'photos',           label: 'Photos',           emoji: '🖼️', bg: '#E3F2FD' },
+  { id: 'upload',           label: 'File Upload',      emoji: '📄', bg: '#E0F2F1' },
+  { id: 'notes',            label: 'Notes',            emoji: '🔗', bg: '#F3E5F5' },
 ];
 
 export default function HomeScreen() {
@@ -82,7 +81,6 @@ export default function HomeScreen() {
   const { signOut, deleteUser, user } = useAuth();
 
   useBillingRetryCheck(() => setShowPaymentWarning(true));
-  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [showReauthModal, setShowReauthModal] = useState(false);
   const [reauthCode, setReauthCode] = useState('');
   const [reauthBusy, setReauthBusy] = useState(false);
@@ -90,17 +88,6 @@ export default function HomeScreen() {
   const [reauthVerificationId, setReauthVerificationId] = useState<string | null>(null);
   const [reauthCooldown, setReauthCooldown] = useState(0);
 
-  const firebaseConfig = useMemo(
-    () => ({
-      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-    }),
-    []
-  );
   const unlimitedShimmer = useSharedValue(0);
   const unlimitedScale = useSharedValue(1);
   const [savedRecordings, setSavedRecordings] = useState<{ uri: string; name: string; duration: number }[]>([]);
@@ -1465,7 +1452,7 @@ export default function HomeScreen() {
                   setReauthBusy(true);
                   setReauthError(null);
                   try {
-                    const vid = await sendReauthOtp(user.phoneNumber, recaptchaRef);
+                    const vid = await sendReauthOtp(user.phoneNumber);
                     setReauthVerificationId(vid);
                     setReauthCooldown(45);
                   } catch (err: any) {
@@ -1516,7 +1503,6 @@ export default function HomeScreen() {
             )}
             {reauthError ? <Text style={{ color: '#FF4444', marginTop: 12, fontFamily: 'Fredoka_400Regular' }}>{reauthError}</Text> : null}
           </View>
-          <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
         </View>
       </Modal>
 

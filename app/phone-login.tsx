@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, StyleSheet, Text, TextInput, View, TouchableWithoutFeedback, Keyboard, Modal, FlatList, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth, getStoredPhoneNumber } from '@/lib/auth-store';
 import { checkUserRegistered } from '@/lib/user-profile';
 import { confirmPhoneOtp, startPhoneSignIn } from '@/lib/auth';
@@ -55,7 +54,6 @@ export default function PhoneLoginScreen() {
   const params = useLocalSearchParams<{ then?: string; mode?: string }>();
   const { uid, user, signOut } = useAuth();
   const [noAccountModal, setNoAccountModal] = useState(false);
-  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+1');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -66,18 +64,6 @@ export default function PhoneLoginScreen() {
   const [cooldown, setCooldown] = useState(0);
   const [resendCount, setResendCount] = useState(0);
   const [phoneLoadedFromStorage, setPhoneLoadedFromStorage] = useState(false);
-
-  const firebaseConfig = useMemo(
-    () => ({
-      apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-    }),
-    []
-  );
 
   useEffect(() => {
     trackPageViewed('phone_login');
@@ -151,7 +137,7 @@ export default function PhoneLoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await startPhoneSignIn(normalizePhoneE164(phone), recaptchaRef);
+      await startPhoneSignIn(normalizePhoneE164(phone));
       setStage('otp');
       setCooldown(45);
       setResendCount(c => c + 1);
@@ -199,8 +185,6 @@ export default function PhoneLoginScreen() {
           <Text style={styles.subtitle}>
             {phoneLoadedFromStorage ? 'Welcome back! Verify your phone number' : 'Log in with your phone number'}
           </Text>
-
-          <FirebaseRecaptchaVerifierModal ref={recaptchaRef} firebaseConfig={firebaseConfig as any} attemptInvisibleVerification />
 
           <Modal visible={showCountryPicker} animationType="slide" transparent onRequestClose={() => setShowCountryPicker(false)}>
             <Pressable style={styles.modalBackdrop} onPress={() => setShowCountryPicker(false)}>

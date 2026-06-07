@@ -2,7 +2,6 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import type { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
 import {
   GoogleAuthProvider,
   OAuthProvider,
@@ -24,13 +23,9 @@ GoogleSignin.configure({
 
 let phoneConfirmation: ConfirmationResult | null = null;
 
-export async function startPhoneSignIn(
-  phoneE164: string,
-  recaptchaRef: { current: FirebaseRecaptchaVerifierModal | null }
-) {
+export async function startPhoneSignIn(phoneE164: string) {
   const { auth } = getFirebase();
-  const verifier = recaptchaRef.current as any;
-  phoneConfirmation = await signInWithPhoneNumber(auth, phoneE164, verifier);
+  phoneConfirmation = await signInWithPhoneNumber(auth, phoneE164, undefined as any);
   return phoneConfirmation;
 }
 
@@ -130,14 +125,10 @@ export async function linkEmailWithLink(user: User, email: string, link: string)
   return await linkWithCredential(user, cred);
 }
 
-export async function sendReauthOtp(
-  phoneNumber: string,
-  recaptchaRef: { current: FirebaseRecaptchaVerifierModal | null }
-): Promise<string> {
+export async function sendReauthOtp(phoneNumber: string): Promise<string> {
   const { auth } = getFirebase();
   const provider = new PhoneAuthProvider(auth);
-  const verifier = recaptchaRef.current as any;
-  return await provider.verifyPhoneNumber(phoneNumber, verifier);
+  return await provider.verifyPhoneNumber(phoneNumber, undefined as any);
 }export async function reauthenticateWithOtp(user: User, verificationId: string, code: string): Promise<void> {
   const cred = PhoneAuthProvider.credential(verificationId, code);
   await reauthenticateWithCredential(user, cred);
