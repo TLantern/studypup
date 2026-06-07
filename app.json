@@ -63,7 +63,6 @@
       "expo-router",
       "@config-plugins/react-native-webrtc",
       "./plugins/withWebRTCFix",
-      "expo-firebase-core",
       "expo-apple-authentication",
       [
         "expo-image-picker",
