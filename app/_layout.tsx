@@ -23,7 +23,9 @@ import { LogBox, View } from 'react-native';
 import { SplashTransition } from '@/components/SplashTransition';
 
 LogBox.ignoreLogs(['Failed to initialize reCAPTCHA Enterprise']);
-import { AuthProvider } from '@/lib/auth-store';
+import { AuthProvider, useAuth } from '@/lib/auth-store';
+import { startProNotesSync } from '@/lib/pro-note-store';
+import { startRecordingErrorsSync } from '@/lib/recording-pipeline';
 import { hydratePaywallBypass } from '@/lib/dev-bypass';
 import { initAnalytics } from '@/lib/analytics';
 import { PostHogProvider } from 'posthog-react-native';
@@ -35,6 +37,26 @@ import {
 } from '@/lib/superwall';
 
 const PaywallTriggerProvider = PaywallTriggerProviderRaw as React.ComponentType<{ children: React.ReactNode }>;
+
+/**
+ * Keeps a realtime listener on the signed-in user's notes running app-wide so
+ * server-written notes (Path B: ≥5 min recordings processed by the Cloud
+ * Function) stream in and clear their "Processing…" card without reopening a
+ * specific screen. Restarts on user change; tears down on sign-out.
+ */
+function ProNotesSync() {
+  const { uid } = useAuth();
+  useEffect(() => {
+    if (!uid) return;
+    const unsubNotes = startProNotesSync();
+    const unsubErrors = startRecordingErrorsSync();
+    return () => {
+      unsubNotes();
+      unsubErrors();
+    };
+  }, [uid]);
+  return null;
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -64,11 +86,13 @@ export default function RootLayout() {
 
   const content = (
     <AuthProvider>
+      <ProNotesSync />
       <View style={{ flex: 1 }}>
         <PaywallTriggerProvider>
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#FFFFFF' } }}>
             <Stack.Screen name="login" options={{ headerShown: true, title: 'Login' }} />
             <Stack.Screen name="avatar-tutor" options={{ animation: 'slide_from_bottom', headerShown: false, gestureEnabled: false }} />
+            <Stack.Screen name="capture-meeting" options={{ animation: 'slide_from_bottom', headerShown: false, gestureEnabled: true }} />
             {[
               'index',
               'students-improve',

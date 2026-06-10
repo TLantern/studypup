@@ -166,10 +166,13 @@ export default function ViralProfessionalNoteDetailScreen() {
   const notesText = note
     ? [
         `Overview:\n${note.overview.map((b) => `• ${b.bold ? b.bold + ': ' : ''}${b.text}`).join('\n')}`,
+        note.topicSegments?.length
+          ? `Meeting Chapters:\n${note.topicSegments.map((s) => `${s.title}:\n${s.bullets.map((b) => `  • ${b}`).join('\n')}`).join('\n\n')}`
+          : null,
         `Key Topics:\n${note.keyTopics.map((b) => `• ${b.bold ? b.bold + ': ' : ''}${b.text}`).join('\n')}`,
         `Action Items:\n${note.actionItems.map((a) => `• ${a}`).join('\n')}`,
         `Final Reflection: ${note.finalReflection}`,
-      ].join('\n\n')
+      ].filter(Boolean).join('\n\n')
     : '';
 
   const handleAction = async (id: string) => {
@@ -417,6 +420,28 @@ export default function ViralProfessionalNoteDetailScreen() {
               </View>
             ))}
 
+            {note.topicSegments && note.topicSegments.length > 0 ? (
+              <>
+                <Text style={styles.h2}>Meeting Chapters</Text>
+                {note.topicSegments.map((segment, si) => (
+                  <View key={si} style={styles.segmentCard}>
+                    <View style={styles.segmentHeader}>
+                      <View style={styles.segmentNumber}>
+                        <Text style={styles.segmentNumberText}>{si + 1}</Text>
+                      </View>
+                      <Text style={styles.segmentTitle}>{segment.title}</Text>
+                    </View>
+                    {segment.bullets.map((b, bi) => (
+                      <View key={bi} style={styles.segmentBullet}>
+                        <Text style={styles.segmentBulletDot}>–</Text>
+                        <Text style={styles.segmentBulletText}>{b}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </>
+            ) : null}
+
             <Text style={styles.h2}>Key Topics Discussed</Text>
             {note.keyTopics.map((b, i) => (
               <View key={i} style={styles.bullet}>
@@ -429,12 +454,21 @@ export default function ViralProfessionalNoteDetailScreen() {
             ))}
 
             <Text style={styles.h2}>Action Items</Text>
-            {note.actionItems.map((item, i) => (
-              <View key={i} style={styles.bullet}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{item}</Text>
-              </View>
-            ))}
+            {note.actionItems.map((item, i) => {
+              const colonIdx = item.indexOf(':');
+              const hasAssignee = colonIdx > 0 && colonIdx < 30;
+              const assignee = hasAssignee ? item.slice(0, colonIdx).trim() : null;
+              const task = hasAssignee ? item.slice(colonIdx + 1).trim() : item;
+              return (
+                <View key={i} style={styles.actionItemRow}>
+                  <View style={styles.actionItemCheck} />
+                  <View style={styles.actionItemBody}>
+                    {assignee ? <Text style={styles.actionItemAssignee}>{assignee}</Text> : null}
+                    <Text style={styles.actionItemTask}>{task}</Text>
+                  </View>
+                </View>
+              );
+            })}
 
             <View style={styles.divider} />
 
@@ -828,6 +862,92 @@ const styles = StyleSheet.create({
   },
   bold: { fontWeight: '700' },
   bodyText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    color: DEEP_BLACK,
+    lineHeight: scaleFont(22),
+  },
+  segmentCard: {
+    backgroundColor: CARD,
+    borderRadius: scaleSize(12),
+    padding: scaleSize(14),
+    marginBottom: scaleSize(10),
+  },
+  segmentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: scaleSize(10),
+    marginBottom: scaleSize(8),
+  },
+  segmentNumber: {
+    width: scaleSize(24),
+    height: scaleSize(24),
+    borderRadius: scaleSize(12),
+    backgroundColor: DEEP_BLACK,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  segmentNumberText: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(12),
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  segmentTitle: {
+    flex: 1,
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(15),
+    fontWeight: '700',
+    color: DEEP_BLACK,
+  },
+  segmentBullet: {
+    flexDirection: 'row',
+    gap: scaleSize(8),
+    marginBottom: scaleSize(4),
+    paddingLeft: scaleSize(34),
+  },
+  segmentBulletDot: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: SUBTITLE_GRAY,
+    lineHeight: scaleFont(20),
+  },
+  segmentBulletText: {
+    flex: 1,
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(14),
+    color: '#444',
+    lineHeight: scaleFont(20),
+  },
+  actionItemRow: {
+    flexDirection: 'row',
+    gap: scaleSize(12),
+    marginBottom: scaleSize(10),
+    alignItems: 'flex-start',
+  },
+  actionItemCheck: {
+    width: scaleSize(18),
+    height: scaleSize(18),
+    borderRadius: scaleSize(4),
+    borderWidth: 2,
+    borderColor: DEEP_BLACK,
+    marginTop: scaleSize(2),
+    flexShrink: 0,
+  },
+  actionItemBody: {
+    flex: 1,
+  },
+  actionItemAssignee: {
+    fontFamily: SF_PRO,
+    fontSize: scaleFont(12),
+    fontWeight: '700',
+    color: ACCENT_BLUE,
+    marginBottom: scaleSize(1),
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  actionItemTask: {
     fontFamily: SF_PRO,
     fontSize: scaleFont(15),
     color: DEEP_BLACK,

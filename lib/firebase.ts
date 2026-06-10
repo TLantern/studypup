@@ -1,11 +1,13 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getDatabase, type Database } from 'firebase/database';
+import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getReactNativePersistence = (require('@firebase/auth') as { getReactNativePersistence: (s: typeof AsyncStorage) => unknown }).getReactNativePersistence;
 
-type FirebaseServices = { app: FirebaseApp; auth: Auth; db: Firestore };
+type FirebaseServices = { app: FirebaseApp; auth: Auth; db: Firestore; rtdb: Database; storage: FirebaseStorage };
 
 let cached: FirebaseServices | null = null;
 
@@ -36,7 +38,9 @@ export function getFirebase(): FirebaseServices {
     auth = getAuth(app);
   }
   const db = getFirestore(app);
+  const rtdb = getDatabase(app, process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL);
+  const storage = getStorage(app);
 
-  cached = { app, auth, db };
+  cached = { app, auth, db, rtdb, storage };
   return cached;
 }

@@ -1,22 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import {
   collection,
   deleteDoc,
   doc,
   getDocs,
+  onSnapshot,
   setDoc,
 } from 'firebase/firestore';
 import { getFirebase } from './firebase';
+import { getRecordingJobById, removeRecordingJob } from './recording-jobs';
 
 export interface ProNoteBullet {
   bold?: string;
   text: string;
 }
 
+export interface ProNoteTopicSegment {
+  title: string;
+  bullets: string[];
+}
+
 export interface ProNote {
   title: string;
   subtitle: string;
   overview: ProNoteBullet[];
+  topicSegments?: ProNoteTopicSegment[];
   keyTopics: ProNoteBullet[];
   actionItems: string[];
   finalReflection: string;
@@ -136,11 +146,14 @@ export function getCurrentProNote(): ProNote | null {
   return _current;
 }
 
-export function addProNote(note: ProNote): string {
-  const id = `note_${Date.now()}`;
+export function addProNote(note: ProNote, explicitId?: string): string {
+  const id = explicitId ?? `note_${Date.now()}`;
   const now = Date.now();
-  const stored: StoredProNote = { ...note, id, createdAt: now, updatedAt: now };
-  _notes = [stored, ..._notes];
+  const createdAt = note.createdAt ?? now;
+  const stored: StoredProNote = { ...note, id, createdAt, updatedAt: now };
+  // If a note with this id already exists (e.g. a resumed job re-running),
+  // replace it in place rather than duplicating.
+  _notes = [stored, ..._notes.filter((n) => n.id !== id)];
   _current = note;
   persistNotes();
   syncNoteToFirebase(stored);
@@ -239,32 +252,17 @@ export function hydrateProNotes(): Promise<void> {
       console.warn('[pro-notes] local hydrate failed', e);
     }
 
-    // 2. Background pull from Firebase (skip if not signed in)
+    // 2. Background pull of folders from Firebase (skip if not signed in).
+    //    Notes are not pulled here — they stream in via the realtime onSnapshot
+    //    listener started in startProNotesSync(), which is also what makes a
+    //    server-written note (Path B) appear without reopening the app.
     const uid = getUid();
     if (uid) {
       try {
         const { db } = getFirebase();
-        const [notesSnap, foldersSnap] = await Promise.all([
-          getDocs(collection(db, 'professionals', uid, 'notes')),
-          getDocs(collection(db, 'professionals', uid, 'folders')),
-        ]);
-        const remoteNotes = notesSnap.docs.map((d) => d.data() as StoredProNote);
+        const foldersSnap = await getDocs(collection(db, 'professionals', uid, 'folders'));
         const remoteFolders = foldersSnap.docs.map((d) => d.data() as ProFolder);
 
-        if (remoteNotes.length || _notes.length) {
-          const map = new Map<string, StoredProNote>();
-          _notes.forEach((n) => map.set(n.id, n));
-          remoteNotes.forEach((n) => {
-            const local = map.get(n.id);
-            if (!local || (n.updatedAt ?? 0) >= (local.updatedAt ?? 0)) {
-              map.set(n.id, n);
-            }
-          });
-          _notes = Array.from(map.values()).sort(
-            (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)
-          );
-          persistNotes();
-        }
         if (remoteFolders.length || _folders.length) {
           const map = new Map<string, ProFolder>();
           _folders.forEach((f) => map.set(f.id, f));
@@ -273,14 +271,103 @@ export function hydrateProNotes(): Promise<void> {
             (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)
           );
           persistFolders();
+          emit();
         }
-        emit();
       } catch (e) {
-        console.warn('[pro-notes] remote hydrate failed', e);
+        console.warn('[pro-folders] remote hydrate failed', e);
       }
     }
 
     _hydrated = true;
   })();
   return _hydrating;
+}
+
+// ── Realtime notes sync ──────────────────────────────────────────────────────
+/**
+ * Merge a snapshot of remote notes into the in-memory store (union semantics:
+ * remote wins on ties / newer updatedAt; local-only notes are kept). A remote
+ * note whose id matches an in-flight recording job means that job's server-side
+ * work finished, so the "Processing…" card is cleared.
+ */
+function mergeRemoteNotes(remoteNotes: StoredProNote[]) {
+  if (!remoteNotes.length && !_notes.length) return;
+  const map = new Map<string, StoredProNote>();
+  _notes.forEach((n) => map.set(n.id, n));
+  remoteNotes.forEach((n) => {
+    const local = map.get(n.id);
+    if (!local || (n.updatedAt ?? 0) >= (local.updatedAt ?? 0)) {
+      map.set(n.id, n);
+    }
+  });
+  _notes = Array.from(map.values()).sort(
+    (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0)
+  );
+  persistNotes();
+
+  // A server-written note that matches a tracked job means that job is done.
+  let completed = 0;
+  remoteNotes.forEach((n) => {
+    if (getRecordingJobById(n.id)) {
+      removeRecordingJob(n.id);
+      completed++;
+    }
+  });
+  if (completed) notifyNotesReady(completed);
+
+  emit();
+}
+
+/**
+ * Fire a local "notes ready" notification when a server-processed recording
+ * (Path B) lands while the app is backgrounded — the user closed the app during
+ * the long upload/transcribe and should be told it finished.
+ */
+function notifyNotesReady(count: number) {
+  if (AppState.currentState === 'active') return;
+  Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Your notes are ready',
+      body:
+        count > 1
+          ? `${count} recordings have been turned into notes.`
+          : 'Your recording has been turned into notes.',
+    },
+    trigger: null,
+  }).catch(() => {});
+}
+
+let _notesUnsub: (() => void) | null = null;
+
+/**
+ * Start a realtime listener on professionals/{uid}/notes so notes (including
+ * those written server-side by the Cloud Function) sync into the store as they
+ * land. Idempotent — tears down any prior listener first (e.g. on user switch).
+ * Returns an unsubscribe function.
+ */
+export function startProNotesSync(): () => void {
+  if (_notesUnsub) {
+    _notesUnsub();
+    _notesUnsub = null;
+  }
+  const uid = getUid();
+  if (!uid) return () => {};
+
+  try {
+    const { db } = getFirebase();
+    const unsubFirestore = onSnapshot(
+      collection(db, 'professionals', uid, 'notes'),
+      (snap) => mergeRemoteNotes(snap.docs.map((d) => d.data() as StoredProNote)),
+      (e) => console.warn('[pro-notes] notes listener error', e)
+    );
+    const stop = () => {
+      unsubFirestore();
+      if (_notesUnsub === stop) _notesUnsub = null;
+    };
+    _notesUnsub = stop;
+    return stop;
+  } catch (e) {
+    console.warn('[pro-notes] startProNotesSync threw', e);
+    return () => {};
+  }
 }

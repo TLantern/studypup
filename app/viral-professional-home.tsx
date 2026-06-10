@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Clipboard,
   InteractionManager,
@@ -32,7 +33,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { hapticSelect } from '@/lib/haptics';
 import { scaleFont, scaleSize } from '@/lib/responsive';
 import { isYouTubeUrl, extractVideoId, fetchYouTubeTranscript } from '@/lib/youtube-transcript';
-import { callOpenAI } from '@/lib/openai-service';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   addProNote,
   createFolder,
@@ -45,6 +46,17 @@ import {
   updateProNote,
   type ProNote,
 } from '@/lib/pro-note-store';
+import {
+  generateNoteFromTranscript,
+  startRecordingJob,
+  retryRecordingJob,
+  useRecordingJobResume,
+} from '@/lib/recording-pipeline';
+import {
+  subscribeRecordingJobs,
+  getRecordingJobs,
+  removeRecordingJob,
+} from '@/lib/recording-jobs';
 import { transcribeAudio } from '@/lib/transcription';
 import { RecordingWaveform } from '@/components/RecordingWaveform';
 
@@ -185,10 +197,11 @@ const FILTERS: { id: FilterTab; label: string }[] = [
 ];
 
 const NEW_NOTE_OPTIONS = [
-  { id: 'record', label: 'Record Audio', emoji: '🎙️', bg: '#FBD3D8' },
-  { id: 'todo', label: 'To-do List', emoji: '📝', bg: '#D8F3DC' },
-  { id: 'youtube', label: 'YouTube Video', emoji: '▶️', bg: '#FBE0B5' },
-  { id: 'voice', label: 'Upload voice memo', emoji: '🎵', bg: '#BBD4FB' },
+  { id: 'record',          label: 'Record Audio',     emoji: '🎙️', bg: '#FBD3D8' },
+  { id: 'capture-meeting', label: 'Capture Meeting',  emoji: '🖥️', bg: '#D8EDD4' },
+  { id: 'todo',            label: 'To-do List',        emoji: '📝', bg: '#D8F3DC' },
+  { id: 'youtube',         label: 'YouTube Video',     emoji: '▶️', bg: '#FBE0B5' },
+  { id: 'voice',           label: 'Upload voice memo', emoji: '🎵', bg: '#BBD4FB' },
 ] as const;
 
 const TODO_STORAGE_KEY = '@studypup/todo-list';
@@ -240,6 +253,12 @@ export default function ViralProfessionalHomeScreen() {
   const [showNewNote, setShowNewNote] = useState(false);
   const [savedNotes, setSavedNotes] = useState<ReturnType<typeof getAllProNotes>>(getAllProNotes());
   const [folders, setFolders] = useState(getAllFolders());
+  const [recordingJobs, setRecordingJobs] = useState<ReturnType<typeof getRecordingJobs>>(getRecordingJobs());
+  // Track jobs started this session so we can navigate to viral-transcribing when one completes.
+  const pendingJobIdsRef = useRef<Set<string>>(new Set());
+  const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
+  const [overlayAlmostDone, setOverlayAlmostDone] = useState(false);
+  useRecordingJobResume();
 
   // Folder creation
   const [showCreateFolder, setShowCreateFolder] = useState(false);
@@ -258,8 +277,43 @@ export default function ViralProfessionalHomeScreen() {
       setSavedNotes(getAllProNotes());
       setFolders(getAllFolders());
     });
-    return () => { unsub(); };
+    const unsubJobs = subscribeRecordingJobs(() => {
+      setRecordingJobs([...getRecordingJobs()]);
+    });
+    return () => { unsub(); unsubJobs(); };
   }, []);
+
+  // Drive the overlay: flip to "Almost done…" when the job transitions to
+  // `processing` (upload finished / on-device generating), then dismiss + navigate
+  // to viral-transcribing once the note lands.
+  const navigatedJobsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const activeJobIds = new Set(recordingJobs.map((j) => j.id));
+
+    for (const job of recordingJobs) {
+      if (pendingJobIdsRef.current.has(job.id) && job.status === 'processing') {
+        setOverlayAlmostDone(true);
+      }
+      if (pendingJobIdsRef.current.has(job.id) && job.status === 'failed') {
+        setShowProcessingOverlay(false);
+        setOverlayAlmostDone(false);
+      }
+    }
+
+    for (const id of pendingJobIdsRef.current) {
+      if (!activeJobIds.has(id) && !navigatedJobsRef.current.has(id)) {
+        const note = savedNotes.find((n) => n.id === id);
+        if (note) {
+          navigatedJobsRef.current.add(id);
+          pendingJobIdsRef.current.delete(id);
+          setShowProcessingOverlay(false);
+          setOverlayAlmostDone(false);
+          router.push({ pathname: '/viral-transcribing', params: { noteId: id } });
+          break;
+        }
+      }
+    }
+  }, [recordingJobs, savedNotes]);
 
   // YouTube sheet
   const [showYouTube, setShowYouTube] = useState(false);
@@ -450,48 +504,6 @@ export default function ViralProfessionalHomeScreen() {
   }, [isPaused, startTimer]);
 
   // Recording-save state
-  const [savingRecording, setSavingRecording] = useState(false);
-  const [savingMessage, setSavingMessage] = useState<string | null>(null);
-  const [showFirstRecordingOverlay, setShowFirstRecordingOverlay] = useState(false);
-  const [overlayAlmostDone, setOverlayAlmostDone] = useState(false);
-
-  const generateNoteFromTranscript = useCallback(
-    async (transcript: string, extras: Partial<ProNote> = {}): Promise<string> => {
-      const structured = await callOpenAI<{
-        title: string;
-        subtitle: string;
-        overview: Array<{ bold?: string; text: string }>;
-        keyTopics: Array<{ bold?: string; text: string }>;
-        actionItems: string[];
-        finalReflection: string;
-      }>(
-        'You are an expert professional note-taker. Return only valid JSON — no markdown, no code fences.',
-        `Analyze this transcript and return a JSON object with this exact shape:
-{
-  "title": "Main topic in 2-4 words",
-  "subtitle": "One sentence describing the content",
-  "overview": [
-    { "bold": "Main Focus", "text": "what this is primarily about" },
-    { "bold": "Core Problem Addressed", "text": "the key challenge or question" }
-  ],
-  "keyTopics": [
-    { "bold": "Topic Name", "text": "brief explanation" }
-  ],
-  "actionItems": [
-    "Concrete next step 1",
-    "Concrete next step 2",
-    "Concrete next step 3"
-  ],
-  "finalReflection": "A 2-3 sentence reflection on the practical value or takeaway."
-}
-
-Transcript:
-${transcript.slice(0, 12000)}`
-      );
-      return addProNote({ ...structured, transcript, ...extras });
-    },
-    []
-  );
 
   const cancelRecord = useCallback(() => {
     pendingRecordRef.current = false;
@@ -514,10 +526,9 @@ ${transcript.slice(0, 12000)}`
   const stopAndSave = useCallback(async () => {
     const rec = recordingRef.current;
     if (!rec) return;
+    const durationSec = recordingDuration;
     stopTimer();
     deactivateKeepAwake();
-
-    setShowFirstRecordingOverlay(true);
 
     let uri: string | null = null;
     try {
@@ -532,41 +543,39 @@ ${transcript.slice(0, 12000)}`
     setRecordingDuration(0);
     setRecordingMetering(null);
 
+    // Show the overlay immediately — before any async file I/O so there's no
+    // race condition where a fast upload completes before the first render.
+    setOverlayAlmostDone(false);
+    setShowProcessingOverlay(true);
+
+    // Close the recording sheet immediately — processing now happens in the
+    // background via a persisted job, so the user can navigate away or close
+    // the app without losing the recording.
+    recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
+      runOnJS(setShowRecord)(false)
+    );
+
     if (!uri) {
-      setShowFirstRecordingOverlay(false);
-      setSavingRecording(false);
-      setSavingMessage(null);
-      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
-        runOnJS(setShowRecord)(false)
-      );
+      setShowProcessingOverlay(false);
       Alert.alert('Recording failed', 'No audio captured.');
       return;
     }
 
     try {
-      const transcript = await transcribeAudio(uri);
-      if (!transcript.trim()) throw new Error('Transcription returned no text.');
-      setOverlayAlmostDone(true);
-      const noteId = await generateNoteFromTranscript(transcript, { audioUri: uri });
-      setShowFirstRecordingOverlay(false);
-      setOverlayAlmostDone(false);
-      setSavingRecording(false);
-      setSavingMessage(null);
-      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
-        runOnJS(setShowRecord)(false)
-      );
-      router.push({ pathname: '/viral-professional-note-detail', params: { generated: '1', noteId } });
+      // Move the audio out of the volatile cache into a persistent location so
+      // it survives an app kill while the job is processing.
+      const dir = `${FileSystem.documentDirectory}recordings/`;
+      await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {});
+      const dest = `${dir}${Date.now()}.m4a`;
+      await FileSystem.moveAsync({ from: uri, to: dest });
+      const job = startRecordingJob({ audioUri: dest, durationSec });
+      pendingJobIdsRef.current.add(job.id);
     } catch (e: any) {
-      setShowFirstRecordingOverlay(false);
-      setOverlayAlmostDone(false);
-      setSavingRecording(false);
-      setSavingMessage(null);
-      recordSlide.value = withTiming(1, { duration: 300, easing: Easing.in(Easing.cubic) }, () =>
-        runOnJS(setShowRecord)(false)
-      );
-      Alert.alert('Could not save recording', e?.message ?? 'Please try again.');
+      console.error('persist recording failed', e);
+      const job = startRecordingJob({ audioUri: uri, durationSec });
+      pendingJobIdsRef.current.add(job.id);
     }
-  }, [generateNoteFromTranscript, stopTimer]);
+  }, [recordingDuration, stopTimer]);
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
@@ -589,6 +598,8 @@ ${transcript.slice(0, 12000)}`
     } else if (id === 'youtube') {
       setYoutubeUrl('');
       setTimeout(() => setShowYouTube(true), 300);
+    } else if (id === 'capture-meeting') {
+      setTimeout(() => router.push('/capture-meeting'), 300);
     } else if (id === 'voice') {
       setTimeout(pickAudio, 300);
     }
@@ -603,24 +614,7 @@ ${transcript.slice(0, 12000)}`
       });
       if (result.canceled || !result.assets?.length) return;
       const file = result.assets[0];
-      setSavingRecording(true);
-      setSavingMessage('Transcribing audio…');
-      try {
-        const transcript = await transcribeAudio(file.uri);
-        if (!transcript.trim()) throw new Error('Transcription returned no text.');
-        setSavingMessage('Generating notes…');
-        const noteId = await generateNoteFromTranscript(transcript, { audioUri: file.uri });
-        setSavingRecording(false);
-        setSavingMessage(null);
-        router.push({
-          pathname: '/viral-professional-note-detail',
-          params: { generated: '1', noteId },
-        });
-      } catch (e: any) {
-        setSavingRecording(false);
-        setSavingMessage(null);
-        Alert.alert('Could not process audio', e?.message ?? 'Please try again.');
-      }
+      startRecordingJob({ audioUri: file.uri, durationSec: 0 });
     } catch (e) {
       console.error('Audio picker failed', e);
     }
@@ -773,6 +767,48 @@ ${transcript.slice(0, 12000)}`
           </Pressable>
         ) : null}
         <Text style={styles.sectionLabel}>{activeFolder ? 'In this folder' : 'Today'}</Text>
+        {!activeFolderId &&
+          recordingJobs
+            .filter((job) => !savedNotes.some((n) => n.id === job.id))
+            .map((job) => {
+              const failed = job.status === 'failed';
+              return (
+                <Pressable
+                  key={job.id}
+                  style={({ pressed }) => [styles.noteCard, pressed && failed && { opacity: 0.85 }]}
+                  disabled={!failed}
+                  onPress={() => {
+                    if (!failed) return;
+                    hapticSelect();
+                    retryRecordingJob(job.id);
+                  }}
+                  onLongPress={() => {
+                    if (!failed) return;
+                    hapticSelect();
+                    removeRecordingJob(job.id);
+                  }}
+                  delayLongPress={350}
+                >
+                  <View style={styles.noteIconWrap}>
+                    {failed ? (
+                      <Ionicons name="alert-circle-outline" size={22} color="#FF3B30" />
+                    ) : (
+                      <ActivityIndicator size="small" color="#8E8E93" />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.noteTitle}>
+                      {failed ? "Couldn't process recording" : 'Processing recording…'}
+                    </Text>
+                    <Text style={styles.noteSubtitle}>
+                      {failed
+                        ? (job.message ?? 'Tap to retry · hold to dismiss')
+                        : (job.message ?? 'Working…')}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
         {filtered.map((note) => (
           <Pressable
             key={note.id}
@@ -1178,20 +1214,10 @@ ${transcript.slice(0, 12000)}`
         </Pressable>
       </Modal>
 
-      {/* ── First-recording full-screen overlay ── */}
-      <Modal visible={showFirstRecordingOverlay} animationType="fade" presentationStyle="fullScreen">
+      <Modal visible={showProcessingOverlay} animationType="fade" presentationStyle="fullScreen">
         <FirstRecordingOverlay almostDone={overlayAlmostDone} />
       </Modal>
 
-      {/* ── Saving overlay (transcription / generation) ── */}
-      {savingRecording && (
-        <View style={styles.savingOverlay} pointerEvents="auto">
-          <View style={styles.savingCard}>
-            <Text style={styles.savingTitle}>Saving recording</Text>
-            <Text style={styles.savingMessage}>{savingMessage ?? 'Working…'}</Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -1276,32 +1302,6 @@ const styles = StyleSheet.create({
     fontSize: scaleFont(15),
     fontWeight: '600',
     color: '#FFFFFF',
-  },
-  savingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: scaleSize(40),
-  },
-  savingCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: scaleSize(16),
-    padding: scaleSize(24),
-    width: '100%',
-    alignItems: 'center',
-  },
-  savingTitle: {
-    fontFamily: SF_PRO,
-    fontSize: scaleFont(17),
-    fontWeight: '700',
-    color: DEEP_BLACK,
-    marginBottom: scaleSize(8),
-  },
-  savingMessage: {
-    fontFamily: SF_PRO,
-    fontSize: scaleFont(14),
-    color: SUBTITLE_GRAY,
   },
   root: { flex: 1, backgroundColor: BG },
   headerRow: {
