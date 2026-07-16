@@ -6,6 +6,7 @@ import { ensureUserDoc, ensureProfessionalDoc } from '@/lib/user-profile';
 import { getOnboarding } from '@/lib/onboarding-storage';
 import { getItem, setItem } from '@/lib/storage';
 import { identifyUser } from '@/lib/analytics';
+import { loginRevenueCat, logoutRevenueCat } from '@/lib/revenuecat';
 
 const STORED_USER_KEY = 'auth:user';
 const STORED_PHONE_KEY = 'auth:phone';
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (u) {
         console.log('[Auth] onAuthStateChanged — user signed in, uid:', u.uid);
         identifyUser(u.uid);
+        loginRevenueCat(u.uid);
         getOnboarding().then((onboarding) => {
           if (onboarding.user_tag === 'working-class') {
             ensureProfessionalDoc(u).catch((e) => console.error('Failed to ensure professional doc:', e));
@@ -68,6 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ensureUserDoc(u).catch((e) => console.error('Failed to ensure user doc:', e));
           }
         }).catch((e) => console.error('Failed to read onboarding for doc routing:', e));
+      } else {
+        logoutRevenueCat();
       }
     });
 
@@ -93,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { default: SuperwallExpoModule } = await import('expo-superwall').then(m => ({ default: m.SuperwallExpoModule }));
             await SuperwallExpoModule.reset();
           } catch (_) {}
+          await logoutRevenueCat();
         } catch (error) {
           console.error('Failed to sign out:', error);
           throw error;

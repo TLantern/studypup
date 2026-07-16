@@ -9,8 +9,8 @@ const SALMON = '#7FA8FF';
 const THUMB_DOWN_BG = '#E06C78';
 const THUMB_UP_BG = '#8CE69C';
 
-const CORRECT_QUIPS = ['Locked in.', 'Banked.', 'Memory strengthened.', 'Nailed it.', 'Stored.'];
-const WRONG_QUIPS = ['Review mode.', 'Next time.', 'Keep going.'];
+const CORRECT_QUIPS = ['Locked in', 'Banked', 'Memory strengthened', 'Nailed it', 'Stored'];
+const WRONG_QUIPS = ['Review mode', 'Next time', 'Keep going'];
 
 type Card = { id: string; question: string; answer: string };
 
@@ -54,8 +54,8 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
   const [index, setIndex] = useState(initialIndex);
   const [flipped, setFlipped] = useState(false);
   const [answers, setAnswers] = useState<Record<string, 'correct' | 'incorrect'>>(() => savedAnswers);
-  const [quipUp, setQuipUp] = useState('Locked in.');
-  const [quipDown, setQuipDown] = useState('Review mode.');
+  const [quipUp, setQuipUp] = useState('Locked in');
+  const [quipDown, setQuipDown] = useState('Review mode');
   const flipAnim = useRef(new Animated.Value(0)).current;
   const [flashVisible, setFlashVisible] = useState(false);
   const flashOpacity = useRef(new Animated.Value(0)).current;

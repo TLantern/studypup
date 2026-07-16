@@ -198,7 +198,8 @@ const FILTERS: { id: FilterTab; label: string }[] = [
 
 const NEW_NOTE_OPTIONS = [
   { id: 'record',          label: 'Record Audio',     emoji: '🎙️', bg: '#FBD3D8' },
-  { id: 'capture-meeting', label: 'Capture Meeting',  emoji: '🖥️', bg: '#D8EDD4' },
+  { id: 'sales-call',      label: 'Sales Call',       emoji: '📞', bg: '#D8EDD4' },
+  { id: 'capture-meeting', label: 'Capture Meeting',  emoji: '🖥️', bg: '#E5E0FB' },
   { id: 'todo',            label: 'To-do List',        emoji: '📝', bg: '#D8F3DC' },
   { id: 'youtube',         label: 'YouTube Video',     emoji: '▶️', bg: '#FBE0B5' },
   { id: 'voice',           label: 'Upload voice memo', emoji: '🎵', bg: '#BBD4FB' },
@@ -617,6 +618,8 @@ export default function ProfessionalHomeScreen() {
     setShowNewNote(false);
     if (id === 'record') {
       setTimeout(openRecord, 300);
+    } else if (id === 'sales-call') {
+      setTimeout(() => router.push('/sales-dialer'), 300);
     } else if (id === 'todo') {
       setTodoCreatedAt(new Date());
       setTodoTitle('');

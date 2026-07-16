@@ -1,44 +1,37 @@
-import { Tabs } from 'expo-router';
-import { Image } from 'react-native';
-import { SF_PRO } from '@/lib/onboarding-theme';
+import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { ACCENT_BLUE } from '@/lib/onboarding-theme';
 
 export default function TabsLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: 'rgba(0,0,0,0.6)',
-        tabBarLabelStyle: { fontFamily: SF_PRO, fontSize: 12 },
-        tabBarItemStyle: { justifyContent: 'center', alignItems: 'center' },
-        tabBarStyle: { display: 'none' },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <Image source={require('../../assets/home.png')} style={{ width: 24, height: 24, tintColor: color }} />,
-        }}
-      />
-      <Tabs.Screen
-        name="library"
-        options={{
-          title: 'Library',
-          tabBarIcon: ({ color }) => <Image source={require('../../assets/library.png')} style={{ width: 24, height: 24, tintColor: color }} />,
-        }}
-      />
-      <Tabs.Screen
-        name="create"
-        options={{ href: null }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <Image source={require('../../assets/profile.png')} style={{ width: 24, height: 24, tintColor: color }} />,
-        }}
-      />
-    </Tabs>
+    <NativeTabs tintColor={ACCENT_BLUE}>
+      <NativeTabs.Trigger name="index">
+        <Label>Home</Label>
+        <Icon
+          sf={{ default: 'house', selected: 'house.fill' }}
+          androidSrc={require('../../assets/home.png')}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="library">
+        <Label>Library</Label>
+        <Icon
+          sf={{ default: 'books.vertical', selected: 'books.vertical.fill' }}
+          androidSrc={require('../../assets/library.png')}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="create">
+        <Label>Create</Label>
+        <Icon
+          sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }}
+          androidSrc={require('../../assets/plus-circle.png')}
+        />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <Label>Profile</Label>
+        <Icon
+          sf={{ default: 'person', selected: 'person.fill' }}
+          androidSrc={require('../../assets/profile.png')}
+        />
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }

@@ -35,6 +35,7 @@ import {
   SuperwallAvailableContext,
   SuperwallProvider,
 } from '@/lib/superwall';
+import { configureRevenueCat } from '@/lib/revenuecat';
 
 const PaywallTriggerProvider = PaywallTriggerProviderRaw as React.ComponentType<{ children: React.ReactNode }>;
 
@@ -82,6 +83,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     hydratePaywallBypass();
+  }, []);
+
+  useEffect(() => {
+    // Configure RevenueCat as early as possible so the auth listener in
+    // AuthProvider can call loginRevenueCat() as soon as it fires.
+    configureRevenueCat();
   }, []);
 
   const content = (

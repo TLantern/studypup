@@ -2,7 +2,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Image as RNImage, InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
-import { useState, useEffect, useRef, useCallback, useMemo, useContext } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, useContext, useSyncExternalStore } from 'react';
+import { getShowAddSheet, setShowAddSheet, subscribeAddSheet } from '@/lib/add-sheet-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -68,7 +69,7 @@ export default function HomeScreen() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isTablet = screenWidth > 600;
   const isLargeTablet = screenWidth > 900;
-  const [showAddSheet, setShowAddSheet] = useState(false);
+  const showAddSheet = useSyncExternalStore(subscribeAddSheet, getShowAddSheet, getShowAddSheet);
   const [materials, setMaterials] = useState<StudyMaterialSet[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
@@ -156,21 +157,13 @@ export default function HomeScreen() {
       ...materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean) as string[],
       ...extraStudyDays,
     ]);
-    return ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((label, i) => {
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, i) => {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dStr = d.toISOString().slice(0, 10);
-      return { label, isToday: dStr === todayStr, isFuture: dStr > todayStr, studied: studiedDates.has(dStr) };
+      return { label, date: d.getDate(), isToday: dStr === todayStr, isFuture: dStr > todayStr, studied: studiedDates.has(dStr) };
     });
   }, [materials, extraStudyDays]);
-
-  const daysStudied = useMemo(() =>
-    new Set(materials.map((m) => (m.updated_at || m.created_at)?.slice(0, 10)).filter(Boolean)).size,
-  [materials]);
-
-  const cardsReviewed = useMemo(() =>
-    materials.reduce((sum, m) => sum + Object.keys(m.user_answers?.flashcards ?? {}).length, 0),
-  [materials]);
 
   const displayNotes = useMemo((): Note[] => {
     const q = searchQuery.trim().toLowerCase();
@@ -709,15 +702,29 @@ export default function HomeScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <LinearGradient
+        colors={[OFF_WHITE, 'rgba(163, 191, 254, 0.06)', OFF_WHITE]}
+        locations={[0, 0.5, 1]}
+        style={{
+          position: 'absolute',
+          top: screenHeight * 0.25,
+          left: 0,
+          right: 0,
+          height: screenHeight * 0.65,
+        }}
+      />
       <View style={[styles.header, { paddingHorizontal: contentPadding }]}>
         <View style={styles.headerLeft}>
-          <Pressable onPress={() => setShowSearchBar((v) => !v)} style={{ marginLeft: 10 }}>
-            <Image source={require('../../assets/search.png')} style={styles.headerIcon} />
-          </Pressable>
+          <Image
+            source={require('../../assets/images/notariomainicon.png')}
+            style={styles.notarioHeaderIcon}
+            contentFit="contain"
+          />
+          <Text style={styles.notarioHeaderTitle}>Notario</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable onPress={() => setShowSettingsModal(true)}>
-            <Image source={require('../../assets/settings-new.png')} style={styles.headerIcon} />
+          <Pressable onPress={() => setShowSearchBar((v) => !v)}>
+            <Image source={require('../../assets/search.png')} style={styles.headerIcon} />
           </Pressable>
         </View>
       </View>
@@ -776,54 +783,29 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={styles.notesContainer}>
-            {/* Streak / weekly stats widget */}
+            {/* Streak widget */}
             <View style={styles.weekCard}>
-              <View style={styles.weekCardTop}>
-                <View style={styles.weekStreakRow}>
-                  <Text style={styles.weekFireEmoji}>🔥</Text>
-                  <Text style={styles.weekStreakNum}>{streakCount}</Text>
-                  <Text style={styles.weekStreakLabel}> day streak</Text>
-                </View>
-                <Text style={styles.weekThisWeek}>This week</Text>
-              </View>
-
               <View style={styles.weekDaysRow}>
-                {weekStats.map(({ label, isToday, isFuture, studied }, i) => (
-                  <View key={i} style={styles.weekDayCol}>
-                    <Text style={styles.weekDayLabel}>{label}</Text>
-                    <View style={[
-                      styles.weekDayCircle,
-                      studied && styles.weekDayStudied,
-                      isToday && !studied && styles.weekDayToday,
-                    ]}>
-                      {studied && <Text style={styles.weekCheckmark}>✓</Text>}
-                      {isToday && !studied && <View style={styles.weekTodayDot} />}
-                    </View>
+                {weekStats.map(({ label, date, isToday, isFuture, studied }, i) => (
+                  <View key={i} style={[styles.weekDayCol, isToday && styles.weekDayColToday]}>
+                    <Text style={[styles.weekDayLabel, isToday && styles.weekDayLabelToday]}>{label}</Text>
+                    {studied ? (
+                      <View style={styles.weekDayCircle}>
+                        <Text style={styles.weekCheckmark}>✓</Text>
+                      </View>
+                    ) : (
+                      <View style={[styles.weekDayDotted, isToday && styles.weekDayDottedToday]}>
+                        <Text style={[styles.weekDayDate, isFuture && styles.weekDayDateFuture]}>{date}</Text>
+                      </View>
+                    )}
                   </View>
                 ))}
               </View>
-
-              <View style={styles.weekDivider} />
-
-              <View style={styles.weekStatsRow}>
-                <View style={styles.weekStat}>
-                  <Text style={styles.weekStatNum}>{daysStudied}</Text>
-                  <Text style={styles.weekStatLabel}>{daysStudied === 1 ? 'day studied' : 'days studied'}</Text>
-                </View>
-                <View style={styles.weekStatDivider} />
-                <View style={styles.weekStat}>
-                  <Text style={styles.weekStatNum}>{materials.length}</Text>
-                  <Text style={styles.weekStatLabel}>{materials.length === 1 ? 'set completed' : 'sets completed'}</Text>
-                </View>
-                <View style={styles.weekStatDivider} />
-                <View style={styles.weekStat}>
-                  <Text style={[styles.weekStatNum, styles.weekStatNumBold]}>{cardsReviewed}</Text>
-                  <Text style={styles.weekStatLabel}>{cardsReviewed === 1 ? 'card reviewed' : 'cards reviewed'}</Text>
-                </View>
-              </View>
             </View>
 
-            <Text style={[styles.myNotesTitle, { fontSize: isTablet ? 36 : 28 }]}>My Notes</Text>
+            <Text style={[styles.myNotesTitle, { fontSize: isTablet ? 36 : 28 }]}>
+              My Notes
+            </Text>
             {materials.length > 0 && displayNotes.length === 0 && (
               <Text style={styles.searchNoResults}>No notes match your search.</Text>
             )}
@@ -880,7 +862,7 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {!showRecordModal && !showPlaybackModal && !showNotesModal && !showUploadModal && !showContentConfirmModal && (
+      {/* {!showRecordModal && !showPlaybackModal && !showNotesModal && !showUploadModal && !showContentConfirmModal && (
         <View style={[styles.fabContainer, {
           bottom: 24 + insets.bottom,
           right: isTablet ? 40 : 24
@@ -896,7 +878,7 @@ export default function HomeScreen() {
             }]} />
           </Pressable>
         </View>
-      )}
+      )} */}
 
       {/* ── Add Content sheet ── */}
       <Modal visible={showAddSheet} transparent animationType="slide" onRequestClose={() => setShowAddSheet(false)}>
@@ -1590,6 +1572,8 @@ const styles = StyleSheet.create({
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 8 },
   avatar: { width: 48, height: 48, borderRadius: 24 },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
+  notarioHeaderIcon: { width: 38, height: 38, borderRadius: 10, marginRight: 8 },
+  notarioHeaderTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 26, color: '#000' },
   streakBadge: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
   streakIcon: { width: 24, height: 24 },
   streakNum: { fontFamily: 'Fredoka_400Regular', fontSize: 20, marginLeft: 4, marginTop: 4 },
@@ -1606,52 +1590,55 @@ const styles = StyleSheet.create({
   emptyArrowLottie: { width: 80, height: 80 },
   notesContainer: { paddingTop: 12, paddingBottom: 140, flexDirection: 'column' },
   weekCard: {
-    backgroundColor: DEEP_BLACK,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: 24,
+  },
+  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  weekDayCol: { alignItems: 'center', gap: 10, paddingVertical: 8 },
+  weekDayColToday: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    marginTop: -6,
+    marginBottom: -6,
+    paddingHorizontal: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
-    elevation: 3,
+    elevation: 2,
   },
-  weekCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  weekStreakRow: { flexDirection: 'row', alignItems: 'center' },
-  weekFireEmoji: { fontSize: 20 },
-  weekStreakNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#fff', marginLeft: 6 },
-  weekStreakLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 16, color: '#aaa', marginTop: 2 },
-  weekThisWeek: { fontFamily: 'Fredoka_400Regular', fontSize: 15, color: '#aaa' },
-  weekDaysRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
-  weekDayCol: { alignItems: 'center', gap: 6 },
   weekDayLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#888' },
+  weekDayLabelToday: { color: '#000', fontWeight: '600' },
   weekDayCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: GRAPHITE_GRAY,
+    backgroundColor: DEEP_BLACK,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  weekDayStudied: { backgroundColor: ACCENT_BLUE },
-  weekDayToday: { backgroundColor: ACCENT_BLUE, borderWidth: 2, borderColor: ACCENT_BLUE },
   weekCheckmark: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  weekMissedX: { color: '#e07070', fontSize: 14, fontWeight: '700' },
-  weekTodayDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' },
-  weekDivider: { height: 1, backgroundColor: GRAPHITE_GRAY, marginBottom: 14 },
-  weekStatsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  weekStat: { alignItems: 'center', flex: 1 },
-  weekStatNum: { fontFamily: 'FredokaOne_400Regular', fontSize: 22, color: '#fff' },
-  weekStatNumBold: { fontFamily: 'FredokaOne_400Regular' },
-  weekStatLabel: { fontFamily: 'Fredoka_400Regular', fontSize: 13, color: '#888', marginTop: 2 },
-  weekStatDivider: { width: 1, height: 32, backgroundColor: GRAPHITE_GRAY },
+  weekDayDotted: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekDayDottedToday: {
+    borderStyle: 'solid',
+    borderColor: '#000',
+  },
+  weekDayDate: {
+    textAlign: 'center',
+    fontFamily: 'Fredoka_400Regular',
+    fontSize: 15,
+    color: '#000',
+  },
+  weekDayDateFuture: { color: '#ccc' },
   myNotesTitle: {
     fontFamily: 'FredokaOne_400Regular',
     fontSize: 28,

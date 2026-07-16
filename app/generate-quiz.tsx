@@ -79,9 +79,10 @@ const shuffleQuizOptions = (question: { question: string; options: string[]; cor
 
 export default function GenerateQuizScreen() {
   const insets = useSafeAreaInsets();
-  const { methods, materialId, wrongOnly, resume } = useLocalSearchParams<{ methods?: string; materialId?: string; wrongOnly?: string; resume?: string }>();
+  const { methods, materialId, wrongOnly, resume, more } = useLocalSearchParams<{ methods?: string; materialId?: string; wrongOnly?: string; resume?: string; more?: string }>();
   const isResume = resume === '1';
   const isWrongOnly = wrongOnly === 'true';
+  const isMore = more === 'true';
   const methodsStr = methodsKey(methods);
   const selectedIds = useMemo(() => methodsStr.split(',').filter(Boolean), [methodsStr]);
   const tabs = ALL_TABS.filter((t) => selectedIds.includes(t.id));
@@ -155,8 +156,8 @@ export default function GenerateQuizScreen() {
   const tabsScrollRef = useRef<ScrollView>(null);
   const tabOffsetsRef = useRef<Record<string, number>>({});
 
-  const CORRECT_QUIPS = ['Locked in.', 'Banked.', 'Nailed it!', 'Memory strengthened.', 'Nice one.'];
-  const WRONG_QUIPS = ['Keep going.', 'Next time.', 'Review mode.'];
+  const CORRECT_QUIPS = ['Locked in', 'Banked', 'Nailed it!', 'Memory strengthened', 'Nice one'];
+  const WRONG_QUIPS = ['Keep going', 'Next time', 'Review mode'];
   const { width, height } = Dimensions.get('window');
   const borderW = Math.round(Math.min(width, height) * 0.018);
 
@@ -260,6 +261,18 @@ export default function GenerateQuizScreen() {
     };
 
     const loadAndGenerate = async () => {
+      if (isMore) {
+        // Starting a fresh "Keep Going" round — reset session bookkeeping so
+        // the report screen fires again once the new questions are answered.
+        reportShownRef.current = false;
+        sessionInteractedRef.current = false;
+        sessionAnsweredIds.current = new Set();
+        creditedRef.current = new Set();
+        streakFiredRef.current = false;
+        setWrongAttempts(0);
+        setQuizStreak(0);
+        setQuestionIndex(0);
+      }
       const raw = await getMaterials(materialId);
       console.log('[LoadQuiz] isWrongOnly:', isWrongOnly, '| raw quiz count:', raw?.quiz_questions?.length, '| saved progress:', JSON.stringify(raw?.progress), '| saved answers keys:', Object.keys(raw?.user_answers?.quiz_questions ?? {}));
       const m = raw ? applyWrongFilter(raw) : null;
@@ -279,11 +292,12 @@ export default function GenerateQuizScreen() {
       setWrittenDisplayMap(Object.fromEntries((raw?.written_questions ?? []).map((w, i) => [w.id, i + 1])));
       setFillDisplayMap(Object.fromEntries((raw?.fill_in_blank_questions ?? []).map((f, i) => [f.id, i + 1])));
 
-      // Check which content is missing for the selected methods
-      const needsFlashcards = selectedIds.includes('flashcards') && (!m.flashcards || m.flashcards.length === 0);
-      const needsQuiz = selectedIds.includes('quiz') && (!m.quiz_questions || m.quiz_questions.length === 0);
-      const needsWritten = selectedIds.includes('written') && (!m.written_questions || m.written_questions.length === 0);
-      const needsFill = selectedIds.includes('fill') && (!m.fill_in_blank_questions || m.fill_in_blank_questions.length === 0);
+      // Check which content is missing for the selected methods.
+      // "Keep Going" (isMore) forces a fresh batch even if content already exists.
+      const needsFlashcards = selectedIds.includes('flashcards') && (isMore || !m.flashcards || m.flashcards.length === 0);
+      const needsQuiz = selectedIds.includes('quiz') && (isMore || !m.quiz_questions || m.quiz_questions.length === 0);
+      const needsWritten = selectedIds.includes('written') && (isMore || !m.written_questions || m.written_questions.length === 0);
+      const needsFill = selectedIds.includes('fill') && (isMore || !m.fill_in_blank_questions || m.fill_in_blank_questions.length === 0);
 
       // If any content needs generation, get the knowledge graph and generate
       if (needsFlashcards || needsQuiz || needsWritten || needsFill) {
@@ -292,26 +306,37 @@ export default function GenerateQuizScreen() {
           const graph = await getKnowledgeGraph(m.knowledge_graph_id);
           if (graph) {
             const updates: any = {};
+            const progressUpdates: any = { ...(m.progress ?? {}) };
+            const answersUpdates: any = { ...(m.user_answers ?? {}) };
 
             if (needsFlashcards) {
               setGeneratingMessage('Generating flashcards...');
               const flashcards = await generateFlashcardsWithAI(graph, 10);
               updates.flashcards = flashcards;
+              if (isMore) { progressUpdates.flashcards = 0; answersUpdates.flashcards = {}; }
             }
             if (needsQuiz) {
               setGeneratingMessage('Generating quiz questions...');
               const quizzes = await generateQuizQuestionsWithAI(graph, 10);
               updates.quiz_questions = quizzes;
+              if (isMore) { progressUpdates.multipleChoice = 0; answersUpdates.quiz_questions = {}; }
             }
             if (needsWritten) {
               setGeneratingMessage('Generating written questions...');
               const written = await generateWrittenQuestionsWithAI(graph, 5);
               updates.written_questions = written;
+              if (isMore) { progressUpdates.written = 0; answersUpdates.written_questions = {}; }
             }
             if (needsFill) {
               setGeneratingMessage('Generating fill in the blank...');
               const fill = await generateFillInBlankQuestionsWithAI(graph, 10);
               updates.fill_in_blank_questions = fill;
+              if (isMore) { progressUpdates.fillInBlanks = 0; answersUpdates.fill_in_blank_questions = {}; }
+            }
+
+            if (isMore) {
+              updates.progress = progressUpdates;
+              updates.user_answers = answersUpdates;
             }
 
             // Update the materials with newly generated content
@@ -425,7 +450,7 @@ export default function GenerateQuizScreen() {
     };
 
     loadAndGenerate();
-  }, [materialId, methodsStr, isWrongOnly]);
+  }, [materialId, methodsStr, isWrongOnly, isMore]);
 
   // Sync selected answer when question index or saved answers change (must run every render for Rules of Hooks)
   useEffect(() => {

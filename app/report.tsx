@@ -290,18 +290,16 @@ export default function ReportScreen() {
             </>
           )}
 
-          {/* Practice button — only shown when there are still wrong answers */}
-          {methods.some((s) => s.correct < s.total) && <Pressable
+          {/* Keep Going — generates a fresh batch of questions and continues the session */}
+          {methods.length > 0 && <Pressable
             style={styles.practiceBtn}
             onPress={() => {
-              const wrongMethods = methods
-                .filter((s) => s.correct < s.total)
-                .map((s) => s.methodId);
-              if (wrongMethods.length === 0) return;
-              router.replace(`/generate-quiz?materialId=${materialId}&methods=${wrongMethods.join(',')}&wrongOnly=true`);
+              const activeMethods = methods.map((s) => s.methodId);
+              if (activeMethods.length === 0) return;
+              router.replace(`/generate-quiz?materialId=${materialId}&methods=${activeMethods.join(',')}&more=true`);
             }}
           >
-            <Text style={styles.practiceBtnText}>Fix my Mistakes</Text>
+            <Text style={styles.practiceBtnText}>Keep Going</Text>
           </Pressable>}
         </Animated.View>
       </ScrollView>
