@@ -290,13 +290,16 @@ export default function ReportScreen() {
             </>
           )}
 
-          {/* Keep Going — generates a fresh batch of questions and continues the session */}
+          {/* Keep Going — if everything was answered correctly, generate a fresh batch;
+              otherwise drop the ones already gotten right and redo just the wrong ones */}
           {methods.length > 0 && <Pressable
             style={styles.practiceBtn}
             onPress={() => {
               const activeMethods = methods.map((s) => s.methodId);
               if (activeMethods.length === 0) return;
-              router.replace(`/generate-quiz?materialId=${materialId}&methods=${activeMethods.join(',')}&more=true`);
+              const allPerfect = methods.every((s) => s.total === 0 || s.correct >= s.total);
+              const mode = allPerfect ? 'more=true' : 'wrongOnly=true';
+              router.replace(`/generate-quiz?materialId=${materialId}&methods=${activeMethods.join(',')}&${mode}`);
             }}
           >
             <Text style={styles.practiceBtnText}>Keep Going</Text>
@@ -411,7 +414,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   practiceBtn: {
-    backgroundColor: '#FD8A8A',
+    backgroundColor: '#000000',
     borderRadius: 32,
     paddingVertical: 15,
     alignItems: 'center',

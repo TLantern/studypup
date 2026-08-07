@@ -5,6 +5,7 @@ import { NotesStudy } from '@/components/NotesStudy';
 import { TutorStudy } from '@/components/TutorStudy';
 import { WrittenStudy } from '@/components/WrittenStudy';
 import { getMaterials, updateMaterials } from '@/lib/study-materials-storage';
+import { calculateMastery } from '@/lib/notes';
 import { recordMasteryAchieved } from '@/lib/streak';
 import { getKnowledgeGraph } from '@/lib/knowledge-graph-storage';
 import {
@@ -218,28 +219,39 @@ export default function GenerateQuizScreen() {
       return;
     }
     
+    // Always hide already-correct items from view when (re)entering a study set, not just in the
+    // explicit "wrongOnly" review flow — a category that's fully mastered falls back to showing
+    // everything rather than an empty list.
     const applyWrongFilter = (mat: NonNullable<Awaited<ReturnType<typeof getMaterials>>>) => {
-      if (!isWrongOnly) return mat;
       const qa = mat.user_answers?.quiz_questions ?? {};
       const fa = mat.user_answers?.flashcards ?? {};
       const wa = mat.user_answers?.written_questions ?? {};
       const fia = mat.user_answers?.fill_in_blank_questions ?? {};
 
-      console.log('[WrongFilter] quiz saved answers:', JSON.stringify(qa));
-      console.log('[WrongFilter] total quiz questions:', mat.quiz_questions.length);
-      mat.quiz_questions.forEach((q) => {
-        const saved = qa[q.id];
-        const status = saved === undefined ? 'unanswered' : saved === q.correct_answer_index ? 'correct' : 'wrong';
-        console.log(`[WrongFilter] Q id=${q.id} savedIdx=${saved} correctIdx=${q.correct_answer_index} → ${status}`);
-      });
-
       const filteredQuiz = mat.quiz_questions.filter((q) => qa[q.id] === undefined || qa[q.id] !== q.correct_answer_index);
-      console.log('[WrongFilter] filtered quiz count (wrong+unanswered):', filteredQuiz.length);
       const filteredFlashcards = mat.flashcards.filter((f) => fa[f.id] !== 'correct');
       const filteredWritten = mat.written_questions.filter((w) => !wa[w.id]?.correct);
       const filteredFill = mat.fill_in_blank_questions.filter((f) => !fia[f.id]?.correct);
 
-      // Clear saved answers only for wrong/unanswered questions so they appear fresh
+      const quizQuestions = filteredQuiz.length > 0 ? filteredQuiz : mat.quiz_questions;
+      const flashcards = filteredFlashcards.length > 0 ? filteredFlashcards : mat.flashcards;
+      const writtenQuestions = filteredWritten.length > 0 ? filteredWritten : mat.written_questions;
+      const fillQuestions = filteredFill.length > 0 ? filteredFill : mat.fill_in_blank_questions;
+
+      if (!isWrongOnly) {
+        // Plain resume: keep saved answers intact (so a previously-wrong pick is still shown),
+        // just narrow down which items are shown.
+        return {
+          ...mat,
+          quiz_questions: quizQuestions,
+          flashcards,
+          written_questions: writtenQuestions,
+          fill_in_blank_questions: fillQuestions,
+        };
+      }
+
+      // Explicit wrong-only review: clear saved answers for the wrong/unanswered items so they
+      // appear fresh for a full retry.
       const clearedQa = { ...qa };
       filteredQuiz.forEach((q) => delete clearedQa[q.id]);
       const clearedFa = { ...fa };
@@ -251,10 +263,10 @@ export default function GenerateQuizScreen() {
 
       return {
         ...mat,
-        quiz_questions: filteredQuiz,
-        flashcards: filteredFlashcards,
-        written_questions: filteredWritten,
-        fill_in_blank_questions: filteredFill,
+        quiz_questions: quizQuestions,
+        flashcards,
+        written_questions: writtenQuestions,
+        fill_in_blank_questions: fillQuestions,
         // Keep progress intact — original correct counts preserved
         user_answers: { quiz_questions: clearedQa, flashcards: clearedFa, written_questions: clearedWa, fill_in_blank_questions: clearedFia },
       };
@@ -292,12 +304,13 @@ export default function GenerateQuizScreen() {
       setWrittenDisplayMap(Object.fromEntries((raw?.written_questions ?? []).map((w, i) => [w.id, i + 1])));
       setFillDisplayMap(Object.fromEntries((raw?.fill_in_blank_questions ?? []).map((f, i) => [f.id, i + 1])));
 
-      // Check which content is missing for the selected methods.
+      // Check which content is missing for the selected methods. Based on raw (unfiltered) storage,
+      // not the view-filtered `m`, so a fully-mastered category doesn't spontaneously regenerate.
       // "Keep Going" (isMore) forces a fresh batch even if content already exists.
-      const needsFlashcards = selectedIds.includes('flashcards') && (isMore || !m.flashcards || m.flashcards.length === 0);
-      const needsQuiz = selectedIds.includes('quiz') && (isMore || !m.quiz_questions || m.quiz_questions.length === 0);
-      const needsWritten = selectedIds.includes('written') && (isMore || !m.written_questions || m.written_questions.length === 0);
-      const needsFill = selectedIds.includes('fill') && (isMore || !m.fill_in_blank_questions || m.fill_in_blank_questions.length === 0);
+      const needsFlashcards = selectedIds.includes('flashcards') && (isMore || !raw?.flashcards || raw.flashcards.length === 0);
+      const needsQuiz = selectedIds.includes('quiz') && (isMore || !raw?.quiz_questions || raw.quiz_questions.length === 0);
+      const needsWritten = selectedIds.includes('written') && (isMore || !raw?.written_questions || raw.written_questions.length === 0);
+      const needsFill = selectedIds.includes('fill') && (isMore || !raw?.fill_in_blank_questions || raw.fill_in_blank_questions.length === 0);
 
       // If any content needs generation, get the knowledge graph and generate
       if (needsFlashcards || needsQuiz || needsWritten || needsFill) {
@@ -486,18 +499,18 @@ export default function GenerateQuizScreen() {
     return base.map(shuffleQuizOptions);
   }, [materials?.quiz_questions, isWrongOnly]);
 
-  // Compute overall mastery across scorable methods only (notes excluded)
+  // Mirrors the same mastery % shown on the Home screen's note card (lib/notes.ts calculateMastery),
+  // across all methods with questions — not just the ones selected for this session — so it stays
+  // in sync and updates live as answers come in or more questions get added.
+  const qTotal = quizTotalFull > 0 ? quizTotalFull : quizQuestions.length;
   const overallMastery = useMemo(() => {
-    const pairs: [number, number][] = [];
-    const qTotal = quizTotalFull > 0 ? quizTotalFull : quizQuestions.length;
-    if (selectedIds.includes('quiz') && qTotal > 0) pairs.push([sessionQuizCorrect, qTotal]);
-    if (selectedIds.includes('flashcards') && flashcardTotal > 0) pairs.push([flashcardCorrect, flashcardTotal]);
-    if (selectedIds.includes('written') && writtenTotal > 0) pairs.push([writtenCorrect, writtenTotal]);
-    if (selectedIds.includes('fill') && fillTotal > 0) pairs.push([fillCorrect, fillTotal]);
-    const totalCorrect = pairs.reduce((s, [c]) => s + c, 0);
-    const totalQs = pairs.reduce((s, [, t]) => s + t, 0);
-    return totalQs > 0 ? Math.min(100, Math.round((totalCorrect / totalQs) * 100)) : 0;
-  }, [sessionQuizCorrect, quizTotalFull, flashcardCorrect, flashcardTotal, writtenCorrect, writtenTotal, fillCorrect, fillTotal, selectedIds, quizQuestions.length]);
+    return calculateMastery({
+      multipleChoice: { correct: sessionQuizCorrect, total: qTotal },
+      flashcards: { correct: flashcardCorrect, total: flashcardTotalFull },
+      fillInBlanks: { correct: fillCorrect, total: fillTotalFull },
+      written: { correct: writtenCorrect, total: writtenTotalFull },
+    });
+  }, [sessionQuizCorrect, qTotal, flashcardCorrect, flashcardTotalFull, fillCorrect, fillTotalFull, writtenCorrect, writtenTotalFull]);
 
   useEffect(() => {
     if (overallMastery >= 75 && !streakFiredRef.current && !loading) {
@@ -651,9 +664,9 @@ export default function GenerateQuizScreen() {
       setQuizStreak((s) => {
         const next = s + 1;
         if (next >= 2) {
-          const targetScale = Math.min(1 + (next - 2) * 0.08, 1.6);
-          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.6); lottieRef.current?.play(); }
-          Animated.spring(fireScale, { toValue: targetScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.85); lottieRef.current?.play(); }
+          else { fireScale.setValue(0.85); }
+          Animated.spring(fireScale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start();
           popNumber();
         }
         return next;
@@ -964,7 +977,7 @@ export default function GenerateQuizScreen() {
         </View>
       )}
       {activeTab === 'tutor' && <TutorStudy notes={notesContent} />}
-      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} onWrongAnswer={(card) => fetchFlashcardExplanation({ id: card.id, front: card.question, back: card.answer })} initialIndex={flashcardInitIdx} displayTotal={flashcardTotalFull || undefined} displayIndexMap={flashcardDisplayMap} explanations={flashcardExplanations} />}
+      {activeTab === 'flashcards' && <FlashcardStudy cards={flashcardCards} onProgressUpdate={handleFlashcardProgress} materialId={materialId} savedAnswers={flashcardAnswers} onAnswersUpdate={handleFlashcardAnswersUpdate} onWrongAnswer={(card) => fetchFlashcardExplanation({ id: card.id, front: card.question, back: card.answer })} initialIndex={flashcardInitIdx} displayTotal={isWrongOnly ? undefined : (flashcardTotalFull || undefined)} displayIndexMap={isWrongOnly ? undefined : flashcardDisplayMap} explanations={flashcardExplanations} />}
       {activeTab === 'written' && (
         <WrittenStudy
           items={writtenItems}
@@ -973,8 +986,8 @@ export default function GenerateQuizScreen() {
           savedAnswers={writtenAnswers}
           onAnswersUpdate={handleWrittenAnswersUpdate}
           initialIndex={writtenInitIdx}
-          displayTotal={writtenTotalFull || undefined}
-          displayIndexMap={writtenDisplayMap}
+          displayTotal={isWrongOnly ? undefined : (writtenTotalFull || undefined)}
+          displayIndexMap={isWrongOnly ? undefined : writtenDisplayMap}
         />
       )}
       {activeTab === 'fill' && (
@@ -985,8 +998,8 @@ export default function GenerateQuizScreen() {
           savedAnswers={fillAnswers}
           onAnswersUpdate={handleFillAnswersUpdate}
           initialIndex={fillInitIdx}
-          displayTotal={fillTotalFull || undefined}
-          displayIndexMap={fillDisplayMap}
+          displayTotal={isWrongOnly ? undefined : (fillTotalFull || undefined)}
+          displayIndexMap={isWrongOnly ? undefined : fillDisplayMap}
         />
       )}
       {activeTab === 'quiz' && (
@@ -1352,6 +1365,7 @@ const styles = StyleSheet.create({
   quizStreakCount: {
     fontFamily: SF_PRO,
     fontSize: 28,
+    fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: -8,
     marginRight: -14,

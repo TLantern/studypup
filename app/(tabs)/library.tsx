@@ -209,7 +209,7 @@ export default function LibraryScreen() {
       />
 
       <Modal visible={showNewFolder} transparent animationType="fade" onRequestClose={() => setShowNewFolder(false)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setShowNewFolder(false)}>
+        <Pressable style={styles.newFolderBackdrop} onPress={() => setShowNewFolder(false)}>
           <Pressable style={styles.newFolderModal} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.sheetTitle}>New Folder</Text>
             <TextInput
@@ -280,6 +280,7 @@ const styles = StyleSheet.create({
   progressBar: { height: '100%', borderRadius: 4 },
 
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  newFolderBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center' },
   sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '70%' },
   sheetTitle: { fontFamily: 'FredokaOne_400Regular', fontSize: 18, color: DEEP_BLACK, marginBottom: 14 },
   sheetCloseBtn: { alignItems: 'center', paddingVertical: 14, marginTop: 8 },
@@ -293,14 +294,15 @@ const styles = StyleSheet.create({
 
   newFolderModal: {
     backgroundColor: '#fff', borderRadius: 20, padding: 20, marginHorizontal: 32, alignSelf: 'center', width: '84%',
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)',
   },
   folderInput: {
     height: 46, borderRadius: 12, backgroundColor: '#F5F5F5', paddingHorizontal: 14,
     fontFamily: SF_PRO, fontSize: 16, color: DEEP_BLACK,
   },
   modalBtn: { flex: 1, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  modalBtnGhost: { backgroundColor: '#F5F5F5' },
+  modalBtnGhost: { backgroundColor: '#F5F5F5', borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
   modalBtnGhostText: { fontFamily: SF_PRO, fontSize: 15, fontWeight: '600', color: SUBTITLE_GRAY },
-  modalBtnPrimary: { backgroundColor: ACCENT_BLUE },
+  modalBtnPrimary: { backgroundColor: ACCENT_BLUE, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
   modalBtnPrimaryText: { fontFamily: SF_PRO, fontSize: 15, fontWeight: '600', color: '#fff' },
 });

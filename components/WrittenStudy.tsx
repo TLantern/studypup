@@ -79,9 +79,9 @@ export function WrittenStudy({ items = SCAFFOLD_ITEMS, onProgressUpdate, materia
       setStreak((s) => {
         const next = s + 1;
         if (next >= 2) {
-          const targetScale = Math.min(1 + (next - 2) * 0.08, 1.6);
-          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.6); lottieRef.current?.play(); }
-          Animated.spring(fireScale, { toValue: targetScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+          if (next === 2) { fireOpacity.setValue(1); fireScale.setValue(0.85); lottieRef.current?.play(); }
+          else { fireScale.setValue(0.85); }
+          Animated.spring(fireScale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start();
           popNumber();
           Haptics.impactAsync(next >= 5 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium);
         }
@@ -399,7 +399,7 @@ Is this answer correct or close enough? Remember: this is a short-answer questio
 const styles = StyleSheet.create({
   wrap: { flex: 1 },
   streakWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, gap: 0 },
-  streakCount: { fontFamily: SF_PRO, fontSize: 28, color: '#1A1A1A', marginBottom: -8, marginRight: -14 },
+  streakCount: { fontFamily: SF_PRO, fontSize: 28, fontWeight: '700', color: '#1A1A1A', marginBottom: -8, marginRight: -14 },
   fireLottie: { width: 68, height: 68 },
   scroll: { flex: 1 },
   wrapContent: { paddingVertical: 24, paddingBottom: 48 },

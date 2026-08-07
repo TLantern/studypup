@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Image as RNImage, InteractionManager, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View, Linking, Alert, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useState, useEffect, useRef, useCallback, useMemo, useContext, useSyncExternalStore } from 'react';
 import { getShowAddSheet, setShowAddSheet, subscribeAddSheet } from '@/lib/add-sheet-store';
+import { setHomeSnapshot } from '@/lib/home-snapshot-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -19,7 +20,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as DocumentPicker from 'expo-document-picker';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { StudyMaterialSet } from '@/lib/knowledge-graph';
 import { Note, getMasteryColor, noteFromStudyMaterialSet } from '@/lib/notes';
 import { listAllMaterials, deleteAllLocalMaterials } from '@/lib/study-materials-storage';
@@ -65,6 +66,11 @@ const SHEET_OPTIONS = [
 ];
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
+  const closeAddSheet = useCallback(() => {
+    setShowAddSheet(false);
+    navigation.navigate('index' as never);
+  }, [navigation]);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const isTablet = screenWidth > 600;
@@ -164,6 +170,10 @@ export default function HomeScreen() {
       return { label, date: d.getDate(), isToday: dStr === todayStr, isFuture: dStr > todayStr, studied: studiedDates.has(dStr) };
     });
   }, [materials, extraStudyDays]);
+
+  useEffect(() => {
+    setHomeSnapshot({ notes: materials.map(noteFromStudyMaterialSet), weekStats });
+  }, [materials, weekStats]);
 
   const displayNotes = useMemo((): Note[] => {
     const q = searchQuery.trim().toLowerCase();
@@ -704,7 +714,7 @@ export default function HomeScreen() {
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <LinearGradient
         colors={[OFF_WHITE, 'rgba(163, 191, 254, 0.06)', OFF_WHITE]}
-        locations={[0, 0.5, 1]}
+        locations={[0, 0.25, 1]}
         style={{
           position: 'absolute',
           top: screenHeight * 0.25,
@@ -881,12 +891,12 @@ export default function HomeScreen() {
       )} */}
 
       {/* ── Add Content sheet ── */}
-      <Modal visible={showAddSheet} transparent animationType="slide" onRequestClose={() => setShowAddSheet(false)}>
-        <Pressable style={styles.sheetBackdrop} onPress={() => setShowAddSheet(false)}>
+      <Modal visible={showAddSheet} transparent animationType="slide" onRequestClose={closeAddSheet}>
+        <Pressable style={styles.sheetBackdrop} onPress={closeAddSheet}>
           <Pressable style={[styles.addSheet, { paddingBottom: insets.bottom + 20 }]} onPress={(e) => e.stopPropagation()}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Upload Content</Text>
-              <Pressable style={styles.sheetClose} hitSlop={12} onPress={() => setShowAddSheet(false)}>
+              <Pressable style={styles.sheetClose} hitSlop={12} onPress={closeAddSheet}>
                 <Text style={{ fontSize: 15, color: DEEP_BLACK }}>✕</Text>
               </Pressable>
             </View>
@@ -1566,7 +1576,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: OFF_WHITE },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: 18 },
   headerDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 8 },

@@ -109,13 +109,14 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
     setStreak((s) => {
       const next = s + 1;
       if (next >= 2) {
-        const targetFireScale = Math.min(1 + (next - 2) * 0.08, 1.6);
         if (next === 2) {
           fireOpacity.setValue(1);
-          fireScale.setValue(0.6);
+          fireScale.setValue(0.85);
           lottieRef.current?.play();
+        } else {
+          fireScale.setValue(0.85);
         }
-        Animated.spring(fireScale, { toValue: targetFireScale, friction: 5, tension: 200, useNativeDriver: true }).start();
+        Animated.spring(fireScale, { toValue: 1, friction: 5, tension: 200, useNativeDriver: true }).start();
         popNumber();
         Haptics.impactAsync(next >= 5 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium);
       }
@@ -294,9 +295,6 @@ export function FlashcardStudy({ cards = SCAFFOLD_CARDS, onProgressUpdate, mater
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.cardWrap, isTablet && { height: 420, marginHorizontal: width * 0.1 }]}>
-          {/* Deck cards behind */}
-          <View style={[styles.card, styles.deckCard3]} />
-          <View style={[styles.card, styles.deckCard2]} />
         <Pressable onPress={flip} style={StyleSheet.absoluteFill}>
           <Animated.View style={[
             styles.card, styles.cardFace,
@@ -388,6 +386,7 @@ const styles = StyleSheet.create({
   streakCount: {
     fontFamily: SF_PRO,
     fontSize: 28,
+    fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: -8,
     marginRight: -14,
@@ -407,18 +406,6 @@ const styles = StyleSheet.create({
     minHeight: 160,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  deckCard2: {
-    position: 'absolute', top: 6, left: 6, right: -6,
-    transform: [{ rotate: '2deg' }],
-    backgroundColor: '#f0f0f0',
-    zIndex: -1,
-  },
-  deckCard3: {
-    position: 'absolute', top: 11, left: 10, right: -10,
-    transform: [{ rotate: '4deg' }],
-    backgroundColor: '#e4e4e4',
-    zIndex: -2,
   },
   cardFace: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   cardBack: { backgroundColor: '#f0f4ff' },

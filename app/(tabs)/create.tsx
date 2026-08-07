@@ -1,12 +1,15 @@
-import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { setShowAddSheet } from '@/lib/add-sheet-store';
+import { HomeScreenDecoy } from '@/components/HomeScreenDecoy';
 
 export default function CreateScreen() {
-  useEffect(() => {
-    setShowAddSheet(true);
-    router.navigate('/(tabs)');
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setShowAddSheet(true);
+      return () => setShowAddSheet(false);
+    }, [])
+  );
 
-  return null;
+  return <HomeScreenDecoy />;
 }
